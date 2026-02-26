@@ -7,6 +7,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +57,9 @@ func runUnhold(_ *cobra.Command, args []string) error {
 	tk.PriorStatus = nil
 	tk.Updated = now
 
-	ticket.AppendSection(tk, "Unhold", "human", "", "", nil, now)
+	actor := identity.Actor()
+	sessionID := identity.SessionID()
+	ticket.AppendSection(tk, "Unhold", actor, sessionID, "", nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -74,7 +77,8 @@ func runUnhold(_ *cobra.Command, args []string) error {
 		Event:   evType,
 		Ticket:  tk.ID,
 		Project: tk.Project,
-		Actor:   "human",
+		Actor:   actor,
+		Session: sessionID,
 		Data: map[string]any{
 			"from":   string(ticket.StatusBlocked),
 			"reason": "unhold",

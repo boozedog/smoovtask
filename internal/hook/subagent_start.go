@@ -38,9 +38,11 @@ func HandleSubagentStart(input *Input) (Output, error) {
 
 	context := fmt.Sprintf(
 		"smoovtask ticket assigned: %s — %s (project: %s, priority: %s)\n\n"+
-			"Use `st pick %s` to claim the ticket before starting work.\n"+
-			"Use `st note \"message\"` to document progress.\n"+
-			"Use `st status review` when done.",
+			"REQUIRED workflow — you MUST follow these steps:\n"+
+			"1. `st pick %s` — claim the ticket before starting ANY work\n"+
+			"2. `st note \"message\"` — document progress as you work\n"+
+			"3. `st status review` — submit when done\n\n"+
+			"Do NOT start editing code without running `st pick` first.",
 		tk.ID, tk.Title, tk.Project, tk.Priority, tk.ID,
 	)
 

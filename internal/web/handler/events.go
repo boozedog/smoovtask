@@ -23,7 +23,7 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
 	defer h.broker.Unsubscribe(ch)
 
 	// Send initial keepalive.
-	fmt.Fprintf(w, ": keepalive\n\n")
+	_, _ = fmt.Fprintf(w, ": keepalive\n\n")
 	flusher.Flush()
 
 	ctx := r.Context()
@@ -40,7 +40,7 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			// Send as a "refresh" event that htmx SSE extension listens for.
-			fmt.Fprintf(w, "event: refresh\ndata: %s\n\n", data)
+			_, _ = fmt.Fprintf(w, "event: refresh\ndata: %s\n\n", data)
 			flusher.Flush()
 		}
 	}

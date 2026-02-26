@@ -75,6 +75,20 @@ func runStatus(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot move to %s — ticket has no assignee. Run `st pick %s` first", targetStatus, tk.ID)
 	}
 
+	if workflow.RequiresNote(tk.Status, targetStatus) {
+		evDir, evErr := cfg.EventsDir()
+		if evErr != nil {
+			return fmt.Errorf("get events dir: %w", evErr)
+		}
+		hasNote, noteErr := workflow.HasNoteSince(evDir, tk.ID, tk.Updated)
+		if noteErr != nil {
+			return fmt.Errorf("check note requirement: %w", noteErr)
+		}
+		if !hasNote {
+			return fmt.Errorf("cannot move to %s — a note is required before review. Run `st note \"message\"` first", targetStatus)
+		}
+	}
+
 	now := time.Now().UTC()
 	oldStatus := tk.Status
 	tk.Status = targetStatus

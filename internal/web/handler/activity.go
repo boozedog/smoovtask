@@ -16,7 +16,25 @@ func (h *Handler) Activity(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.ActivityPage(data).Render(r.Context(), w)
+	_ = templates.ActivityPage(data).Render(r.Context(), w)
+}
+
+// PartialActivity renders just the activity content for htmx swaps.
+func (h *Handler) PartialActivity(w http.ResponseWriter, r *http.Request) {
+	data, err := h.buildActivityData(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Push canonical /activity URL so filters are bookmarkable.
+	pushURL := "/activity"
+	if q := r.URL.Query().Encode(); q != "" {
+		pushURL += "?" + q
+	}
+	w.Header().Set("HX-Push-Url", pushURL)
+
+	_ = templates.ActivityContent(data).Render(r.Context(), w)
 }
 
 func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, error) {

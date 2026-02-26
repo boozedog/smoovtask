@@ -3,6 +3,7 @@ package workflow
 import (
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
@@ -17,6 +18,25 @@ func RequiresAssignee(to ticket.Status) bool {
 // since the ticket entered its current status.
 func RequiresNote(from, to ticket.Status) bool {
 	return from == ticket.StatusInProgress && to == ticket.StatusReview
+}
+
+// HasNoteSince checks whether a ticket.note event exists for the ticket
+// since its last status change.
+func HasNoteSince(eventsDir, ticketID string, since time.Time) (bool, error) {
+	events, err := event.QueryEvents(eventsDir, event.Query{
+		TicketID: ticketID,
+		After:    since,
+	})
+	if err != nil {
+		return false, fmt.Errorf("query events: %w", err)
+	}
+
+	for _, e := range events {
+		if e.Event == event.TicketNote {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // CanReview checks whether the given session is eligible to review a ticket.

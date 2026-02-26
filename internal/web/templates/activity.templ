@@ -21,21 +21,21 @@ templ ActivityPage(data ActivityData) {
 			hx-ext="sse"
 			sse-connect="/events"
 			sse-swap="refresh"
-			hx-get={ partialActivityURL(data.Filter) }
+			hx-get="/partials/activity"
 			hx-trigger="sse:refresh"
 			hx-target="#activity-content"
 			hx-swap="innerHTML"
+			hx-include="[name='project'],[name='event_type']"
 		>
 			<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
 				<select
 					name="project"
 					class="uk-select uk-form-small"
 					style="max-width: 200px;"
-					hx-get="/activity"
-					hx-target="body"
-					hx-swap="outerHTML"
+					hx-get="/partials/activity"
+					hx-target="#activity-content"
+					hx-swap="innerHTML"
 					hx-include="[name='event_type']"
-					hx-push-url="true"
 				>
 					<option value="">All Projects</option>
 					for _, p := range data.Projects {
@@ -53,11 +53,10 @@ templ ActivityPage(data ActivityData) {
 					name="event_type"
 					class="uk-select uk-form-small"
 					style="max-width: 200px;"
-					hx-get="/activity"
-					hx-target="body"
-					hx-swap="outerHTML"
+					hx-get="/partials/activity"
+					hx-target="#activity-content"
+					hx-swap="innerHTML"
 					hx-include="[name='project']"
-					hx-push-url="true"
 				>
 					<option value="">All Events</option>
 					<option value="ticket" if data.Filter.EventType == "ticket" { selected }>Ticket Events</option>
@@ -70,17 +69,6 @@ templ ActivityPage(data ActivityData) {
 			</div>
 		</div>
 	}
-}
-
-func partialActivityURL(f ActivityFilter) string {
-	url := "/activity?"
-	if f.Project != "" {
-		url += "project=" + f.Project + "&"
-	}
-	if f.EventType != "" {
-		url += "event_type=" + f.EventType + "&"
-	}
-	return url
 }
 
 templ ActivityContent(data ActivityData) {

@@ -3,9 +3,63 @@ package hook
 import (
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
+
+func TestHandleSessionStartLogsEvent(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	// Create a ticket so the handler has something to find
+	store := ticket.NewStore(env.ticketsDir(t))
+	tk := &ticket.Ticket{
+		ID:       "st_test01",
+		Title:    "Test ticket",
+		Project:  "test-project",
+		Status:   ticket.StatusOpen,
+		Priority: ticket.PriorityP2,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(tk); err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+
+	input := &Input{
+		SessionID: "sess-start-test",
+		CWD:       projectPath,
+	}
+
+	err := HandleSessionStart(input)
+	if err != nil {
+		t.Fatalf("HandleSessionStart() error: %v", err)
+	}
+
+	ev := readTodayEvent(t, env.EventsDir)
+	assertEvent(t, ev, event.HookSessionStart, "sess-start-test", "test-project")
+
+	openCount, _ := ev.Data["open_count"].(float64)
+	if openCount != 1 {
+		t.Errorf("open_count = %v, want 1", ev.Data["open_count"])
+	}
+}
+
+func TestHandleSessionStartNoProject(t *testing.T) {
+	setupTestEnv(t, "")
+
+	input := &Input{
+		SessionID: "sess-no-proj",
+		CWD:       "/some/unknown/path",
+	}
+
+	err := HandleSessionStart(input)
+	if err != nil {
+		t.Fatalf("HandleSessionStart() error: %v", err)
+	}
+}
 
 func TestBuildBoardSummaryOpen(t *testing.T) {
 	open := []*ticket.Ticket{
@@ -13,16 +67,28 @@ func TestBuildBoardSummaryOpen(t *testing.T) {
 		{ID: "st_c1Dw4n", Title: "Fix CORS headers", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 	}
 
-	summary := buildBoardSummary("api-server", open, nil)
+	summary := buildBoardSummary("api-server", "sess-abc123", open, nil)
 
 	if !strings.Contains(summary, "smoovtask — api-server — 2 OPEN tickets ready") {
 		t.Errorf("missing header, got:\n%s", summary)
 	}
+	if !strings.Contains(summary, "Session: sess-abc123") {
+		t.Errorf("missing session ID, got:\n%s", summary)
+	}
 	if !strings.Contains(summary, "st_a7Kx2m") {
 		t.Error("missing ticket ID st_a7Kx2m")
 	}
+	if !strings.Contains(summary, "REQUIRED workflow") {
+		t.Error("missing required workflow instruction")
+	}
 	if !strings.Contains(summary, "st pick") {
 		t.Error("missing pick instruction")
+	}
+	if !strings.Contains(summary, "st note") {
+		t.Error("missing note instruction")
+	}
+	if !strings.Contains(summary, "st status review") {
+		t.Error("missing status review instruction")
 	}
 }
 
@@ -31,10 +97,13 @@ func TestBuildBoardSummaryReview(t *testing.T) {
 		{ID: "st_test01", Title: "Reviewed ticket", Priority: ticket.PriorityP2, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", nil, review)
+	summary := buildBoardSummary("proj", "", nil, review)
 
 	if !strings.Contains(summary, "REVIEW") {
 		t.Error("should show REVIEW when review tickets exist")
+	}
+	if !strings.Contains(summary, "REQUIRED") {
+		t.Error("missing REQUIRED prefix on review instruction")
 	}
 	if !strings.Contains(summary, "st review") {
 		t.Error("missing review instruction")
@@ -42,7 +111,7 @@ func TestBuildBoardSummaryReview(t *testing.T) {
 }
 
 func TestBuildBoardSummaryEmpty(t *testing.T) {
-	summary := buildBoardSummary("proj", nil, nil)
+	summary := buildBoardSummary("proj", "", nil, nil)
 	if summary != "" {
 		t.Errorf("expected empty summary, got: %q", summary)
 	}
@@ -56,7 +125,7 @@ func TestBuildBoardSummaryReviewPreferred(t *testing.T) {
 		{ID: "st_rev01", Title: "Review ticket", Priority: ticket.PriorityP2, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", open, review)
+	summary := buildBoardSummary("proj", "", open, review)
 
 	// Review P2 (45) beats Open P3 (30), so show REVIEW
 	if !strings.Contains(summary, "REVIEW") {
@@ -74,7 +143,7 @@ func TestBuildBoardSummarySortedByPriority(t *testing.T) {
 		{ID: "st_mid", Title: "Mid priority", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 	}
 
-	summary := buildBoardSummary("proj", open, nil)
+	summary := buildBoardSummary("proj", "", open, nil)
 
 	highIdx := strings.Index(summary, "st_high")
 	midIdx := strings.Index(summary, "st_mid")
@@ -97,7 +166,7 @@ func TestBuildBoardSummaryReviewBeatsSamePriority(t *testing.T) {
 		{ID: "st_rev01", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", open, review)
+	summary := buildBoardSummary("proj", "", open, review)
 
 	if !strings.Contains(summary, "REVIEW") {
 		t.Error("REVIEW should win at same priority due to +5 boost")
@@ -117,7 +186,7 @@ func TestBuildBoardSummaryHigherOpenBeatsLowerReview(t *testing.T) {
 		{ID: "st_rev01", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", open, review)
+	summary := buildBoardSummary("proj", "", open, review)
 
 	if !strings.Contains(summary, "OPEN") {
 		t.Error("higher-priority OPEN should beat lower-priority REVIEW")
@@ -145,7 +214,7 @@ func TestBuildBoardSummaryReviewBeatsNextPriorityDown(t *testing.T) {
 		{ID: "st_rev02", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", open, review)
+	summary := buildBoardSummary("proj", "", open, review)
 
 	if !strings.Contains(summary, "REVIEW") {
 		t.Error("P3 REVIEW (35) should beat P3 OPEN (30)")
@@ -169,7 +238,7 @@ func TestBuildBoardSummaryDesignExample1(t *testing.T) {
 		{ID: "st_p3rev2", Title: "P3 Review 2", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", open, review)
+	summary := buildBoardSummary("proj", "", open, review)
 
 	if !strings.Contains(summary, "3 OPEN tickets") {
 		t.Errorf("expected 3 OPEN tickets, got:\n%s", summary)
@@ -197,7 +266,7 @@ func TestBuildBoardSummaryDesignExample2(t *testing.T) {
 		{ID: "st_p2rev", Title: "P2 Review", Priority: ticket.PriorityP2, Status: ticket.StatusReview},
 	}
 
-	summary := buildBoardSummary("proj", open, review)
+	summary := buildBoardSummary("proj", "", open, review)
 
 	if !strings.Contains(summary, "2 REVIEW tickets") {
 		t.Errorf("expected 2 REVIEW tickets, got:\n%s", summary)

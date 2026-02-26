@@ -43,7 +43,7 @@ func TestNote_OnCurrentTicket(t *testing.T) {
 	}
 	found := false
 	for _, e := range events {
-		if e.Event == "ticket.note" {
+		if e.Event == event.TicketNote {
 			found = true
 			break
 		}

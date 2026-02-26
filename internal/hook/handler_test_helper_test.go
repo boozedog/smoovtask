@@ -56,6 +56,12 @@ func setupTestEnv(t *testing.T, projectPath string) testEnv {
 	}
 }
 
+// ticketsDir returns the tickets directory path for this test env.
+func (e testEnv) ticketsDir(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(e.Home, "vault", "tickets")
+}
+
 // quote returns a TOML-safe quoted string.
 func quote(s string) string {
 	return `"` + s + `"`

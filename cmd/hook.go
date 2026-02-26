@@ -28,14 +28,7 @@ func runHook(_ *cobra.Command, args []string) error {
 
 	switch eventType {
 	case "session-start":
-		out, err := hook.HandleSessionStart(input)
-		if err != nil {
-			return err
-		}
-		if out.AdditionalContext != "" {
-			return hook.WriteOutput(out)
-		}
-		return nil
+		return hook.HandleSessionStart(input)
 
 	case "subagent-start":
 		out, err := hook.HandleSubagentStart(input)
@@ -48,7 +41,14 @@ func runHook(_ *cobra.Command, args []string) error {
 		return nil
 
 	case "pre-tool":
-		return hook.HandlePreTool(input)
+		out, err := hook.HandlePreTool(input)
+		if err != nil {
+			return err
+		}
+		if out.AdditionalContext != "" {
+			return hook.WriteOutput(out)
+		}
+		return nil
 
 	case "post-tool":
 		return hook.HandlePostTool(input)

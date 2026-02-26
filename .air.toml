@@ -16,5 +16,8 @@ tmp_dir = "tmp"
 [log]
   time = false
 
+[proxy]
+  enabled = false
+
 [misc]
   clean_on_exit = true

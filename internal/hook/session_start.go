@@ -5,27 +5,32 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
-// HandleSessionStart processes the SessionStart hook and returns a board summary.
-func HandleSessionStart(input *Input) (Output, error) {
+// HandleSessionStart processes the SessionStart hook.
+// It prints the board summary directly to stdout (plain text),
+// which Claude Code automatically injects into the agent's context
+// for SessionStart hooks.
+func HandleSessionStart(input *Input) error {
 	cfg, err := config.Load()
 	if err != nil {
-		return Output{}, fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	proj := project.Detect(cfg, input.CWD)
 	if proj == "" {
-		return Output{}, nil
+		return nil
 	}
 
 	ticketsDir, err := cfg.TicketsDir()
 	if err != nil {
-		return Output{}, fmt.Errorf("get tickets dir: %w", err)
+		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
 	store := ticket.NewStore(ticketsDir)
@@ -36,7 +41,7 @@ func HandleSessionStart(input *Input) (Output, error) {
 		Status:  ticket.StatusOpen,
 	})
 	if err != nil {
-		return Output{}, fmt.Errorf("list tickets: %w", err)
+		return fmt.Errorf("list tickets: %w", err)
 	}
 
 	// Get review tickets for this project
@@ -45,15 +50,33 @@ func HandleSessionStart(input *Input) (Output, error) {
 		Status:  ticket.StatusReview,
 	})
 	if err != nil {
-		return Output{}, fmt.Errorf("list review tickets: %w", err)
+		return fmt.Errorf("list review tickets: %w", err)
 	}
 
-	summary := buildBoardSummary(proj, openTickets, reviewTickets)
-	if summary == "" {
-		return Output{}, nil
+	// Log session-start event
+	eventsDir, err := cfg.EventsDir()
+	if err != nil {
+		return fmt.Errorf("get events dir: %w", err)
+	}
+	el := event.NewEventLog(eventsDir)
+	_ = el.Append(event.Event{
+		TS:      time.Now().UTC(),
+		Event:   event.HookSessionStart,
+		Project: proj,
+		Actor:   "agent",
+		Session: input.SessionID,
+		Data: map[string]any{
+			"open_count":   len(openTickets),
+			"review_count": len(reviewTickets),
+		},
+	})
+
+	summary := buildBoardSummary(proj, input.SessionID, openTickets, reviewTickets)
+	if summary != "" {
+		fmt.Print(summary)
 	}
 
-	return Output{AdditionalContext: summary}, nil
+	return nil
 }
 
 // priorityWeight returns the scoring weight for a ticket priority.
@@ -90,7 +113,7 @@ func sortByPriority(tickets []*ticket.Ticket) {
 // buildBoardSummary formats the board summary for session context injection.
 // It uses score-based batch selection: score all tickets, find the highest,
 // then present ALL tickets of that same status type sorted by priority.
-func buildBoardSummary(proj string, openTickets, reviewTickets []*ticket.Ticket) string {
+func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*ticket.Ticket) string {
 	if len(openTickets) == 0 && len(reviewTickets) == 0 {
 		return ""
 	}
@@ -128,7 +151,11 @@ func buildBoardSummary(proj string, openTickets, reviewTickets []*ticket.Ticket)
 	sortByPriority(tickets)
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "smoovtask — %s — %d %s tickets ready\n\n", proj, len(tickets), statusLabel)
+	fmt.Fprintf(&b, "smoovtask — %s — %d %s tickets ready\n", proj, len(tickets), statusLabel)
+	if sessionID != "" {
+		fmt.Fprintf(&b, "Session: %s\n", sessionID)
+	}
+	b.WriteString("\n")
 
 	for _, tk := range tickets {
 		fmt.Fprintf(&b, "  %-12s %-30s %s\n", tk.ID, tk.Title, tk.Priority)
@@ -136,9 +163,13 @@ func buildBoardSummary(proj string, openTickets, reviewTickets []*ticket.Ticket)
 
 	b.WriteString("\n")
 	if statusLabel == "OPEN" {
-		b.WriteString("Pick a ticket with `st pick st_xxxxxx`.\n")
+		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
+		b.WriteString("1. `st pick st_xxxxxx` — claim a ticket before starting any work\n")
+		b.WriteString("2. `st note \"message\"` — document progress as you work\n")
+		b.WriteString("3. `st status review` — submit when done\n")
+		b.WriteString("\nDo NOT start editing code without picking a ticket first.\n")
 	} else {
-		b.WriteString("Review a ticket with `st review st_xxxxxx`.\n")
+		b.WriteString("REQUIRED: Review a ticket with `st review st_xxxxxx`.\n")
 	}
 
 	return b.String()

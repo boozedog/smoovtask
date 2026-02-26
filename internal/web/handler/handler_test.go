@@ -248,6 +248,102 @@ func TestActivityFilterByProject(t *testing.T) {
 	}
 }
 
+func TestPartialActivity(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity", nil)
+	w := httptest.NewRecorder()
+
+	h.PartialActivity(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, event.TicketCreated) {
+		t.Error("expected partial activity to contain ticket.created event")
+	}
+	// Partial should NOT include the full layout.
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("partial should not include full HTML layout")
+	}
+}
+
+func TestPartialActivityPushesURL(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity?project=testproj&event_type=ticket", nil)
+	w := httptest.NewRecorder()
+
+	h.PartialActivity(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	pushURL := w.Header().Get("HX-Push-Url")
+	if pushURL == "" {
+		t.Fatal("expected HX-Push-Url header to be set")
+	}
+	if !strings.Contains(pushURL, "/activity?") {
+		t.Errorf("expected push URL to start with /activity?, got %q", pushURL)
+	}
+	if !strings.Contains(pushURL, "project=testproj") {
+		t.Errorf("expected push URL to contain project=testproj, got %q", pushURL)
+	}
+	if !strings.Contains(pushURL, "event_type=ticket") {
+		t.Errorf("expected push URL to contain event_type=ticket, got %q", pushURL)
+	}
+}
+
+func TestPartialActivityPushesURLNoFilters(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity", nil)
+	w := httptest.NewRecorder()
+
+	h.PartialActivity(w, req)
+
+	pushURL := w.Header().Get("HX-Push-Url")
+	if pushURL != "/activity" {
+		t.Errorf("expected push URL /activity with no filters, got %q", pushURL)
+	}
+}
+
+func TestActivityFilterByEventType(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	// Add a hook event.
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC(),
+		Event:   "hook.session_start",
+		Ticket:  "",
+		Project: "testproj",
+		Actor:   "agent",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	// Filter for ticket events only — should include ticket.created but not hook.session_start.
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity?event_type=ticket", nil)
+	w := httptest.NewRecorder()
+
+	h.PartialActivity(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "ticket.created") {
+		t.Error("expected ticket events in filtered activity")
+	}
+	if strings.Contains(body, "hook.session_start") {
+		t.Error("expected hook events to be filtered out")
+	}
+}
+
 func TestEvents(t *testing.T) {
 	h, _, _ := testSetup(t)
 
@@ -342,7 +438,7 @@ func TestWatcher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	ch := broker.Subscribe()
 	defer broker.Unsubscribe(ch)

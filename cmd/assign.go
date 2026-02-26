@@ -6,6 +6,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +47,9 @@ func runAssign(_ *cobra.Command, args []string) error {
 	tk.Assignee = agentID
 	tk.Updated = now
 
-	ticket.AppendSection(tk, "Assigned", "human", "", "", map[string]string{
+	actor := identity.Actor()
+	sessionID := identity.SessionID()
+	ticket.AppendSection(tk, "Assigned", actor, sessionID, "", map[string]string{
 		"assignee": agentID,
 	}, now)
 
@@ -65,7 +68,8 @@ func runAssign(_ *cobra.Command, args []string) error {
 		Event:   event.TicketAssigned,
 		Ticket:  tk.ID,
 		Project: tk.Project,
-		Actor:   "human",
+		Actor:   actor,
+		Session: sessionID,
 		Data:    map[string]any{"assignee": agentID},
 	})
 

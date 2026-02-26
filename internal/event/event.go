@@ -6,6 +6,7 @@ import "time"
 const (
 	TicketCreated  = "ticket.created"
 	TicketAssigned = "ticket.assigned"
+	TicketNote     = "ticket.note"
 
 	StatusBacklog    = "status.backlog"
 	StatusOpen       = "status.open"

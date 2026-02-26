@@ -29,6 +29,53 @@ func TestRequiresNote(t *testing.T) {
 	}
 }
 
+func TestHasNoteSince(t *testing.T) {
+	dir := t.TempDir()
+	el := event.NewEventLog(dir)
+
+	ts := time.Date(2026, 2, 25, 10, 0, 0, 0, time.UTC)
+
+	// Add a status event and a note after it
+	_ = el.Append(event.Event{
+		TS:     ts,
+		Event:  event.StatusInProgress,
+		Ticket: "st_test01",
+	})
+	_ = el.Append(event.Event{
+		TS:     ts.Add(time.Hour),
+		Event:  event.TicketNote,
+		Ticket: "st_test01",
+		Data:   map[string]any{"message": "progress update"},
+	})
+
+	// Should find the note after the status change
+	ok, err := HasNoteSince(dir, "st_test01", ts)
+	if err != nil {
+		t.Fatalf("HasNoteSince: %v", err)
+	}
+	if !ok {
+		t.Error("should find note after status change time")
+	}
+
+	// Should not find a note after the note was written
+	ok, err = HasNoteSince(dir, "st_test01", ts.Add(2*time.Hour))
+	if err != nil {
+		t.Fatalf("HasNoteSince: %v", err)
+	}
+	if ok {
+		t.Error("should not find note before the since time")
+	}
+
+	// Should not find a note for a different ticket
+	ok, err = HasNoteSince(dir, "st_other1", ts)
+	if err != nil {
+		t.Fatalf("HasNoteSince: %v", err)
+	}
+	if ok {
+		t.Error("should not find note for different ticket")
+	}
+}
+
 func TestCanReview(t *testing.T) {
 	dir := t.TempDir()
 	el := event.NewEventLog(dir)

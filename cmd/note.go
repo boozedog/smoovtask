@@ -62,7 +62,7 @@ func runNote(_ *cobra.Command, args []string) error {
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      now,
-		Event:   "ticket.note",
+		Event:   event.TicketNote,
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,

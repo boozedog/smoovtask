@@ -15,7 +15,7 @@ func (h *Handler) Ticket(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ticket not found", http.StatusNotFound)
 		return
 	}
-	templates.TicketPage(data).Render(r.Context(), w)
+	_ = templates.TicketPage(data).Render(r.Context(), w)
 }
 
 // PartialTicket renders just the ticket content for htmx swaps.
@@ -25,7 +25,7 @@ func (h *Handler) PartialTicket(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ticket not found", http.StatusNotFound)
 		return
 	}
-	templates.TicketContent(data).Render(r.Context(), w)
+	_ = templates.TicketContent(data).Render(r.Context(), w)
 }
 
 func (h *Handler) buildTicketData(r *http.Request) (templates.TicketData, error) {

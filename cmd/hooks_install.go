@@ -51,7 +51,7 @@ func smoovtaskHooks() map[string][]hookGroup {
 		"PreToolUse": {
 			{
 				Matcher: "*",
-				Hooks:   []hookEntry{{Type: "command", Command: "st hook pre-tool", Async: true}},
+				Hooks:   []hookEntry{{Type: "command", Command: "st hook pre-tool"}},
 			},
 		},
 		"PostToolUse": {

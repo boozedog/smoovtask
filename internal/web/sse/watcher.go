@@ -41,7 +41,7 @@ func NewWatcher(eventsDir string, broker *Broker) (*Watcher, error) {
 	w.snapshotOffsets()
 
 	if err := fw.Add(eventsDir); err != nil {
-		fw.Close()
+		_ = fw.Close()
 		return nil, err
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
 	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
@@ -98,7 +99,9 @@ func runNew(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("ensure dirs: %w", err)
 	}
 
-	ticket.AppendSection(tk, "Created", "human", "", title, nil, now)
+	actor := identity.Actor()
+	sessionID := identity.SessionID()
+	ticket.AppendSection(tk, "Created", actor, sessionID, title, nil, now)
 
 	if err := store.Create(tk); err != nil {
 		return fmt.Errorf("create ticket: %w", err)
@@ -115,7 +118,8 @@ func runNew(_ *cobra.Command, args []string) error {
 		Event:   event.TicketCreated,
 		Ticket:  tk.ID,
 		Project: proj,
-		Actor:   "human",
+		Actor:   actor,
+		Session: sessionID,
 		Data:    map[string]any{"title": title, "priority": string(priority)},
 	})
 

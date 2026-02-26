@@ -29,7 +29,8 @@ Tickets are markdown files with YAML frontmatter in an Obsidian vault. Events ar
 ## Building & Running
 
 ```sh
-just build          # build + install
+just install        # quick install from local source (use during dev)
+just build          # templ generate + build + install
 just test           # go test -v ./...
 just test-short     # go test ./... (non-verbose)
 just test-cover     # tests with HTML coverage report
@@ -40,11 +41,25 @@ just release        # goreleaser snapshot build
 just clean          # remove build artifacts
 ```
 
+**IMPORTANT:** After modifying `st` source code, run `just install` to update the binary in your PATH. The `st` hooks run the installed binary, not the local build — stale binaries cause confusing behavior.
+
 ## Storage Paths
 
 - Config: `~/.smoovtask/config.toml`
 - Events: `~/.smoovtask/events/YYYY-MM-DD.jsonl`
 - Tickets: `<vault_path>/tickets/YYYY-MM-DDTHH:MM-st_xxxxxx.md` (default vault: `~/obsidian/smoovtask`)
+
+## Agent Workflow (REQUIRED)
+
+When working on this project, you MUST use the `st` ticketing workflow:
+
+1. **`st pick st_xxxxxx`** — claim a ticket before starting any code changes
+2. **`st note "message"`** — document progress as you work (at least once before submitting)
+3. **`st status review`** — submit the ticket when done
+
+Do NOT edit code without an active ticket. The hooks will log all tool usage, and unattributed work creates audit gaps.
+
+If no tickets exist for your task, create one first with `st new "title"`.
 
 ## Conventions
 

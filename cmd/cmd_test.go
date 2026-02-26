@@ -109,6 +109,20 @@ func (e *testEnv) createTicket(t *testing.T, title string, status ticket.Status)
 	return tk
 }
 
+// addNoteEvent logs a ticket.note event for the given ticket, so that
+// the RequiresNote check passes when transitioning to REVIEW.
+func (e *testEnv) addNoteEvent(t *testing.T, ticketID string) {
+	t.Helper()
+	_ = e.EventLog.Append(event.Event{
+		TS:      time.Now().UTC(),
+		Event:   event.TicketNote,
+		Ticket:  ticketID,
+		Project: "testproject",
+		Actor:   "agent",
+		Data:    map[string]any{"message": "test note"},
+	})
+}
+
 // runCmd executes a cobra command with the given args and captures stdout.
 // Commands use fmt.Printf (writes to os.Stdout), so we redirect os.Stdout
 // to a pipe to capture output.

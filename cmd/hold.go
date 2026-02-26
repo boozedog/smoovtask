@@ -6,6 +6,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +53,9 @@ func runHold(_ *cobra.Command, args []string) error {
 	tk.Status = ticket.StatusBlocked
 	tk.Updated = now
 
-	ticket.AppendSection(tk, "Blocked (Hold)", "human", "", reason, nil, now)
+	actor := identity.Actor()
+	sessionID := identity.SessionID()
+	ticket.AppendSection(tk, "Blocked (Hold)", actor, sessionID, reason, nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -69,7 +72,8 @@ func runHold(_ *cobra.Command, args []string) error {
 		Event:   event.StatusBlocked,
 		Ticket:  tk.ID,
 		Project: tk.Project,
-		Actor:   "human",
+		Actor:   actor,
+		Session: sessionID,
 		Data: map[string]any{
 			"reason":       "hold",
 			"message":      reason,

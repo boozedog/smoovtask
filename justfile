@@ -9,6 +9,10 @@ build: templ
     go build -o {{bin}} ./cmd/st
     go install ./cmd/st
 
+# Quick install from local source (no templ, no local binary)
+install:
+    go install ./cmd/st
+
 # Run all tests (verbose)
 test:
     go test -v ./...
@@ -39,7 +43,7 @@ release:
 
 # Run web UI dev server with live reload
 web:
-    templ generate --watch --proxy="http://localhost:8080" --cmd="air" ./internal/web/templates/
+    air
 
 # Remove build artifacts
 clean:

@@ -10,6 +10,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/web/handler"
+	"github.com/boozedog/smoovtask/internal/web/middleware"
 	"github.com/boozedog/smoovtask/internal/web/sse"
 	"github.com/boozedog/smoovtask/internal/web/static"
 )
@@ -48,7 +49,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("start watcher: %w", err)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	// Set up handlers.
 	h := handler.New(ticketsDir, eventsDir, s.broker)
@@ -75,10 +76,14 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)
 	mux.HandleFunc("GET /partials/list", h.PartialList)
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
+	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 
 	s.srv = &http.Server{
-		Addr:         fmt.Sprintf(":%d", s.port),
-		Handler:      mux,
+		Addr: fmt.Sprintf(":%d", s.port),
+		Handler: middleware.Chain(mux,
+			middleware.CORS(),
+			middleware.RateLimit(ctx, middleware.DefaultRateLimitConfig()),
+		),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,

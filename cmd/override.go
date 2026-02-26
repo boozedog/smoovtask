@@ -7,6 +7,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
@@ -54,8 +55,10 @@ func runOverride(_ *cobra.Command, args []string) error {
 	tk.PriorStatus = nil
 	tk.Updated = now
 
+	actor := identity.Actor()
+	sessionID := identity.SessionID()
 	content := fmt.Sprintf("%s → %s", oldStatus, targetStatus)
-	ticket.AppendSection(tk, "Override", "human", "", content, nil, now)
+	ticket.AppendSection(tk, "Override", actor, sessionID, content, nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -72,11 +75,12 @@ func runOverride(_ *cobra.Command, args []string) error {
 		Event:   "status.override",
 		Ticket:  tk.ID,
 		Project: tk.Project,
-		Actor:   "human",
+		Actor:   actor,
+		Session: sessionID,
 		Data: map[string]any{
 			"from":   string(oldStatus),
 			"to":     string(targetStatus),
-			"reason": "human-override",
+			"reason": "override",
 		},
 	})
 

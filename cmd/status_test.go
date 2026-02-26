@@ -19,6 +19,9 @@ func TestStatus_ValidTransition(t *testing.T) {
 		t.Fatalf("save ticket: %v", err)
 	}
 
+	// Add a note (required before review)
+	env.addNoteEvent(t, tk.ID)
+
 	out, err := env.runCmd(t, "status", "review")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -70,6 +73,26 @@ func TestStatus_InvalidTransition(t *testing.T) {
 	}
 }
 
+func TestStatus_RequiresNoteBeforeReview(t *testing.T) {
+	env := newTestEnv(t)
+	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
+
+	tk := env.createTicket(t, "note required test", ticket.StatusInProgress)
+	tk.Assignee = "test-session-status"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	// Try to move to review without a note — should fail
+	_, err := env.runCmd(t, "status", "--ticket", tk.ID, "review")
+	if err == nil {
+		t.Fatal("expected error when no note exists before review")
+	}
+	if !strings.Contains(err.Error(), "note is required") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "note is required")
+	}
+}
+
 func TestStatus_WithTicketFlag(t *testing.T) {
 	env := newTestEnv(t)
 	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
@@ -79,6 +102,8 @@ func TestStatus_WithTicketFlag(t *testing.T) {
 	if err := env.Store.Save(tk); err != nil {
 		t.Fatalf("save ticket: %v", err)
 	}
+
+	env.addNoteEvent(t, tk.ID)
 
 	out, err := env.runCmd(t, "status", "--ticket", tk.ID, "review")
 	if err != nil {
@@ -111,6 +136,8 @@ func TestStatus_AutoUnblock(t *testing.T) {
 	}
 
 	// Move B: IN-PROGRESS → REVIEW → DONE (need two transitions)
+	// Add a note (required before review)
+	env.addNoteEvent(t, tkB.ID)
 	// First go to REVIEW
 	_, err := env.runCmd(t, "status", "--ticket", tkB.ID, "review")
 	if err != nil {

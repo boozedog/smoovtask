@@ -125,6 +125,7 @@ func TestPick_NoOpenTickets(t *testing.T) {
 func TestPick_NoSessionFallsBackToActor(t *testing.T) {
 	env := newTestEnv(t)
 	t.Setenv("CLAUDE_SESSION_ID", "")
+	t.Setenv("CLAUDECODE", "")
 
 	tk := env.createTicket(t, "no session pick", ticket.StatusOpen)
 
@@ -137,7 +138,7 @@ func TestPick_NoSessionFallsBackToActor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get ticket: %v", err)
 	}
-	// With no session ID, actor is "human"
+	// With no session ID and no CLAUDECODE, actor is "human"
 	if updated.Assignee != "human" {
 		t.Errorf("assignee = %q, want %q", updated.Assignee, "human")
 	}

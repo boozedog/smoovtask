@@ -15,7 +15,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.ListPage(data).Render(r.Context(), w)
+	_ = templates.ListPage(data).Render(r.Context(), w)
 }
 
 // PartialList renders just the list content for htmx swaps.
@@ -25,7 +25,7 @@ func (h *Handler) PartialList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.ListContent(data).Render(r.Context(), w)
+	_ = templates.ListContent(data).Render(r.Context(), w)
 }
 
 func (h *Handler) buildListData(r *http.Request) (templates.ListData, error) {
