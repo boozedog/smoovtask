@@ -10,7 +10,7 @@ func TestDetect(t *testing.T) {
 	cfg := &config.Config{
 		Projects: map[string]config.ProjectConfig{
 			"api-server":  {Path: "/home/user/projects/api-server"},
-			"smoovtask":  {Path: "/home/user/projects/smoovtask"},
+			"smoovtask":   {Path: "/home/user/projects/smoovtask"},
 			"nested-proj": {Path: "/home/user/projects/api-server/services/auth"},
 		},
 	}

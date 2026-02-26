@@ -1,13 +1,14 @@
 # smoovtask — Next Steps
 
-## What's Done (Phases 1–3)
+## What's Done (Phases 1–4)
 
-The core CLI is complete. All commands, hooks, workflow engine, and tests are implemented.
+The core CLI and web UI are complete.
 
-### Commands (16 total)
+### Commands (17 total)
 - `init`, `new`, `list`, `show`, `pick`, `note`, `status`, `review`
 - `assign`, `hold`, `unhold`, `close`, `override`, `context`
 - `hook <event>` (10 handlers), `hooks install`
+- `web` — browser-based dashboard
 
 ### Internals
 - Workflow state machine with transition rules, review eligibility, dependency auto-blocking/unblocking
@@ -15,6 +16,17 @@ The core CLI is complete. All commands, hooks, workflow engine, and tests are im
 - JSONL event log with daily rotation and flock-based append
 - Project detection from PWD, session identity from env vars
 - Priority-scored batch selection in session-start hook
+
+### Phase 4: Web UI — `st web` (done)
+
+Browser dashboard with live updates. See [PHASE_4.md](PHASE_4.md) for full details.
+
+- **Kanban board** (`/`) — tickets grouped by status, live SSE updates
+- **List view** (`/list`) — filterable table by project and status
+- **Ticket detail** (`/ticket/{id}`) — goldmark-rendered markdown body + metadata sidebar
+- **Activity feed** (`/activity`) — recent events with project/type filters, live updates
+- **SSE streaming** (`/events`) — fsnotify watches JSONL dir, fan-out broker pushes to clients
+- **Tech**: templ templates, htmx + SSE extension, Franken UI (dark theme), goldmark, vendored via go:embed
 
 ### Test Coverage
 | Package | Coverage |
@@ -27,12 +39,13 @@ The core CLI is complete. All commands, hooks, workflow engine, and tests are im
 | `internal/identity/` | 100% |
 | `internal/project/` | 100% |
 | `internal/config/` | 35% |
+| `internal/web/handler/` | 13 tests (handlers, SSE broker, watcher) |
 
 ---
 
-## What's Left (from DESIGN.md)
+## What's Left
 
-### Phase 4: TUI — `st board`
+### Phase 5: TUI — `st board`
 
 Terminal kanban board using bubbletea + lipgloss + bubbles.
 
@@ -52,33 +65,6 @@ Terminal kanban board using bubbletea + lipgloss + bubbles.
 - `cmd/board.go` — cobra command
 
 **Estimated scope:** ~500–800 lines. Moderate complexity — bubbletea has a learning curve but the data layer is done.
-
-### Phase 5: Web UI — `st web`
-
-Web server embedded in the `st` binary.
-
-**Tech stack:**
-- Go net/http server
-- templ (type-safe Go HTML templates)
-- htmx for dynamic interactions
-- Franken UI (UIKit + Tailwind) for styling
-- SSE for real-time updates (htmx SSE extension)
-- Static assets embedded via `go:embed`
-
-**Views:**
-- Kanban board (cards move in real-time via SSE)
-- List view (sortable/filterable)
-- Ticket detail (rendered markdown, dependency links)
-- Activity feed (live JSONL stream)
-
-**Packages:**
-- `internal/web/handler/` — HTTP handlers
-- `internal/web/sse/` — SSE event streaming (tails JSONL)
-- `internal/web/templates/` — templ templates
-- `internal/web/static/` — embedded CSS/JS assets
-- `cmd/web.go` — cobra command
-
-**Estimated scope:** ~1500–2500 lines. Largest remaining feature. SSE streaming from JSONL tail is the interesting part.
 
 ### Phase 6: Plugin System
 
@@ -124,10 +110,9 @@ tts_command = "say"
 
 ## Suggested Order
 
-1. **Phase 4: TUI** — immediate value, lets you watch agents work from the terminal
-2. **Phase 5: Web UI** — richer visualization, shareable view, activity feed
-3. **Phase 6: Plugins** — extensibility, auto-approve is the killer feature
+1. **Phase 5: TUI** — immediate value, lets you watch agents work from the terminal
+2. **Phase 6: Plugins** — extensibility, auto-approve is the killer feature
 
-Phases 4 and 5 are independent and could be done in either order (or parallel). Phase 6 is independent of both UIs.
+Phases 5 and 6 are independent and could be done in either order (or parallel).
 
 The smaller items can be tackled opportunistically between phases.

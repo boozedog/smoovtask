@@ -1,0 +1,100 @@
+package templates
+
+import (
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
+
+type TicketData struct {
+	Ticket   *ticket.Ticket
+	BodyHTML string
+}
+
+templ TicketPage(data TicketData) {
+	@Layout(data.Ticket.Title, "/ticket") {
+		<div
+			hx-ext="sse"
+			sse-connect="/events"
+			sse-swap="refresh"
+			hx-get={ "/partials/ticket/" + data.Ticket.ID }
+			hx-trigger="sse:refresh"
+			hx-target="#ticket-content"
+			hx-swap="innerHTML"
+		>
+			<div id="ticket-content">
+				@TicketContent(data)
+			</div>
+		</div>
+	}
+}
+
+templ TicketContent(data TicketData) {
+	<div style="display: grid; grid-template-columns: 1fr 280px; gap: 2rem;">
+		<div>
+			<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+				{ data.Ticket.Title }
+			</h1>
+			<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+				<code style="font-size: 0.8rem;">{ data.Ticket.ID }</code>
+				@StatusBadge(data.Ticket.Status)
+				@PriorityBadge(data.Ticket.Priority)
+			</div>
+			<div class="st-ticket-body">
+				@templ.Raw(data.BodyHTML)
+			</div>
+		</div>
+		<aside>
+			<div class="st-sidebar-item">
+				<div class="st-sidebar-label">Status</div>
+				<div class="st-sidebar-value">
+					@StatusBadge(data.Ticket.Status)
+				</div>
+			</div>
+			<div class="st-sidebar-item">
+				<div class="st-sidebar-label">Priority</div>
+				<div class="st-sidebar-value">
+					@PriorityBadge(data.Ticket.Priority)
+				</div>
+			</div>
+			<div class="st-sidebar-item">
+				<div class="st-sidebar-label">Project</div>
+				<div class="st-sidebar-value">{ data.Ticket.Project }</div>
+			</div>
+			if data.Ticket.Assignee != "" {
+				<div class="st-sidebar-item">
+					<div class="st-sidebar-label">Assignee</div>
+					<div class="st-sidebar-value" style="font-size: 0.85rem; word-break: break-all;">{ data.Ticket.Assignee }</div>
+				</div>
+			}
+			<div class="st-sidebar-item">
+				<div class="st-sidebar-label">Created</div>
+				<div class="st-sidebar-value" style="font-size: 0.85rem;">{ data.Ticket.Created.Format("2006-01-02 15:04") }</div>
+			</div>
+			<div class="st-sidebar-item">
+				<div class="st-sidebar-label">Updated</div>
+				<div class="st-sidebar-value" style="font-size: 0.85rem;">{ data.Ticket.Updated.Format("2006-01-02 15:04") }</div>
+			</div>
+			if len(data.Ticket.Tags) > 0 {
+				<div class="st-sidebar-item">
+					<div class="st-sidebar-label">Tags</div>
+					<div class="st-sidebar-value" style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+						for _, tag := range data.Ticket.Tags {
+							<span class="st-badge" style="background: #374151; color: #9ca3af;">{ tag }</span>
+						}
+					</div>
+				</div>
+			}
+			if len(data.Ticket.DependsOn) > 0 {
+				<div class="st-sidebar-item">
+					<div class="st-sidebar-label">Depends On</div>
+					<div class="st-sidebar-value">
+						for _, dep := range data.Ticket.DependsOn {
+							<div>
+								<a href={ templ.SafeURL("/ticket/" + dep) } style="font-size: 0.85rem;">{ dep }</a>
+							</div>
+						}
+					</div>
+				</div>
+			}
+		</aside>
+	</div>
+}

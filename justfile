@@ -1,7 +1,11 @@
 bin := "st"
 
+# Generate templ templates
+templ:
+    templ generate ./internal/web/templates/
+
 # Build the binary and install to PATH
-build:
+build: templ
     go build -o {{bin}} ./cmd/st
     go install ./cmd/st
 
@@ -32,6 +36,10 @@ vuln:
 # Build release binaries
 release:
     goreleaser build --snapshot --clean
+
+# Run web UI dev server with live reload
+web:
+    templ generate --watch --proxy="http://localhost:8080" --cmd="air" ./internal/web/templates/
 
 # Remove build artifacts
 clean:

@@ -1,0 +1,43 @@
+package templates
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
+
+func priorityClass(p ticket.Priority) string {
+	return "st-badge st-badge-" + strings.ToLower(string(p))
+}
+
+func statusClass(s ticket.Status) string {
+	return "st-status-" + strings.ToLower(string(s))
+}
+
+func statusLabel(s ticket.Status) string {
+	return string(s)
+}
+
+templ PriorityBadge(p ticket.Priority) {
+	<span class={ priorityClass(p) }>{ string(p) }</span>
+}
+
+templ StatusBadge(s ticket.Status) {
+	<span class={ "st-badge " + statusClass(s) } style="border: 1px solid; background: transparent;">
+		{ statusLabel(s) }
+	</span>
+}
+
+templ TicketCard(tk *ticket.Ticket) {
+	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } class="st-card" style="display: block; text-decoration: none; color: inherit;">
+		<div class="st-card-title">{ tk.Title }</div>
+		<div class="st-card-meta">
+			@PriorityBadge(tk.Priority)
+			<span>{ tk.ID }</span>
+			if tk.Project != "" {
+				<span>{ tk.Project }</span>
+			}
+		</div>
+	</a>
+}

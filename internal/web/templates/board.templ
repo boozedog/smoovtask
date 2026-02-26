@@ -1,0 +1,55 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
+
+type BoardData struct {
+	Columns []BoardColumn
+}
+
+type BoardColumn struct {
+	Status  ticket.Status
+	Tickets []*ticket.Ticket
+}
+
+templ BoardPage(data BoardData) {
+	@Layout("Board", "/") {
+		<div
+			hx-ext="sse"
+			sse-connect="/events"
+			sse-swap="refresh"
+			hx-get="/partials/board"
+			hx-trigger="sse:refresh"
+			hx-target="#board"
+			hx-swap="innerHTML"
+		>
+			<div id="board">
+				@BoardContent(data)
+			</div>
+		</div>
+	}
+}
+
+templ BoardContent(data BoardData) {
+	<div class="st-board">
+		for _, col := range data.Columns {
+			<div class="st-column">
+				<div class={ "st-column-header " + statusClass(col.Status) }>
+					{ string(col.Status) }
+					<span class="st-column-count">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
+				</div>
+				for _, tk := range col.Tickets {
+					@TicketCard(tk)
+				}
+				if len(col.Tickets) == 0 {
+					<div style="padding: 0.75rem; opacity: 0.4; font-size: 0.8rem; text-align: center;">
+						No tickets
+					</div>
+				}
+			</div>
+		}
+	</div>
+}

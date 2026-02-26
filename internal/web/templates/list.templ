@@ -1,0 +1,125 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
+
+type ListData struct {
+	Tickets  []*ticket.Ticket
+	Projects []string
+	Filter   ListFilter
+}
+
+type ListFilter struct {
+	Project string
+	Status  string
+}
+
+templ ListPage(data ListData) {
+	@Layout("List", "/list") {
+		<div
+			hx-ext="sse"
+			sse-connect="/events"
+			sse-swap="refresh"
+			hx-get={ partialListURL(data.Filter) }
+			hx-trigger="sse:refresh"
+			hx-target="#list-content"
+			hx-swap="innerHTML"
+		>
+			<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+				<select
+					name="project"
+					class="uk-select uk-form-small"
+					style="max-width: 200px;"
+					hx-get="/partials/list"
+					hx-target="#list-content"
+					hx-swap="innerHTML"
+					hx-include="[name='status']"
+				>
+					<option value="">All Projects</option>
+					for _, p := range data.Projects {
+						<option
+							value={ p }
+							if data.Filter.Project == p {
+								selected
+							}
+						>
+							{ p }
+						</option>
+					}
+				</select>
+				<select
+					name="status"
+					class="uk-select uk-form-small"
+					style="max-width: 200px;"
+					hx-get="/partials/list"
+					hx-target="#list-content"
+					hx-swap="innerHTML"
+					hx-include="[name='project']"
+				>
+					<option value="">All Statuses</option>
+					<option value="BACKLOG" if data.Filter.Status == "BACKLOG" { selected }>BACKLOG</option>
+					<option value="OPEN" if data.Filter.Status == "OPEN" { selected }>OPEN</option>
+					<option value="IN-PROGRESS" if data.Filter.Status == "IN-PROGRESS" { selected }>IN-PROGRESS</option>
+					<option value="REVIEW" if data.Filter.Status == "REVIEW" { selected }>REVIEW</option>
+					<option value="REWORK" if data.Filter.Status == "REWORK" { selected }>REWORK</option>
+					<option value="BLOCKED" if data.Filter.Status == "BLOCKED" { selected }>BLOCKED</option>
+					<option value="DONE" if data.Filter.Status == "DONE" { selected }>DONE</option>
+				</select>
+			</div>
+			<div id="list-content">
+				@ListContent(data)
+			</div>
+		</div>
+	}
+}
+
+func partialListURL(f ListFilter) string {
+	url := "/partials/list?"
+	if f.Project != "" {
+		url += "project=" + f.Project + "&"
+	}
+	if f.Status != "" {
+		url += "status=" + f.Status + "&"
+	}
+	return url
+}
+
+templ ListContent(data ListData) {
+	if len(data.Tickets) == 0 {
+		<div style="padding: 2rem; text-align: center; opacity: 0.5;">
+			No tickets found.
+		</div>
+	} else {
+		<table class="uk-table uk-table-small uk-table-divider uk-table-hover">
+			<thead>
+				<tr>
+					<th style="width: 100px;">ID</th>
+					<th>Title</th>
+					<th style="width: 120px;">Status</th>
+					<th style="width: 60px;">Priority</th>
+					<th style="width: 120px;">Project</th>
+					<th style="width: 160px;">Updated</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, tk := range data.Tickets {
+					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) }>
+						<td><code>{ tk.ID }</code></td>
+						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
+						<td>
+							@StatusBadge(tk.Status)
+						</td>
+						<td>
+							@PriorityBadge(tk.Priority)
+						</td>
+						<td>{ tk.Project }</td>
+						<td style="font-size: 0.8rem; opacity: 0.7;">{ tk.Updated.Format("2006-01-02 15:04") }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}

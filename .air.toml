@@ -1,0 +1,20 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "templ generate ./internal/web/templates/ && go build -o ./tmp/st ./cmd/st"
+  bin = "./tmp/st"
+  args_bin = ["web"]
+  include_ext = ["go", "templ", "css", "js"]
+  include_dir = ["cmd", "internal"]
+  exclude_dir = ["tmp"]
+  exclude_regex = ["_templ\\.go$"]
+  delay = 500
+  send_interrupt = true
+  kill_delay = 500
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true
