@@ -26,7 +26,11 @@ type ProjectConfig struct {
 }
 
 // DefaultDir returns the default config directory (~/.smoovbrain).
+// If SMOOVBRAIN_DIR is set, uses that path instead.
 func DefaultDir() (string, error) {
+	if d := os.Getenv("SMOOVBRAIN_DIR"); d != "" {
+		return d, nil
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("get home dir: %w", err)
