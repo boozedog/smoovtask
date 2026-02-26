@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
@@ -86,15 +87,15 @@ func sortHeaderURL(f ListFilter, field string) string {
 	if f.Sort == field && f.Dir == "asc" {
 		dir = "desc"
 	}
-	url := "/partials/list-content?"
+	u := "/partials/list-content?"
 	if f.Project != "" {
-		url += "project=" + f.Project + "&"
+		u += "project=" + url.QueryEscape(f.Project) + "&"
 	}
 	if f.Status != "" {
-		url += "status=" + f.Status + "&"
+		u += "status=" + url.QueryEscape(f.Status) + "&"
 	}
-	url += "sort=" + field + "&dir=" + dir
-	return url
+	u += "sort=" + field + "&dir=" + dir
+	return u
 }
 
 func sortIndicator(f ListFilter, field string) string {
@@ -150,9 +151,9 @@ templ ListContent(data ListData) {
 			</thead>
 			<tbody>
 				for _, tk := range data.Tickets {
-					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s", tk.ID) }>
+					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s?from=list", tk.ID) }>
 						<td><code>{ tk.ID }</code></td>
-						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#content" hx-push-url={ fmt.Sprintf("/ticket/%s", tk.ID) } style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
+						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s?from=list", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s?from=list", tk.ID) } hx-target="#content" hx-push-url={ fmt.Sprintf("/ticket/%s", tk.ID) } style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
 						<td>
 							@StatusBadge(tk.Status)
 						</td>

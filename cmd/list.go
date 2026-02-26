@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -21,11 +22,13 @@ var listCmd = &cobra.Command{
 var (
 	listProject string
 	listStatus  string
+	listAll     bool
 )
 
 func init() {
 	listCmd.Flags().StringVar(&listProject, "project", "", "filter by project name")
 	listCmd.Flags().StringVar(&listStatus, "status", "", "filter by status")
+	listCmd.Flags().BoolVar(&listAll, "all", false, "show all tickets including DONE")
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -57,6 +60,11 @@ func runList(_ *cobra.Command, _ []string) error {
 		filter.Status = ""
 	}
 
+	// Default: hide DONE unless --all or --status is explicit
+	if !listAll && listStatus == "" {
+		filter.Excludes = []ticket.Status{ticket.StatusDone}
+	}
+
 	store := ticket.NewStore(ticketsDir)
 	tickets, err := store.List(filter)
 	if err != nil {
@@ -67,6 +75,19 @@ func runList(_ *cobra.Command, _ []string) error {
 		fmt.Println("No tickets found.")
 		return nil
 	}
+
+	// Default sort: status weight (REVIEW first, then active, then backlog) then priority
+	sort.Slice(tickets, func(i, j int) bool {
+		wi, wj := listStatusWeight(tickets[i].Status), listStatusWeight(tickets[j].Status)
+		if wi != wj {
+			return wi < wj
+		}
+		// Lower priority number = higher priority (P0 > P1 > ...)
+		if tickets[i].Priority != tickets[j].Priority {
+			return tickets[i].Priority < tickets[j].Priority
+		}
+		return tickets[i].Updated.After(tickets[j].Updated)
+	})
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	for _, tk := range tickets {
@@ -79,9 +100,32 @@ func runList(_ *cobra.Command, _ []string) error {
 	return w.Flush()
 }
 
+// listStatusWeight returns sort weight: lower = higher in list.
+func listStatusWeight(s ticket.Status) int {
+	switch s {
+	case ticket.StatusReview:
+		return 0
+	case ticket.StatusRework:
+		return 1
+	case ticket.StatusInProgress:
+		return 2
+	case ticket.StatusOpen:
+		return 3
+	case ticket.StatusBlocked:
+		return 4
+	case ticket.StatusBacklog:
+		return 5
+	case ticket.StatusDone:
+		return 6
+	default:
+		return 7
+	}
+}
+
 func truncate(s string, max int) string {
-	if len(s) <= max {
+	runes := []rune(s)
+	if len(runes) <= max {
 		return s
 	}
-	return s[:max-1] + "…"
+	return string(runes[:max-1]) + "…"
 }

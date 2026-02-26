@@ -1,12 +1,59 @@
 package templates
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
+
+func relativeTime(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		m := int(d.Minutes())
+		if m == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", m)
+	case d < 24*time.Hour:
+		h := int(d.Hours())
+		if h == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", h)
+	case d < 48*time.Hour:
+		return "yesterday"
+	case d < 30*24*time.Hour:
+		days := int(d.Hours() / 24)
+		return fmt.Sprintf("%d days ago", days)
+	default:
+		return t.Format("2006-01-02 15:04")
+	}
+}
+
+func backPartialURL(backURL string) string {
+	if backURL == "/list" {
+		return "/partials/list"
+	}
+	return "/partials/board"
+}
+
+func ticketPartialURL(data TicketData) string {
+	u := "/partials/ticket/" + data.Ticket.ID
+	if data.BackURL == "/list" {
+		u += "?from=list"
+	}
+	return u
+}
 
 type TicketData struct {
 	Ticket   *ticket.Ticket
 	BodyHTML string
+	BackURL  string // "/list" or "/" (board), derived from referrer
+	BackName string // "List" or "Board"
 }
 
 templ TicketPage(data TicketData) {
@@ -17,7 +64,7 @@ templ TicketPage(data TicketData) {
 
 templ TicketPartial(data TicketData) {
 	<div
-		hx-get={ "/partials/ticket/" + data.Ticket.ID }
+		hx-get={ ticketPartialURL(data) }
 		hx-trigger="sse:refresh"
 		hx-target="this"
 		hx-swap="outerHTML"
@@ -30,7 +77,15 @@ templ TicketContent(data TicketData) {
 	<div class="st-ticket-grid">
 		<div>
 			<nav style="margin-bottom: 0.75rem; font-size: 0.85rem;">
-				<a href="/" hx-get="/partials/board" hx-target="#content" hx-push-url="/" style="opacity: 0.6; color: inherit; text-decoration: none;">Board</a>
+				<a
+					href={ templ.SafeURL(data.BackURL) }
+					hx-get={ backPartialURL(data.BackURL) }
+					hx-target="#content"
+					hx-push-url={ data.BackURL }
+					style="opacity: 0.6; color: inherit; text-decoration: none;"
+				>
+					&larr; { data.BackName }
+				</a>
 				<span style="opacity: 0.4;"> / </span>
 				<span>{ data.Ticket.ID }</span>
 			</nav>
@@ -71,11 +126,15 @@ templ TicketContent(data TicketData) {
 			}
 			<div class="st-sidebar-item">
 				<div class="st-sidebar-label">Created</div>
-				<div class="st-sidebar-value" style="font-size: 0.85rem;">{ data.Ticket.Created.Format("2006-01-02 15:04") }</div>
+				<div class="st-sidebar-value" style="font-size: 0.85rem;">
+					<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") }>{ relativeTime(data.Ticket.Created) }</time>
+				</div>
 			</div>
 			<div class="st-sidebar-item">
 				<div class="st-sidebar-label">Updated</div>
-				<div class="st-sidebar-value" style="font-size: 0.85rem;">{ data.Ticket.Updated.Format("2006-01-02 15:04") }</div>
+				<div class="st-sidebar-value" style="font-size: 0.85rem;">
+					<time title={ data.Ticket.Updated.Format("2006-01-02 15:04:05 MST") }>{ relativeTime(data.Ticket.Updated) }</time>
+				</div>
 			</div>
 			if len(data.Ticket.Tags) > 0 {
 				<div class="st-sidebar-item">

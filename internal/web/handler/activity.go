@@ -57,14 +57,28 @@ func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, er
 	filterProject := r.URL.Query().Get("project")
 	filterEventType := r.URL.Query().Get("event_type")
 
+	// Default to "ticket_status" filter when no event_type is specified.
+	if filterEventType == "" && !r.URL.Query().Has("event_type") {
+		filterEventType = "ticket_status"
+	}
+
 	q := event.Query{
 		Project: filterProject,
 	}
 
 	events := recentEvents(h.eventsDir, q, 200)
 
-	// Filter by event type prefix if specified.
-	if filterEventType != "" {
+	// Filter by event type.
+	switch filterEventType {
+	case "ticket_status":
+		var filtered []event.Event
+		for _, e := range events {
+			if strings.HasPrefix(e.Event, "ticket.") || strings.HasPrefix(e.Event, "status.") {
+				filtered = append(filtered, e)
+			}
+		}
+		events = filtered
+	case "ticket", "status", "hook":
 		var filtered []event.Event
 		for _, e := range events {
 			if strings.HasPrefix(e.Event, filterEventType+".") {
@@ -72,15 +86,8 @@ func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, er
 			}
 		}
 		events = filtered
-	} else {
-		// By default, exclude hook events.
-		var filtered []event.Event
-		for _, e := range events {
-			if !strings.HasPrefix(e.Event, "hook.") {
-				filtered = append(filtered, e)
-			}
-		}
-		events = filtered
+	default:
+		// "all" or empty with explicit param — show everything.
 	}
 
 	// Collect unique project names.

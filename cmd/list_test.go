@@ -82,3 +82,88 @@ func TestList_Empty(t *testing.T) {
 		t.Errorf("output = %q, want %q", out, "No tickets found")
 	}
 }
+
+func TestList_HidesDoneByDefault(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	tkOpen := env.createTicket(t, "open ticket", ticket.StatusOpen)
+	tkDone := env.createTicket(t, "done ticket", ticket.StatusDone)
+
+	out, err := env.runCmd(t, "list")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, tkOpen.ID) {
+		t.Errorf("output should contain open ticket %s", tkOpen.ID)
+	}
+	if strings.Contains(out, tkDone.ID) {
+		t.Errorf("output should not contain done ticket %s without --all", tkDone.ID)
+	}
+}
+
+func TestList_AllShowsDone(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	tkOpen := env.createTicket(t, "open ticket", ticket.StatusOpen)
+	tkDone := env.createTicket(t, "done ticket", ticket.StatusDone)
+
+	out, err := env.runCmd(t, "list", "--all")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, tkOpen.ID) {
+		t.Errorf("output should contain open ticket %s", tkOpen.ID)
+	}
+	if !strings.Contains(out, tkDone.ID) {
+		t.Errorf("output should contain done ticket %s with --all", tkDone.ID)
+	}
+}
+
+func TestList_SortOrder(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	tkOpen := env.createTicket(t, "open ticket", ticket.StatusOpen)
+	tkReview := env.createTicket(t, "review ticket", ticket.StatusReview)
+
+	out, err := env.runCmd(t, "list")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	reviewIdx := strings.Index(out, tkReview.ID)
+	openIdx := strings.Index(out, tkOpen.ID)
+
+	if reviewIdx < 0 || openIdx < 0 {
+		t.Fatalf("output missing ticket IDs: %q", out)
+	}
+	if reviewIdx > openIdx {
+		t.Errorf("REVIEW ticket should appear before OPEN ticket in output")
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	tests := []struct {
+		name string
+		s    string
+		max  int
+		want string
+	}{
+		{"short", "hello", 10, "hello"},
+		{"exact", "hello", 5, "hello"},
+		{"over", "hello world", 5, "hell…"},
+		{"empty", "", 5, ""},
+		{"multibyte_under", "éàü", 5, "éàü"},
+		{"multibyte_over", "éàüöñç", 5, "éàüö…"},
+		{"cjk_boundary", "世界你好吗啊", 5, "世界你好…"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncate(tt.s, tt.max)
+			if got != tt.want {
+				t.Errorf("truncate(%q, %d) = %q, want %q", tt.s, tt.max, got, tt.want)
+			}
+		})
+	}
+}

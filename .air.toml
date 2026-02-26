@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 [build]
   cmd = "templ generate ./internal/web/templates/ && go build -o ./tmp/st ./cmd/st"
   bin = "./tmp/st"
-  args_bin = ["web"]
+  args_bin = ["web", "--port", "8081"]
   include_ext = ["go", "templ", "css", "js"]
   include_dir = ["cmd", "internal"]
   exclude_dir = ["tmp"]

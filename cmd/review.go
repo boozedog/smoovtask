@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -92,6 +93,29 @@ func runReview(_ *cobra.Command, args []string) error {
 		Data:    map[string]any{"reviewer": tk.Assignee},
 	})
 
-	fmt.Printf("Claimed %s for review: %s\n", tk.ID, tk.Title)
+	fmt.Printf("Claimed %s for review: %s\n\n", tk.ID, tk.Title)
+
+	// Print review context
+	fmt.Printf("--- Ticket Metadata ---\n")
+	fmt.Printf("ID:       %s\n", tk.ID)
+	fmt.Printf("Priority: %s\n", tk.Priority)
+	fmt.Printf("Project:  %s\n", tk.Project)
+	if len(tk.Tags) > 0 {
+		fmt.Printf("Tags:     %s\n", strings.Join(tk.Tags, ", "))
+	}
+	fmt.Println()
+
+	if tk.Body != "" {
+		fmt.Printf("--- Ticket Body ---\n")
+		fmt.Println(tk.Body)
+	}
+
+	fmt.Printf("--- Review Checklist ---\n")
+	fmt.Printf("- [ ] Read the ticket description and acceptance criteria\n")
+	fmt.Printf("- [ ] Verify the implementation matches the requirements\n")
+	fmt.Printf("- [ ] Check for edge cases and error handling\n")
+	fmt.Printf("- [ ] Review code quality and test coverage\n")
+	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
+	fmt.Printf("\nReminder: `st note` is required before approving (`st status done`) or rejecting (`st status rework`).\n")
 	return nil
 }

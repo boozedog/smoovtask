@@ -263,3 +263,36 @@ func TestNew_InvalidPriority(t *testing.T) {
 		t.Fatal("expected error for invalid priority")
 	}
 }
+
+func TestNew_DescriptionFlag(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	out, err := env.runCmd(t, "new", "-d", "This is the description body", "ticket with desc")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
+	}
+
+	// Verify the ticket was created and find it
+	tickets, err := env.Store.List(ticket.ListFilter{Project: "testproject"})
+	if err != nil {
+		t.Fatalf("list tickets: %v", err)
+	}
+	if len(tickets) != 1 {
+		t.Fatalf("got %d tickets, want 1", len(tickets))
+	}
+
+	// Read the ticket file to verify the description is in the body
+	tk := tickets[0]
+	raw, err := os.ReadFile(filepath.Join(env.TicketsDir, tk.Filename()))
+	if err != nil {
+		t.Fatalf("read ticket file: %v", err)
+	}
+	body := string(raw)
+	if !strings.Contains(body, "This is the description body") {
+		t.Errorf("ticket body should contain the description, got:\n%s", body)
+	}
+}

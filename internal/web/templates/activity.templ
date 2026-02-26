@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/boozedog/smoovtask/internal/event"
 )
@@ -15,7 +16,19 @@ func eventContext(ev event.Event) string {
 	case ev.Data["message"] != nil:
 		ctx = fmt.Sprintf("%v", ev.Data["message"])
 	case ev.Data["from"] != nil:
-		ctx = fmt.Sprintf("%v", ev.Data["from"])
+		// Show status transition: FROM → TO.
+		from := fmt.Sprintf("%v", ev.Data["from"])
+		// Use explicit "to" field (e.g. status.override), fall back to event name.
+		to := ""
+		if ev.Data["to"] != nil {
+			to = strings.ToUpper(fmt.Sprintf("%v", ev.Data["to"]))
+		} else {
+			to = ev.Event
+			if i := strings.LastIndex(to, "."); i >= 0 {
+				to = strings.ToUpper(to[i+1:])
+			}
+		}
+		ctx = from + " → " + to
 	case ev.Data["tool"] != nil:
 		ctx = fmt.Sprintf("%v", ev.Data["tool"])
 	case ev.Data["title"] != nil:
@@ -23,8 +36,9 @@ func eventContext(ev event.Event) string {
 	default:
 		return ""
 	}
-	if len(ctx) > 80 {
-		ctx = ctx[:80] + "…"
+	runes := []rune(ctx)
+	if len(runes) > 80 {
+		ctx = string(runes[:80]) + "…"
 	}
 	return ctx
 }
@@ -85,7 +99,8 @@ templ ActivityPartial(data ActivityData) {
 				hx-swap="innerHTML"
 				hx-include="[name='project']"
 			>
-				<option value="">All Events</option>
+				<option value="ticket_status" if data.Filter.EventType == "ticket_status" { selected }>Ticket + Status</option>
+				<option value="all" if data.Filter.EventType == "all" { selected }>All Events</option>
 				<option value="ticket" if data.Filter.EventType == "ticket" { selected }>Ticket Events</option>
 				<option value="status" if data.Filter.EventType == "status" { selected }>Status Changes</option>
 				<option value="hook" if data.Filter.EventType == "hook" { selected }>Hook Events</option>

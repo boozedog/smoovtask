@@ -22,13 +22,15 @@ var newCmd = &cobra.Command{
 }
 
 var (
-	newPriority  string
-	newTags      string
-	newDependsOn string
+	newPriority    string
+	newTags        string
+	newDependsOn   string
+	newDescription string
 )
 
 func init() {
-	newCmd.Flags().StringVar(&newPriority, "priority", "P3", "ticket priority (P0-P5)")
+	newCmd.Flags().StringVarP(&newPriority, "priority", "p", "P3", "ticket priority (P0-P5)")
+	newCmd.Flags().StringVarP(&newDescription, "description", "d", "", "ticket description/acceptance criteria")
 	newCmd.Flags().StringVar(&newTags, "tags", "", "comma-separated tags")
 	newCmd.Flags().StringVar(&newDependsOn, "depends-on", "", "comma-separated ticket IDs this ticket depends on")
 	rootCmd.AddCommand(newCmd)
@@ -101,7 +103,11 @@ func runNew(_ *cobra.Command, args []string) error {
 
 	actor := identity.Actor()
 	sessionID := identity.SessionID()
-	ticket.AppendSection(tk, "Created", actor, sessionID, title, nil, now)
+	sectionContent := title
+	if newDescription != "" {
+		sectionContent = newDescription
+	}
+	ticket.AppendSection(tk, "Created", actor, sessionID, sectionContent, nil, now)
 
 	if err := store.Create(tk); err != nil {
 		return fmt.Errorf("create ticket: %w", err)
@@ -113,6 +119,10 @@ func runNew(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("get events dir: %w", err)
 	}
 	el := event.NewEventLog(eventsDir)
+	evData := map[string]any{"title": title, "priority": string(priority)}
+	if newDescription != "" {
+		evData["description"] = newDescription
+	}
 	_ = el.Append(event.Event{
 		TS:      now,
 		Event:   event.TicketCreated,
@@ -120,7 +130,7 @@ func runNew(_ *cobra.Command, args []string) error {
 		Project: proj,
 		Actor:   actor,
 		Session: sessionID,
-		Data:    map[string]any{"title": title, "priority": string(priority)},
+		Data:    evData,
 	})
 
 	fmt.Printf("Created %s: %s\n", tk.ID, title)

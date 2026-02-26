@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -19,8 +20,9 @@ func NewStore(ticketsDir string) *Store {
 
 // ListFilter defines optional filters for listing tickets.
 type ListFilter struct {
-	Project string
-	Status  Status
+	Project  string
+	Status   Status
+	Excludes []Status
 }
 
 // Create generates a new ticket and writes it to disk.
@@ -121,11 +123,18 @@ func (s *Store) List(filter ListFilter) ([]*Ticket, error) {
 		if filter.Status != "" && t.Status != filter.Status {
 			continue
 		}
+		if excluded(t.Status, filter.Excludes) {
+			continue
+		}
 
 		tickets = append(tickets, t)
 	}
 
 	return tickets, nil
+}
+
+func excluded(s Status, excludes []Status) bool {
+	return slices.Contains(excludes, s)
 }
 
 // findFile finds the file path for a ticket by ID (exact or prefix match).

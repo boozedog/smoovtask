@@ -2,10 +2,7 @@ package sse
 
 import (
 	"log/slog"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
@@ -17,9 +14,6 @@ type Watcher struct {
 	dir     string
 	broker  *Broker
 	watcher *fsnotify.Watcher
-
-	mu      sync.Mutex
-	offsets map[string]int64 // file path → last read offset
 }
 
 // NewWatcher creates and starts a file watcher on the events directory.
@@ -33,11 +27,7 @@ func NewWatcher(eventsDir string, broker *Broker) (*Watcher, error) {
 		dir:     eventsDir,
 		broker:  broker,
 		watcher: fw,
-		offsets: make(map[string]int64),
 	}
-
-	// Snapshot current file sizes so we only stream new events.
-	w.snapshotOffsets()
 
 	if err := fw.Add(eventsDir); err != nil {
 		_ = fw.Close()
@@ -51,27 +41,6 @@ func NewWatcher(eventsDir string, broker *Broker) (*Watcher, error) {
 // Close stops the watcher.
 func (w *Watcher) Close() error {
 	return w.watcher.Close()
-}
-
-// snapshotOffsets records current file sizes for all existing JSONL files.
-func (w *Watcher) snapshotOffsets() {
-	entries, err := os.ReadDir(w.dir)
-	if err != nil {
-		return
-	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	for _, entry := range entries {
-		if !strings.HasSuffix(entry.Name(), ".jsonl") {
-			continue
-		}
-		path := filepath.Join(w.dir, entry.Name())
-		info, err := entry.Info()
-		if err != nil {
-			continue
-		}
-		w.offsets[path] = info.Size()
-	}
 }
 
 func (w *Watcher) loop() {
@@ -97,9 +66,6 @@ func (w *Watcher) loop() {
 				dirty[ev.Name] = struct{}{}
 			}
 		case <-timer.C:
-			for path := range dirty {
-				w.consumeNewLines(path)
-			}
 			clear(dirty)
 			// Send a single refresh signal regardless of how many events arrived.
 			w.broker.Broadcast(event.Event{Event: "refresh"})
@@ -110,16 +76,4 @@ func (w *Watcher) loop() {
 			slog.Error("fsnotify error", "err", err)
 		}
 	}
-}
-
-// consumeNewLines advances the offset past any new lines without broadcasting individually.
-func (w *Watcher) consumeNewLines(path string) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	info, err := os.Stat(path)
-	if err != nil {
-		return
-	}
-	w.offsets[path] = info.Size()
 }

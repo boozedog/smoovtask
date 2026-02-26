@@ -85,7 +85,11 @@ func runStatus(_ *cobra.Command, args []string) error {
 			return fmt.Errorf("check note requirement: %w", noteErr)
 		}
 		if !hasNote {
-			return fmt.Errorf("cannot move to %s — a note is required before review. Run `st note \"message\"` first", targetStatus)
+			msg := "cannot move to %s — a note is required before review. Run `st note \"message\"` first"
+			if tk.Status == ticket.StatusReview {
+				msg = "cannot move to %s — a review note is required. Document your findings with `st note \"<findings>\"` first"
+			}
+			return fmt.Errorf(msg, targetStatus)
 		}
 	}
 
@@ -96,7 +100,12 @@ func runStatus(_ *cobra.Command, args []string) error {
 
 	heading := statusHeading(targetStatus)
 
-	ticket.AppendSection(tk, heading, actor, sessionID, "", nil, now)
+	var sectionFields map[string]string
+	if oldStatus == ticket.StatusReview && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
+		sectionFields = map[string]string{"reviewed-by": tk.Assignee}
+	}
+
+	ticket.AppendSection(tk, heading, actor, sessionID, "", sectionFields, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)

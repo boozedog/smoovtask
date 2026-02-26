@@ -163,9 +163,11 @@ func resetFlags() {
 	noteTicket = ""
 	listProject = ""
 	listStatus = ""
+	listAll = false
 	newPriority = "P3"
 	newTags = ""
 	newDependsOn = ""
+	newDescription = ""
 }
 
 func TestOverride_HappyPath(t *testing.T) {
