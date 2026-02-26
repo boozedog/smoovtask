@@ -1,6 +1,6 @@
 /sb
 tmp/
-dist/
+/dist/
 coverage.out
 .env
 .todos/
