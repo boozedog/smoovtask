@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/boozedog/smoovbrain/internal/hook"
+	"github.com/boozedog/smoovtask/internal/hook"
 	"github.com/spf13/cobra"
 )
 

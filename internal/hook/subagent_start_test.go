@@ -9,11 +9,11 @@ func TestTicketIDPattern(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"Work on sb_a7Kx2m: add rate limiting", "sb_a7Kx2m"},
-		{"sb_Qr9fZw is the target", "sb_Qr9fZw"},
+		{"Work on st_a7Kx2m: add rate limiting", "st_a7Kx2m"},
+		{"st_Qr9fZw is the target", "st_Qr9fZw"},
 		{"no ticket here", ""},
-		{"sb_ too short", ""},
-		{"sb_!@#$%^ invalid chars", ""},
+		{"st_ too short", ""},
+		{"st_!@#$%^ invalid chars", ""},
 	}
 
 	for _, tt := range tests {

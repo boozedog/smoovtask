@@ -18,7 +18,7 @@ func TestAppendBasic(t *testing.T) {
 	e := Event{
 		TS:      ts,
 		Event:   TicketCreated,
-		Ticket:  "sb_a7Kx2m",
+		Ticket:  "st_a7Kx2m",
 		Project: "api-server",
 		Actor:   "human",
 		Data:    map[string]any{"title": "Add rate limiting"},
@@ -41,8 +41,8 @@ func TestAppendBasic(t *testing.T) {
 		t.Fatalf("unmarshal: %v", err)
 	}
 
-	if got.Ticket != "sb_a7Kx2m" {
-		t.Errorf("ticket = %q, want %q", got.Ticket, "sb_a7Kx2m")
+	if got.Ticket != "st_a7Kx2m" {
+		t.Errorf("ticket = %q, want %q", got.Ticket, "st_a7Kx2m")
 	}
 	if got.Event != TicketCreated {
 		t.Errorf("event = %q, want %q", got.Event, TicketCreated)
@@ -66,7 +66,7 @@ func TestAppendMultipleLines(t *testing.T) {
 		e := Event{
 			TS:     ts.Add(time.Duration(i) * time.Minute),
 			Event:  StatusOpen,
-			Ticket: "sb_test01",
+			Ticket: "st_test01",
 		}
 		if err := log.Append(e); err != nil {
 			t.Fatalf("Append %d: %v", i, err)
@@ -102,7 +102,7 @@ func TestDailyRotation(t *testing.T) {
 		e := Event{
 			TS:     ts,
 			Event:  StatusOpen,
-			Ticket: "sb_rotate",
+			Ticket: "st_rotate",
 		}
 		if err := log.Append(e); err != nil {
 			t.Fatalf("Append: %v", err)
@@ -138,7 +138,7 @@ func TestConcurrentAppends(t *testing.T) {
 			e := Event{
 				TS:      ts,
 				Event:   HookPostTool,
-				Ticket:  "sb_conc01",
+				Ticket:  "st_conc01",
 				Session: "session-test",
 				Data:    map[string]any{"index": i},
 			}

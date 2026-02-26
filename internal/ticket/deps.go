@@ -69,7 +69,7 @@ func AutoUnblock(store *Store, ticketID string) ([]*Ticket, error) {
 		tk.PriorStatus = nil
 		tk.Updated = now
 
-		AppendSection(tk, "Auto-Unblocked", "sb", "", "", nil, now)
+		AppendSection(tk, "Auto-Unblocked", "st", "", "", nil, now)
 
 		if err := store.Save(tk); err != nil {
 			continue

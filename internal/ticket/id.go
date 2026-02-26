@@ -10,7 +10,7 @@ import (
 
 const (
 	// IDPrefix is the prefix for all ticket IDs.
-	IDPrefix = "sb_"
+	IDPrefix = "st_"
 
 	// IDLength is the number of random base62 characters after the prefix.
 	IDLength = 6
@@ -19,7 +19,7 @@ const (
 	base62Chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
-// GenerateID creates a new unique ticket ID (sb_xxxxxx).
+// GenerateID creates a new unique ticket ID (st_xxxxxx).
 // It checks for collisions against existing files in ticketsDir.
 func GenerateID(ticketsDir string) (string, error) {
 	existing, err := existingIDs(ticketsDir)
@@ -40,7 +40,7 @@ func GenerateID(ticketsDir string) (string, error) {
 	return "", fmt.Errorf("failed to generate unique ID after 100 attempts")
 }
 
-// randomID generates a random sb_xxxxxx ID.
+// randomID generates a random st_xxxxxx ID.
 func randomID() (string, error) {
 	max := big.NewInt(int64(len(base62Chars)))
 	var b strings.Builder
@@ -81,14 +81,14 @@ func existingIDs(ticketsDir string) (map[string]bool, error) {
 }
 
 // extractIDFromFilename extracts the ticket ID from a filename like
-// 2026-02-25T10:00-sb_a7Kx2m.md
+// 2026-02-25T10:00-st_a7Kx2m.md
 func extractIDFromFilename(name string) string {
-	// Find "sb_" in the filename
+	// Find "st_" in the filename
 	idx := strings.Index(name, IDPrefix)
 	if idx < 0 {
 		return ""
 	}
-	// Extract sb_ + 6 chars
+	// Extract st_ + 6 chars
 	rest := name[idx:]
 	if len(rest) < len(IDPrefix)+IDLength {
 		return ""

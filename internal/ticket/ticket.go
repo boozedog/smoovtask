@@ -51,7 +51,7 @@ var ValidPriorities = map[Priority]bool{
 	PriorityP5: true,
 }
 
-// Ticket represents a smoovbrain ticket with frontmatter and body.
+// Ticket represents a smoovtask ticket with frontmatter and body.
 type Ticket struct {
 	ID          string    `yaml:"id"`
 	Title       string    `yaml:"title"`
@@ -70,7 +70,7 @@ type Ticket struct {
 }
 
 // Filename returns the expected filename for this ticket.
-// Format: 2026-02-25T10:00-sb_xxxxxx.md
+// Format: 2026-02-25T10:00-st_xxxxxx.md
 func (t *Ticket) Filename() string {
 	return t.Created.UTC().Format("2006-01-02T15:04") + "-" + t.ID + ".md"
 }

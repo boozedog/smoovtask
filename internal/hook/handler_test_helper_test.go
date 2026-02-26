@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/event"
+	"github.com/boozedog/smoovtask/internal/event"
 )
 
 // testEnv holds paths for a test environment with config and events dirs.
@@ -17,7 +17,7 @@ type testEnv struct {
 	EventsDir string
 }
 
-// setupTestEnv creates a temporary directory structure that mimics ~/.smoovbrain
+// setupTestEnv creates a temporary directory structure that mimics ~/.smoovtask
 // and sets $HOME so that config.Load() and EventsDir() resolve correctly.
 // The optional projectPath, if non-empty, registers a project named "test-project"
 // pointing at that path.
@@ -25,7 +25,7 @@ func setupTestEnv(t *testing.T, projectPath string) testEnv {
 	t.Helper()
 
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, ".smoovbrain")
+	configDir := filepath.Join(tmpDir, ".smoovtask")
 	eventsDir := filepath.Join(configDir, "events")
 	vaultDir := filepath.Join(tmpDir, "vault")
 	ticketsDir := filepath.Join(vaultDir, "tickets")

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/project"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
 

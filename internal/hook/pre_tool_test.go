@@ -3,7 +3,7 @@ package hook
 import (
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/event"
+	"github.com/boozedog/smoovtask/internal/event"
 )
 
 func TestHandlePreTool(t *testing.T) {

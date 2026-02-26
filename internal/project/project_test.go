@@ -3,14 +3,14 @@ package project
 import (
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/config"
+	"github.com/boozedog/smoovtask/internal/config"
 )
 
 func TestDetect(t *testing.T) {
 	cfg := &config.Config{
 		Projects: map[string]config.ProjectConfig{
 			"api-server":  {Path: "/home/user/projects/api-server"},
-			"smoovbrain":  {Path: "/home/user/projects/smoovbrain"},
+			"smoovtask":  {Path: "/home/user/projects/smoovtask"},
 			"nested-proj": {Path: "/home/user/projects/api-server/services/auth"},
 		},
 	}
@@ -21,8 +21,8 @@ func TestDetect(t *testing.T) {
 	}{
 		{"/home/user/projects/api-server", "api-server"},
 		{"/home/user/projects/api-server/internal", "api-server"},
-		{"/home/user/projects/smoovbrain", "smoovbrain"},
-		{"/home/user/projects/smoovbrain/cmd", "smoovbrain"},
+		{"/home/user/projects/smoovtask", "smoovtask"},
+		{"/home/user/projects/smoovtask/cmd", "smoovtask"},
 		{"/home/user/projects/unknown", ""},
 		{"/other/path", ""},
 		// Longest prefix match: nested project wins

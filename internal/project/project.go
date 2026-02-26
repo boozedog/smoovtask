@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/boozedog/smoovbrain/internal/config"
+	"github.com/boozedog/smoovtask/internal/config"
 )
 
 // Detect determines the project name from the given directory path

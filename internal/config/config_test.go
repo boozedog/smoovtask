@@ -15,8 +15,8 @@ func TestLoadDefaults(t *testing.T) {
 		t.Fatalf("LoadFrom: %v", err)
 	}
 
-	if cfg.Settings.VaultPath != "~/obsidian/smoovbrain" {
-		t.Errorf("default VaultPath = %q, want %q", cfg.Settings.VaultPath, "~/obsidian/smoovbrain")
+	if cfg.Settings.VaultPath != "~/obsidian/smoovtask" {
+		t.Errorf("default VaultPath = %q, want %q", cfg.Settings.VaultPath, "~/obsidian/smoovtask")
 	}
 	if len(cfg.Projects) != 0 {
 		t.Errorf("default Projects = %v, want empty", cfg.Projects)
@@ -113,7 +113,7 @@ func TestExpandPath(t *testing.T) {
 func TestEnsureDirs(t *testing.T) {
 	dir := t.TempDir()
 	vault := filepath.Join(dir, "vault")
-	configDir := filepath.Join(dir, "smoovbrain")
+	configDir := filepath.Join(dir, "smoovtask")
 	path := filepath.Join(configDir, "config.toml")
 
 	cfg := &Config{

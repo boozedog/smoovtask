@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/project"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +48,7 @@ func runNew(_ *cobra.Command, args []string) error {
 
 	proj := project.Detect(cfg, cwd)
 	if proj == "" {
-		return fmt.Errorf("not in a registered project — run `sb init` first")
+		return fmt.Errorf("not in a registered project — run `st init` first")
 	}
 
 	priority := ticket.Priority(newPriority)
@@ -132,7 +132,7 @@ func runNew(_ *cobra.Command, args []string) error {
 			tk.Status = ticket.StatusBlocked
 			tk.Updated = now
 
-			ticket.AppendSection(tk, "Blocked (Dependencies)", "sb", "", fmt.Sprintf("Unresolved dependencies: %s", strings.Join(unresolved, ", ")), nil, now)
+			ticket.AppendSection(tk, "Blocked (Dependencies)", "st", "", fmt.Sprintf("Unresolved dependencies: %s", strings.Join(unresolved, ", ")), nil, now)
 
 			if err := store.Save(tk); err != nil {
 				return fmt.Errorf("save ticket after auto-block: %w", err)
@@ -143,7 +143,7 @@ func runNew(_ *cobra.Command, args []string) error {
 				Event:   event.StatusBlocked,
 				Ticket:  tk.ID,
 				Project: proj,
-				Actor:   "sb",
+				Actor:   "st",
 				Data: map[string]any{
 					"reason":       "depends-on",
 					"refs":         dependsOn,

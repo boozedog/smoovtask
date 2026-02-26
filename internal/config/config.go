@@ -9,7 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Config holds the global smoovbrain configuration.
+// Config holds the global smoovtask configuration.
 type Config struct {
 	Settings SettingsConfig           `toml:"settings"`
 	Projects map[string]ProjectConfig `toml:"projects"`
@@ -25,7 +25,7 @@ type ProjectConfig struct {
 	Path string `toml:"path"`
 }
 
-// DefaultDir returns the default config directory (~/.smoovbrain).
+// DefaultDir returns the default config directory (~/.smoovtask).
 // If SMOOVBRAIN_DIR is set, uses that path instead.
 func DefaultDir() (string, error) {
 	if d := os.Getenv("SMOOVBRAIN_DIR"); d != "" {
@@ -35,7 +35,7 @@ func DefaultDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("get home dir: %w", err)
 	}
-	return filepath.Join(home, ".smoovbrain"), nil
+	return filepath.Join(home, ".smoovtask"), nil
 }
 
 // DefaultPath returns the default config file path.
@@ -170,6 +170,6 @@ func (c *Config) EnsureDirs() error {
 
 func (c *Config) applyDefaults() {
 	if c.Settings.VaultPath == "" {
-		c.Settings.VaultPath = "~/obsidian/smoovbrain"
+		c.Settings.VaultPath = "~/obsidian/smoovtask"
 	}
 }

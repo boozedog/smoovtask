@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestStatus_ValidTransition(t *testing.T) {

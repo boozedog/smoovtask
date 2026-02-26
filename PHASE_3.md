@@ -1,10 +1,10 @@
-# smoovbrain Phase 3: Core Completion + Test Coverage
+# smoovtask Phase 3: Core Completion + Test Coverage
 
 ## Context for the Next Agent
 
 Phase 2 is complete and pushed. You now have:
 
-- **Hook Install**: `sb hooks install` merges all 10 hooks into `~/.claude/settings.json`
+- **Hook Install**: `st hooks install` merges all 10 hooks into `~/.claude/settings.json`
 - **Workflow Commands**: `hold`, `unhold`, `assign`, `close` + `--depends-on` on `new`
 - **Dependency System**: `CheckDependencies`, `FindDependents`, `AutoUnblock` in `internal/ticket/deps.go`
 - **Priority Sorting**: Score-based batch selection in session-start (priority weight + REVIEW boost)
@@ -19,10 +19,10 @@ Read `DESIGN.md` for the full spec. Read `PHASE_2.md` for what was built in Phas
 
 Two goals: finish the remaining core commands, and add test coverage for the entire CLI layer.
 
-### Step 1: `sb override` Command
+### Step 1: `st override` Command
 
 **Files:**
-- `cmd/override.go` — `sb override <ticket-id> <status>`
+- `cmd/override.go` — `st override <ticket-id> <status>`
 
 **Behavior (from DESIGN.md):**
 - Human-only force override — bypasses all transition rules
@@ -30,20 +30,20 @@ Two goals: finish the remaining core commands, and add test coverage for the ent
 - Clears `PriorStatus` (override is a clean slate)
 - AppendSection with heading "Override", actor "human", content showing from → to
 - Log event: `"status.override"` with data `{"from": oldStatus, "to": newStatus, "reason": "human-override"}`
-- Print: "Override sb_xxxxxx: OLD → NEW"
+- Print: "Override st_xxxxxx: OLD → NEW"
 
-Use `workflow.StatusFromAlias` to resolve the target status (so `sb override sb_xxx done` works).
+Use `workflow.StatusFromAlias` to resolve the target status (so `st override st_xxx done` works).
 
-### Step 2: `sb context` Command
+### Step 2: `st context` Command
 
 **Files:**
-- `cmd/context.go` — `sb context`
+- `cmd/context.go` — `st context`
 
 **Behavior (from DESIGN.md):**
 - Print current session context for debugging/hooks
 - Output JSON with: `session_id`, `project` (from PWD), `active_ticket` (if any), `cwd`
 - If no active ticket, `active_ticket` is null
-- Useful for agents and humans to understand what sb thinks the current state is
+- Useful for agents and humans to understand what st thinks the current state is
 
 ### Step 3: CLI Test Infrastructure
 
@@ -51,7 +51,7 @@ Use `workflow.StatusFromAlias` to resolve the target status (so `sb override sb_
 - `cmd/cmd_test.go` — shared test helpers for all cmd tests
 
 **Test helper pattern:**
-The internal packages use `t.TempDir()` with real file I/O. Follow the same pattern for cmd tests. Create a helper that sets up a complete smoovbrain environment:
+The internal packages use `t.TempDir()` with real file I/O. Follow the same pattern for cmd tests. Create a helper that sets up a complete smoovtask environment:
 
 ```go
 // testEnv sets up a temp config, tickets dir, and events dir.
@@ -70,13 +70,13 @@ func newTestEnv(t *testing.T) *testEnv
 ```
 
 Key requirements:
-- Create temp `~/.smoovbrain/` equivalent with `config.toml`
+- Create temp `~/.smoovtask/` equivalent with `config.toml`
 - Register a test project pointing to a temp directory
 - Set `SMOOVBRAIN_CONFIG` env var (or equivalent) so `config.Load()` uses test config
 - Provide helpers to create test tickets in known states
 - Set/unset `CLAUDE_SESSION_ID` for session-based tests
 
-**Important**: Check how `config.Load()` resolves its path. If it hardcodes `~/.smoovbrain/config.toml`, you may need to add a `config.LoadFrom(path)` variant or use an env var override. The config package already has `LoadFrom` — verify and use it. You'll need to wire the cmd layer to support this (e.g., via a package-level config path override or root command persistent flag).
+**Important**: Check how `config.Load()` resolves its path. If it hardcodes `~/.smoovtask/config.toml`, you may need to add a `config.LoadFrom(path)` variant or use an env var override. The config package already has `LoadFrom` — verify and use it. You'll need to wire the cmd layer to support this (e.g., via a package-level config path override or root command persistent flag).
 
 ### Step 4: Command Tests
 
@@ -114,7 +114,7 @@ Key requirements:
 | `unhold` | Not BLOCKED, nil PriorStatus |
 | `close` | From any status, auto-unblocks dependents |
 | `override` | Any status → any status, alias resolution |
-| `hooks install` | Fresh install, idempotent re-install, existing non-sb hooks preserved |
+| `hooks install` | Fresh install, idempotent re-install, existing non-st hooks preserved |
 
 ### Step 5: Hook Handler Tests
 
@@ -159,8 +159,8 @@ After all steps:
 1. `go test ./...` — all pass, including new cmd/ tests
 2. `go test -cover ./...` — check coverage percentages
 3. `golangci-lint run ./...` — clean
-4. `sb override sb_xxx done` works from any status
-5. `sb context` outputs valid JSON with session info
+4. `st override st_xxx done` works from any status
+5. `st context` outputs valid JSON with session info
 6. No regressions in existing functionality
 
 ## Conventions Reminder

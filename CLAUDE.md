@@ -1,6 +1,6 @@
-# smoovbrain
+# smoovtask
 
-AI agent workflow and ticketing system for Claude Code. Command: `sb`
+AI agent workflow and ticketing system for Claude Code. Command: `st`
 
 ## Tech Stack
 
@@ -9,14 +9,14 @@ Go 1.26 · Cobra (CLI) · BurntSushi/toml (config) · YAML v3 (ticket frontmatte
 ## Architecture
 
 ```
-sb CLI → internal packages → markdown tickets (Obsidian vault) + JSONL events (~/.smoovbrain/)
+st CLI → internal packages → markdown tickets (Obsidian vault) + JSONL events (~/.smoovtask/)
 ```
 
-Tickets are markdown files with YAML frontmatter in an Obsidian vault. Events are append-only JSONL logs rotated daily. Claude Code hooks call `sb hook <event>` for context injection and activity logging.
+Tickets are markdown files with YAML frontmatter in an Obsidian vault. Events are append-only JSONL logs rotated daily. Claude Code hooks call `st hook <event>` for context injection and activity logging.
 
 ## Project Structure
 
-- `cmd/sb/` — Entry point (`main.go`)
+- `cmd/st/` — Entry point (`main.go`)
 - `cmd/` — CLI commands (Cobra): root, init, new, list, show, pick, status, note, review, hook
 - `internal/config/` — TOML config loading, project registry
 - `internal/ticket/` — Ticket struct, ID generation, markdown parse/write, file-based store
@@ -42,9 +42,9 @@ just clean          # remove build artifacts
 
 ## Storage Paths
 
-- Config: `~/.smoovbrain/config.toml`
-- Events: `~/.smoovbrain/events/YYYY-MM-DD.jsonl`
-- Tickets: `<vault_path>/tickets/YYYY-MM-DDTHH:MM-sb_xxxxxx.md` (default vault: `~/obsidian/smoovbrain`)
+- Config: `~/.smoovtask/config.toml`
+- Events: `~/.smoovtask/events/YYYY-MM-DD.jsonl`
+- Tickets: `<vault_path>/tickets/YYYY-MM-DDTHH:MM-st_xxxxxx.md` (default vault: `~/obsidian/smoovtask`)
 
 ## Conventions
 

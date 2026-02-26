@@ -1,11 +1,11 @@
-# smoovbrain Phase 2: Complete Workflow + Hook Installation
+# smoovtask Phase 2: Complete Workflow + Hook Installation
 
 ## Context for the Next Agent
 
-Phase 1 is complete and pushed. You have a working `sb` CLI with:
+Phase 1 is complete and pushed. You have a working `st` CLI with:
 
 - **Scaffold**: Go 1.26, Cobra, golangci-lint, gofumpt, goreleaser, justfile, hk.pkl, GitHub rulesets
-- **Config**: `~/.smoovbrain/config.toml` with project registry, vault path, tilde expansion
+- **Config**: `~/.smoovtask/config.toml` with project registry, vault path, tilde expansion
 - **Ticket CRUD**: Create/Get/List/Save with markdown files (YAML frontmatter + append-only body)
 - **Event Log**: JSONL with flock-protected append, daily rotation, query/filter, `SessionsForTicket()`
 - **Workflow Engine**: State machine (BACKLOG→OPEN→IN-PROGRESS→REVIEW→DONE/REWORK), status aliases, review eligibility
@@ -20,13 +20,13 @@ Read `DESIGN.md` for the full spec — it's the source of truth for all behavior
 
 ### Step 1: Install Claude Code Hooks
 
-Create or update `~/.claude/settings.json` to wire all `sb hook` commands. The hook config is fully specified in DESIGN.md under "Hooks". Add an `sb hooks install` command that merges the hook config into the user's existing settings.json (don't clobber existing settings).
+Create or update `~/.claude/settings.json` to wire all `st hook` commands. The hook config is fully specified in DESIGN.md under "Hooks". Add an `st hooks install` command that merges the hook config into the user's existing settings.json (don't clobber existing settings).
 
 **Files:**
-- `cmd/hooks_install.go` — `sb hooks install` command
+- `cmd/hooks_install.go` — `st hooks install` command
 
 **Key details:**
-- Read existing `~/.claude/settings.json`, merge smoovbrain hooks into the `hooks` key
+- Read existing `~/.claude/settings.json`, merge smoovtask hooks into the `hooks` key
 - SessionStart, PreToolUse, PostToolUse are already implemented
 - SubagentStart, Stop are already implemented
 - Mark unimplemented hooks with comments (subagent-stop, task-completed, teammate-idle, permission-request, session-end)
@@ -36,11 +36,11 @@ Create or update `~/.claude/settings.json` to wire all `sb hook` commands. The h
 ### Step 2: Missing Workflow Commands
 
 **Files:**
-- `cmd/hold.go` — `sb hold sb_xxxxxx "reason"` — block ticket with human hold
-- `cmd/unhold.go` — `sb unhold sb_xxxxxx` — release human hold
-- `cmd/assign.go` — `sb assign sb_xxxxxx <agent-id>` — manually assign
-- `cmd/close.go` — `sb close sb_xxxxxx` — human shortcut to mark done
-- Update `cmd/new.go` — add `--depends-on` flag (replaces `sb spawn`)
+- `cmd/hold.go` — `st hold st_xxxxxx "reason"` — block ticket with human hold
+- `cmd/unhold.go` — `st unhold st_xxxxxx` — release human hold
+- `cmd/assign.go` — `st assign st_xxxxxx <agent-id>` — manually assign
+- `cmd/close.go` — `st close st_xxxxxx` — human shortcut to mark done
+- Update `cmd/new.go` — add `--depends-on` flag (replaces `st spawn`)
 
 Each command must:
 1. Validate the operation (check current status, permissions)
@@ -57,7 +57,7 @@ Each command must:
 - `depends-on` field in frontmatter lists ticket IDs
 - If any dependency is not DONE, ticket auto-transitions to BLOCKED with `prior-status` saved
 - When a dependency reaches DONE, scan for dependents and auto-unblock (snap back to prior-status)
-- Human holds: `sb hold` sets BLOCKED with reason in JSONL, only `sb unhold` releases
+- Human holds: `st hold` sets BLOCKED with reason in JSONL, only `st unhold` releases
 - Frontmatter stores `prior-status` so snap-back works
 - Two kinds of BLOCKED: `depends-on` (auto) and `hold` (manual)
 
@@ -83,13 +83,13 @@ Wire auto-unblock into `cmd/status.go`: when a ticket moves to DONE, scan all ti
 - `internal/hook/session_end.go` — cleanup logging
 - Update `cmd/hook.go` — add cases for new event types
 
-**task-completed key behavior:** Log-only. Does not block. Ticket completion is decided by reviewers via `sb review`, not by the task system.
+**task-completed key behavior:** Log-only. Does not block. Ticket completion is decided by reviewers via `st review`, not by the task system.
 
-### Step 6: Improve `sb status` Current-Ticket Resolution
+### Step 6: Improve `st status` Current-Ticket Resolution
 
 Currently `resolveCurrentTicket` in `cmd/status.go` scans tickets by assignee. Improve to also work when `--ticket` is not set and there's no `CLAUDE_SESSION_ID` — prompt the user or show guidance.
 
-Also: make `sb note` not depend on the `statusTicket` package var hack — extract `resolveCurrentTicket` into a shared function in `cmd/helpers.go`.
+Also: make `st note` not depend on the `statusTicket` package var hack — extract `resolveCurrentTicket` into a shared function in `cmd/helpers.go`.
 
 ## Parallelization
 
@@ -102,15 +102,15 @@ Also: make `sb note` not depend on the `statusTicket` package var hack — extra
 ## Verification
 
 After all steps:
-1. `sb hooks install` adds hooks to `~/.claude/settings.json`
-2. `sb new "Dep test A"` → `sb new "Dep test B" --depends-on sb_xxxxxx` (no separate spawn command)
+1. `st hooks install` adds hooks to `~/.claude/settings.json`
+2. `st new "Dep test A"` → `st new "Dep test B" --depends-on st_xxxxxx` (no separate spawn command)
 3. Dep test B should auto-BLOCK
 4. Move Dep test A through to DONE → Dep test B auto-unblocks
-5. `sb hold sb_yyyy "waiting on keys"` → ticket BLOCKED
-6. `sb unhold sb_yyyy` → ticket snaps back
-7. `sb assign sb_yyyy agent-99` works
-8. `sb close sb_yyyy` marks DONE
-9. `echo '...' | sb hook task-completed` — logs event to JSONL (no blocking)
+5. `st hold st_yyyy "waiting on keys"` → ticket BLOCKED
+6. `st unhold st_yyyy` → ticket snaps back
+7. `st assign st_yyyy agent-99` works
+8. `st close st_yyyy` marks DONE
+9. `echo '...' | st hook task-completed` — logs event to JSONL (no blocking)
 10. Priority sorting: P0 tickets appear first in session-start board
 11. `go test ./...` all pass
 12. `golangci-lint run ./...` clean

@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/identity"
-	"github.com/boozedog/smoovbrain/internal/project"
-	"github.com/boozedog/smoovbrain/internal/ticket"
-	"github.com/boozedog/smoovbrain/internal/workflow"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
 )
 
@@ -54,7 +54,7 @@ func runPick(_ *cobra.Command, args []string) error {
 		}
 		proj := project.Detect(cfg, cwd)
 		if proj == "" {
-			return fmt.Errorf("not in a registered project — run `sb init` first")
+			return fmt.Errorf("not in a registered project — run `st init` first")
 		}
 
 		tickets, err := store.List(ticket.ListFilter{Project: proj, Status: ticket.StatusOpen})

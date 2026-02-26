@@ -16,8 +16,8 @@ var hooksCmd = &cobra.Command{
 
 var hooksInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install smoovbrain hooks into Claude Code settings",
-	Long:  `Installs smoovbrain hook commands into ~/.claude/settings.json. Existing hooks and settings are preserved.`,
+	Short: "Install smoovtask hooks into Claude Code settings",
+	Long:  `Installs smoovtask hook commands into ~/.claude/settings.json. Existing hooks and settings are preserved.`,
 	RunE:  runHooksInstall,
 }
 
@@ -39,60 +39,60 @@ type hookGroup struct {
 	Hooks   []hookEntry `json:"hooks"`
 }
 
-// smoovbrainHooks returns the hook config that sb needs installed.
-func smoovbrainHooks() map[string][]hookGroup {
+// smoovtaskHooks returns the hook config that st needs installed.
+func smoovtaskHooks() map[string][]hookGroup {
 	return map[string][]hookGroup{
 		"SessionStart": {
 			{
 				Matcher: "startup",
-				Hooks:   []hookEntry{{Type: "command", Command: "sb hook session-start"}},
+				Hooks:   []hookEntry{{Type: "command", Command: "st hook session-start"}},
 			},
 		},
 		"PreToolUse": {
 			{
 				Matcher: "*",
-				Hooks:   []hookEntry{{Type: "command", Command: "sb hook pre-tool", Async: true}},
+				Hooks:   []hookEntry{{Type: "command", Command: "st hook pre-tool", Async: true}},
 			},
 		},
 		"PostToolUse": {
 			{
 				Matcher: "*",
-				Hooks:   []hookEntry{{Type: "command", Command: "sb hook post-tool", Async: true}},
+				Hooks:   []hookEntry{{Type: "command", Command: "st hook post-tool", Async: true}},
 			},
 		},
 		"SubagentStart": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook subagent-start"}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook subagent-start"}},
 			},
 		},
 		"SubagentStop": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook subagent-stop", Async: true}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook subagent-stop", Async: true}},
 			},
 		},
 		"TaskCompleted": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook task-completed", Async: true}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook task-completed", Async: true}},
 			},
 		},
 		"TeammateIdle": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook teammate-idle", Async: true}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook teammate-idle", Async: true}},
 			},
 		},
 		"Stop": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook stop", Async: true}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook stop", Async: true}},
 			},
 		},
 		"PermissionRequest": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook permission-request"}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook permission-request"}},
 			},
 		},
 		"SessionEnd": {
 			{
-				Hooks: []hookEntry{{Type: "command", Command: "sb hook session-end", Async: true}},
+				Hooks: []hookEntry{{Type: "command", Command: "st hook session-end", Async: true}},
 			},
 		},
 	}
@@ -123,11 +123,11 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 		existingHooks = make(map[string]any)
 	}
 
-	wanted := smoovbrainHooks()
+	wanted := smoovtaskHooks()
 	var installed, skipped []string
 
 	for eventName, groups := range wanted {
-		if hasSmoovbrainHook(existingHooks, eventName) {
+		if hasSmoovtaskHook(existingHooks, eventName) {
 			skipped = append(skipped, eventName)
 			continue
 		}
@@ -174,15 +174,15 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 		}
 	}
 	if len(installed) == 0 {
-		fmt.Println("All smoovbrain hooks already installed.")
+		fmt.Println("All smoovtask hooks already installed.")
 	}
 
 	fmt.Printf("\nSettings: %s\n", settingsPath)
 	return nil
 }
 
-// hasSmoovbrainHook checks if an sb hook command already exists for the given event.
-func hasSmoovbrainHook(hooks map[string]any, eventName string) bool {
+// hasSmoovtaskHook checks if an st hook command already exists for the given event.
+func hasSmoovtaskHook(hooks map[string]any, eventName string) bool {
 	groups, ok := hooks[eventName].([]any)
 	if !ok {
 		return false
@@ -203,7 +203,7 @@ func hasSmoovbrainHook(hooks map[string]any, eventName string) bool {
 				continue
 			}
 			cmd, _ := entry["command"].(string)
-			if len(cmd) >= 7 && cmd[:7] == "sb hook" {
+			if len(cmd) >= 7 && cmd[:7] == "st hook" {
 				return true
 			}
 		}

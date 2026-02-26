@@ -5,13 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/boozedog/smoovbrain/internal/config"
+	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Register current directory as a smoovbrain project",
+	Short: "Register current directory as a smoovtask project",
 	RunE:  runInit,
 }
 

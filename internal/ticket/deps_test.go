@@ -32,8 +32,8 @@ func testTicket(id, project string, status Status, dependsOn []string) *Ticket {
 func TestCheckDependencies_AllResolved(t *testing.T) {
 	store := testStore(t)
 
-	depA := testTicket("sb_aaaaaa", "proj", StatusDone, nil)
-	depB := testTicket("sb_bbbbbb", "proj", StatusDone, nil)
+	depA := testTicket("st_aaaaaa", "proj", StatusDone, nil)
+	depB := testTicket("st_bbbbbb", "proj", StatusDone, nil)
 	if err := store.Create(depA); err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestCheckDependencies_AllResolved(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tk := testTicket("sb_cccccc", "proj", StatusOpen, []string{"sb_aaaaaa", "sb_bbbbbb"})
+	tk := testTicket("st_cccccc", "proj", StatusOpen, []string{"st_aaaaaa", "st_bbbbbb"})
 	if err := store.Create(tk); err != nil {
 		t.Fatal(err)
 	}
@@ -58,8 +58,8 @@ func TestCheckDependencies_AllResolved(t *testing.T) {
 func TestCheckDependencies_SomeUnresolved(t *testing.T) {
 	store := testStore(t)
 
-	depA := testTicket("sb_aaaaaa", "proj", StatusDone, nil)
-	depB := testTicket("sb_bbbbbb", "proj", StatusInProgress, nil)
+	depA := testTicket("st_aaaaaa", "proj", StatusDone, nil)
+	depB := testTicket("st_bbbbbb", "proj", StatusInProgress, nil)
 	if err := store.Create(depA); err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestCheckDependencies_SomeUnresolved(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tk := testTicket("sb_cccccc", "proj", StatusOpen, []string{"sb_aaaaaa", "sb_bbbbbb"})
+	tk := testTicket("st_cccccc", "proj", StatusOpen, []string{"st_aaaaaa", "st_bbbbbb"})
 	if err := store.Create(tk); err != nil {
 		t.Fatal(err)
 	}
@@ -79,15 +79,15 @@ func TestCheckDependencies_SomeUnresolved(t *testing.T) {
 	if len(unresolved) != 1 {
 		t.Fatalf("expected 1 unresolved, got %d: %v", len(unresolved), unresolved)
 	}
-	if unresolved[0] != "sb_bbbbbb" {
-		t.Errorf("expected sb_bbbbbb, got %s", unresolved[0])
+	if unresolved[0] != "st_bbbbbb" {
+		t.Errorf("expected st_bbbbbb, got %s", unresolved[0])
 	}
 }
 
 func TestCheckDependencies_MissingDep(t *testing.T) {
 	store := testStore(t)
 
-	tk := testTicket("sb_cccccc", "proj", StatusOpen, []string{"sb_missing"})
+	tk := testTicket("st_cccccc", "proj", StatusOpen, []string{"st_missing"})
 	if err := store.Create(tk); err != nil {
 		t.Fatal(err)
 	}
@@ -99,18 +99,18 @@ func TestCheckDependencies_MissingDep(t *testing.T) {
 	if len(unresolved) != 1 {
 		t.Fatalf("expected 1 unresolved, got %d", len(unresolved))
 	}
-	if unresolved[0] != "sb_missing" {
-		t.Errorf("expected sb_missing, got %s", unresolved[0])
+	if unresolved[0] != "st_missing" {
+		t.Errorf("expected st_missing, got %s", unresolved[0])
 	}
 }
 
 func TestFindDependents(t *testing.T) {
 	store := testStore(t)
 
-	depA := testTicket("sb_aaaaaa", "proj", StatusDone, nil)
-	child1 := testTicket("sb_bbbbbb", "proj", StatusOpen, []string{"sb_aaaaaa"})
-	child2 := testTicket("sb_cccccc", "proj2", StatusOpen, []string{"sb_aaaaaa"})
-	unrelated := testTicket("sb_dddddd", "proj", StatusOpen, nil)
+	depA := testTicket("st_aaaaaa", "proj", StatusDone, nil)
+	child1 := testTicket("st_bbbbbb", "proj", StatusOpen, []string{"st_aaaaaa"})
+	child2 := testTicket("st_cccccc", "proj2", StatusOpen, []string{"st_aaaaaa"})
+	unrelated := testTicket("st_dddddd", "proj", StatusOpen, nil)
 
 	for _, tk := range []*Ticket{depA, child1, child2, unrelated} {
 		if err := store.Create(tk); err != nil {
@@ -118,7 +118,7 @@ func TestFindDependents(t *testing.T) {
 		}
 	}
 
-	dependents, err := FindDependents(store, "sb_aaaaaa")
+	dependents, err := FindDependents(store, "st_aaaaaa")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,8 +130,8 @@ func TestFindDependents(t *testing.T) {
 	for _, d := range dependents {
 		ids[d.ID] = true
 	}
-	if !ids["sb_bbbbbb"] || !ids["sb_cccccc"] {
-		t.Errorf("expected sb_bbbbbb and sb_cccccc in dependents, got %v", ids)
+	if !ids["st_bbbbbb"] || !ids["st_cccccc"] {
+		t.Errorf("expected st_bbbbbb and st_cccccc in dependents, got %v", ids)
 	}
 }
 
@@ -139,28 +139,28 @@ func TestAutoUnblock(t *testing.T) {
 	store := testStore(t)
 
 	// depA is DONE
-	depA := testTicket("sb_aaaaaa", "proj", StatusDone, nil)
+	depA := testTicket("st_aaaaaa", "proj", StatusDone, nil)
 	if err := store.Create(depA); err != nil {
 		t.Fatal(err)
 	}
 
 	// child depends on depA, is BLOCKED with PriorStatus=OPEN
-	child := testTicket("sb_bbbbbb", "proj", StatusBlocked, []string{"sb_aaaaaa"})
+	child := testTicket("st_bbbbbb", "proj", StatusBlocked, []string{"st_aaaaaa"})
 	priorOpen := StatusOpen
 	child.PriorStatus = &priorOpen
 	if err := store.Create(child); err != nil {
 		t.Fatal(err)
 	}
 
-	unblocked, err := AutoUnblock(store, "sb_aaaaaa")
+	unblocked, err := AutoUnblock(store, "st_aaaaaa")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(unblocked) != 1 {
 		t.Fatalf("expected 1 unblocked, got %d", len(unblocked))
 	}
-	if unblocked[0].ID != "sb_bbbbbb" {
-		t.Errorf("expected sb_bbbbbb, got %s", unblocked[0].ID)
+	if unblocked[0].ID != "st_bbbbbb" {
+		t.Errorf("expected st_bbbbbb, got %s", unblocked[0].ID)
 	}
 	if unblocked[0].Status != StatusOpen {
 		t.Errorf("expected OPEN, got %s", unblocked[0].Status)
@@ -170,7 +170,7 @@ func TestAutoUnblock(t *testing.T) {
 	}
 
 	// Re-read from disk to verify persistence
-	reloaded, err := store.Get("sb_bbbbbb")
+	reloaded, err := store.Get("st_bbbbbb")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,8 +183,8 @@ func TestAutoUnblock_StillBlocked(t *testing.T) {
 	store := testStore(t)
 
 	// depA is DONE, depB is still IN-PROGRESS
-	depA := testTicket("sb_aaaaaa", "proj", StatusDone, nil)
-	depB := testTicket("sb_bbbbbb", "proj", StatusInProgress, nil)
+	depA := testTicket("st_aaaaaa", "proj", StatusDone, nil)
+	depB := testTicket("st_bbbbbb", "proj", StatusInProgress, nil)
 	if err := store.Create(depA); err != nil {
 		t.Fatal(err)
 	}
@@ -193,14 +193,14 @@ func TestAutoUnblock_StillBlocked(t *testing.T) {
 	}
 
 	// child depends on both, BLOCKED
-	child := testTicket("sb_cccccc", "proj", StatusBlocked, []string{"sb_aaaaaa", "sb_bbbbbb"})
+	child := testTicket("st_cccccc", "proj", StatusBlocked, []string{"st_aaaaaa", "st_bbbbbb"})
 	priorOpen := StatusOpen
 	child.PriorStatus = &priorOpen
 	if err := store.Create(child); err != nil {
 		t.Fatal(err)
 	}
 
-	unblocked, err := AutoUnblock(store, "sb_aaaaaa")
+	unblocked, err := AutoUnblock(store, "st_aaaaaa")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func TestAutoUnblock_StillBlocked(t *testing.T) {
 	}
 
 	// Verify child is still BLOCKED on disk
-	reloaded, err := store.Get("sb_cccccc")
+	reloaded, err := store.Get("st_cccccc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,18 +221,18 @@ func TestAutoUnblock_StillBlocked(t *testing.T) {
 func TestAutoUnblock_NoPriorStatus(t *testing.T) {
 	store := testStore(t)
 
-	depA := testTicket("sb_aaaaaa", "proj", StatusDone, nil)
+	depA := testTicket("st_aaaaaa", "proj", StatusDone, nil)
 	if err := store.Create(depA); err != nil {
 		t.Fatal(err)
 	}
 
 	// BLOCKED but no PriorStatus — should not be unblocked
-	child := testTicket("sb_bbbbbb", "proj", StatusBlocked, []string{"sb_aaaaaa"})
+	child := testTicket("st_bbbbbb", "proj", StatusBlocked, []string{"st_aaaaaa"})
 	if err := store.Create(child); err != nil {
 		t.Fatal(err)
 	}
 
-	unblocked, err := AutoUnblock(store, "sb_aaaaaa")
+	unblocked, err := AutoUnblock(store, "st_aaaaaa")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,27 +244,27 @@ func TestAutoUnblock_NoPriorStatus(t *testing.T) {
 func TestAutoUnblock_CrossProject(t *testing.T) {
 	store := testStore(t)
 
-	depA := testTicket("sb_aaaaaa", "proj-a", StatusDone, nil)
+	depA := testTicket("st_aaaaaa", "proj-a", StatusDone, nil)
 	if err := store.Create(depA); err != nil {
 		t.Fatal(err)
 	}
 
 	// Different project depends on depA
-	child := testTicket("sb_bbbbbb", "proj-b", StatusBlocked, []string{"sb_aaaaaa"})
+	child := testTicket("st_bbbbbb", "proj-b", StatusBlocked, []string{"st_aaaaaa"})
 	priorOpen := StatusOpen
 	child.PriorStatus = &priorOpen
 	if err := store.Create(child); err != nil {
 		t.Fatal(err)
 	}
 
-	unblocked, err := AutoUnblock(store, "sb_aaaaaa")
+	unblocked, err := AutoUnblock(store, "st_aaaaaa")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(unblocked) != 1 {
 		t.Fatalf("expected 1 unblocked (cross-project), got %d", len(unblocked))
 	}
-	if unblocked[0].ID != "sb_bbbbbb" {
-		t.Errorf("expected sb_bbbbbb, got %s", unblocked[0].ID)
+	if unblocked[0].ID != "st_bbbbbb" {
+		t.Errorf("expected st_bbbbbb, got %s", unblocked[0].ID)
 	}
 }

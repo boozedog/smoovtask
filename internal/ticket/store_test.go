@@ -91,8 +91,8 @@ func TestStoreGetByPrefix(t *testing.T) {
 		t.Fatalf("Create() error: %v", err)
 	}
 
-	// Get by prefix (sb_ + first 2 chars)
-	prefix := tk.ID[:5] // sb_xx
+	// Get by prefix (st_ + first 2 chars)
+	prefix := tk.ID[:5] // st_xx
 	got, err := store.Get(prefix)
 	if err != nil {
 		t.Fatalf("Get(%q) error: %v", prefix, err)
@@ -107,7 +107,7 @@ func TestStoreGetNotFound(t *testing.T) {
 	dir := t.TempDir()
 	store := NewStore(dir)
 
-	_, err := store.Get("sb_zzzzzz")
+	_, err := store.Get("st_zzzzzz")
 	if err == nil {
 		t.Error("Get() should error for nonexistent ticket")
 	}

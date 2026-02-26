@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/project"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // HandleSessionStart processes the SessionStart hook and returns a board summary.
@@ -128,7 +128,7 @@ func buildBoardSummary(proj string, openTickets, reviewTickets []*ticket.Ticket)
 	sortByPriority(tickets)
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "smoovbrain — %s — %d %s tickets ready\n\n", proj, len(tickets), statusLabel)
+	fmt.Fprintf(&b, "smoovtask — %s — %d %s tickets ready\n\n", proj, len(tickets), statusLabel)
 
 	for _, tk := range tickets {
 		fmt.Fprintf(&b, "  %-12s %-30s %s\n", tk.ID, tk.Title, tk.Priority)
@@ -136,9 +136,9 @@ func buildBoardSummary(proj string, openTickets, reviewTickets []*ticket.Ticket)
 
 	b.WriteString("\n")
 	if statusLabel == "OPEN" {
-		b.WriteString("Pick a ticket with `sb pick sb_xxxxxx`.\n")
+		b.WriteString("Pick a ticket with `st pick st_xxxxxx`.\n")
 	} else {
-		b.WriteString("Review a ticket with `sb review sb_xxxxxx`.\n")
+		b.WriteString("Review a ticket with `st review st_xxxxxx`.\n")
 	}
 
 	return b.String()

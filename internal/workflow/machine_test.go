@@ -3,7 +3,7 @@ package workflow
 import (
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestCanTransition(t *testing.T) {

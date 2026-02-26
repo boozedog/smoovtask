@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/identity"
-	"github.com/boozedog/smoovbrain/internal/ticket"
-	"github.com/boozedog/smoovbrain/internal/workflow"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ func init() {
 	// Aliases
 	submitCmd := &cobra.Command{
 		Use:    "submit",
-		Short:  "Submit current ticket for review (alias for `sb status review`)",
+		Short:  "Submit current ticket for review (alias for `st status review`)",
 		Args:   cobra.NoArgs,
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -72,7 +72,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 
 	// Check rules
 	if workflow.RequiresAssignee(targetStatus) && tk.Assignee == "" {
-		return fmt.Errorf("cannot move to %s — ticket has no assignee. Run `sb pick %s` first", targetStatus, tk.ID)
+		return fmt.Errorf("cannot move to %s — ticket has no assignee. Run `st pick %s` first", targetStatus, tk.ID)
 	}
 
 	now := time.Now().UTC()
@@ -120,7 +120,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 				Event:   snapStatus,
 				Ticket:  ut.ID,
 				Project: ut.Project,
-				Actor:   "sb",
+				Actor:   "st",
 				Session: sessionID,
 				Data:    map[string]any{"from": string(ticket.StatusBlocked), "reason": "auto-unblock"},
 			})

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
 
@@ -87,7 +87,7 @@ func runClose(_ *cobra.Command, args []string) error {
 			Event:   snapStatus,
 			Ticket:  ut.ID,
 			Project: ut.Project,
-			Actor:   "sb",
+			Actor:   "st",
 			Data:    map[string]any{"from": string(ticket.StatusBlocked), "reason": "auto-unblock"},
 		})
 		fmt.Printf("Auto-unblocked: %s → %s\n", ut.ID, ut.Status)

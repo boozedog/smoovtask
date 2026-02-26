@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestList_All(t *testing.T) {

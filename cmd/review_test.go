@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestReview_CleanSession(t *testing.T) {
@@ -95,7 +95,7 @@ func TestReview_TicketNotFound(t *testing.T) {
 	t.Setenv("CLAUDE_SESSION_ID", "clean-reviewer")
 	_ = env
 
-	_, err := env.runCmd(t, "review", "sb_zzzzzz")
+	_, err := env.runCmd(t, "review", "st_zzzzzz")
 	if err == nil {
 		t.Fatal("expected error for missing ticket")
 	}

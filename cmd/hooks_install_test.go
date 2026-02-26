@@ -55,7 +55,7 @@ func TestHooksInstall_FreshInstall(t *testing.T) {
 		}
 	}
 
-	// Verify at least one hook has an "sb hook" command
+	// Verify at least one hook has an "st hook" command
 	foundSB := false
 	for _, eventName := range expectedEvents {
 		groups, ok := hooks[eventName].([]any)
@@ -77,14 +77,14 @@ func TestHooksInstall_FreshInstall(t *testing.T) {
 					continue
 				}
 				cmd, _ := entry["command"].(string)
-				if strings.HasPrefix(cmd, "sb hook") {
+				if strings.HasPrefix(cmd, "st hook") {
 					foundSB = true
 				}
 			}
 		}
 	}
 	if !foundSB {
-		t.Error("no 'sb hook' command found in installed hooks")
+		t.Error("no 'st hook' command found in installed hooks")
 	}
 }
 
@@ -107,8 +107,8 @@ func TestHooksInstall_Idempotent(t *testing.T) {
 		t.Fatalf("second install: %v", err)
 	}
 
-	if !strings.Contains(out, "All smoovbrain hooks already installed") {
-		t.Errorf("output = %q, want substring %q", out, "All smoovbrain hooks already installed")
+	if !strings.Contains(out, "All smoovtask hooks already installed") {
+		t.Errorf("output = %q, want substring %q", out, "All smoovtask hooks already installed")
 	}
 
 	// Verify settings file hasn't duplicated hooks
@@ -140,7 +140,7 @@ func TestHooksInstall_PreservesExistingHooks(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 
-	// Create existing settings with a non-sb hook
+	// Create existing settings with a non-st hook
 	claudeDir := filepath.Join(tmpHome, ".claude")
 	if err := os.MkdirAll(claudeDir, 0o755); err != nil {
 		t.Fatalf("create claude dir: %v", err)
@@ -202,9 +202,9 @@ func TestHooksInstall_PreservesExistingHooks(t *testing.T) {
 		t.Fatal("PreToolUse hooks missing")
 	}
 
-	// Should have 2 groups: the existing custom hook + the sb hook
+	// Should have 2 groups: the existing custom hook + the st hook
 	if len(preToolGroups) != 2 {
-		t.Fatalf("PreToolUse has %d groups, want 2 (custom + sb)", len(preToolGroups))
+		t.Fatalf("PreToolUse has %d groups, want 2 (custom + st)", len(preToolGroups))
 	}
 
 	// Verify the custom hook is still there

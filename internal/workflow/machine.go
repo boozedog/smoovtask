@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // transitions defines the valid status transitions.

@@ -73,18 +73,18 @@ func TestGenerateIDCollisionCheck(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create a file with a known ID
-	fname := "2026-02-25T10:00-sb_abc123.md"
+	fname := "2026-02-25T10:00-st_abc123.md"
 	if err := os.WriteFile(filepath.Join(dir, fname), []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	// Generate should not return sb_abc123
+	// Generate should not return st_abc123
 	for range 50 {
 		id, err := GenerateID(dir)
 		if err != nil {
 			t.Fatalf("GenerateID() error: %v", err)
 		}
-		if id == "sb_abc123" {
+		if id == "st_abc123" {
 			t.Fatal("GenerateID returned a colliding ID")
 		}
 	}
@@ -95,10 +95,10 @@ func TestExtractIDFromFilename(t *testing.T) {
 		name string
 		want string
 	}{
-		{"2026-02-25T10:00-sb_a7Kx2m.md", "sb_a7Kx2m"},
-		{"2026-02-25T10:30-sb_b3Yz9q.md", "sb_b3Yz9q"},
+		{"2026-02-25T10:00-st_a7Kx2m.md", "st_a7Kx2m"},
+		{"2026-02-25T10:30-st_b3Yz9q.md", "st_b3Yz9q"},
 		{"random-file.md", ""},
-		{"sb_.md", ""},
+		{"st_.md", ""},
 		{"", ""},
 	}
 

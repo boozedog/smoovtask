@@ -7,7 +7,7 @@ import (
 
 func TestParse(t *testing.T) {
 	input := `---
-id: sb_a7Kx2m
+id: st_a7Kx2m
 title: Add rate limiting to API
 project: api-server
 status: OPEN
@@ -31,8 +31,8 @@ Add rate limiting middleware to all public endpoints.
 		t.Fatalf("Parse() error: %v", err)
 	}
 
-	if tk.ID != "sb_a7Kx2m" {
-		t.Errorf("ID = %q, want %q", tk.ID, "sb_a7Kx2m")
+	if tk.ID != "st_a7Kx2m" {
+		t.Errorf("ID = %q, want %q", tk.ID, "st_a7Kx2m")
 	}
 	if tk.Title != "Add rate limiting to API" {
 		t.Errorf("Title = %q, want %q", tk.Title, "Add rate limiting to API")
@@ -66,7 +66,7 @@ Add rate limiting middleware to all public endpoints.
 
 func TestParseNoPriorStatus(t *testing.T) {
 	input := `---
-id: sb_test01
+id: st_test01
 title: Test
 project: test
 status: OPEN

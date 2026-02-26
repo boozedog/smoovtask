@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/project"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // findProjectFromCwd detects the project from the current working directory.
@@ -22,7 +22,7 @@ func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, sessionID, ti
 	}
 
 	if sessionID == "" {
-		return nil, fmt.Errorf("no --ticket specified and no CLAUDE_SESSION_ID set — use --ticket <id> or run `sb pick` first")
+		return nil, fmt.Errorf("no --ticket specified and no CLAUDE_SESSION_ID set — use --ticket <id> or run `st pick` first")
 	}
 
 	cwd, err := os.Getwd()
@@ -47,5 +47,5 @@ func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, sessionID, ti
 		}
 	}
 
-	return nil, fmt.Errorf("no active ticket found for session %q — use `sb pick` first or specify --ticket", sessionID)
+	return nil, fmt.Errorf("no active ticket found for session %q — use `st pick` first or specify --ticket", sessionID)
 }

@@ -8,8 +8,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "sb",
-	Short:         "smoovbrain — AI agent workflow and ticketing system",
+	Use:           "st",
+	Short:         "smoovtask — AI agent workflow and ticketing system",
 	Long:          `An opinionated workflow/ticketing system for Claude Code agents. Enforces process, captures everything in an Obsidian vault, and provides full visibility into agent work.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,

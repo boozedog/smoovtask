@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestHold_HappyPath(t *testing.T) {
@@ -71,7 +71,7 @@ func TestHold_TicketNotFound(t *testing.T) {
 	env := newTestEnv(t)
 	_ = env
 
-	_, err := env.runCmd(t, "hold", "sb_zzzzzz", "missing")
+	_, err := env.runCmd(t, "hold", "st_zzzzzz", "missing")
 	if err == nil {
 		t.Fatal("expected error for missing ticket")
 	}

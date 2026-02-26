@@ -1,9 +1,9 @@
-bin := "sb"
+bin := "st"
 
 # Build the binary and install to PATH
 build:
-    go build -o {{bin}} ./cmd/sb
-    go install ./cmd/sb
+    go build -o {{bin}} ./cmd/st
+    go install ./cmd/st
 
 # Run all tests (verbose)
 test:

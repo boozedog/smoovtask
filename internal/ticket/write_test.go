@@ -9,7 +9,7 @@ import (
 func TestMarshal(t *testing.T) {
 	created := time.Date(2026, 2, 25, 10, 0, 0, 0, time.UTC)
 	tk := &Ticket{
-		ID:        "sb_a7Kx2m",
+		ID:        "st_a7Kx2m",
 		Title:     "Add rate limiting",
 		Project:   "api-server",
 		Status:    StatusOpen,
@@ -32,7 +32,7 @@ func TestMarshal(t *testing.T) {
 		t.Error("missing opening frontmatter delimiter")
 	}
 
-	if !strings.Contains(content, "id: sb_a7Kx2m") {
+	if !strings.Contains(content, "id: st_a7Kx2m") {
 		t.Error("missing ID in frontmatter")
 	}
 	if !strings.Contains(content, "title: Add rate limiting") {
@@ -52,7 +52,7 @@ func TestMarshal(t *testing.T) {
 func TestMarshalRoundtrip(t *testing.T) {
 	created := time.Date(2026, 2, 25, 10, 0, 0, 0, time.UTC)
 	original := &Ticket{
-		ID:        "sb_test01",
+		ID:        "st_test01",
 		Title:     "Test ticket",
 		Project:   "test-project",
 		Status:    StatusOpen,
@@ -93,7 +93,7 @@ func TestMarshalRoundtrip(t *testing.T) {
 
 func TestMarshalNilSlices(t *testing.T) {
 	tk := &Ticket{
-		ID:       "sb_test02",
+		ID:       "st_test02",
 		Title:    "Nil slices",
 		Project:  "test",
 		Status:   StatusOpen,
@@ -151,12 +151,12 @@ func TestAppendSectionNoContent(t *testing.T) {
 	tk := &Ticket{Body: ""}
 	ts := time.Date(2026, 2, 25, 10, 0, 0, 0, time.UTC)
 
-	AppendSection(tk, "Assigned", "sb", "", "", nil, ts)
+	AppendSection(tk, "Assigned", "st", "", "", nil, ts)
 
 	if !strings.Contains(tk.Body, "## Assigned") {
 		t.Error("missing section heading")
 	}
-	if !strings.Contains(tk.Body, "**actor:** sb") {
+	if !strings.Contains(tk.Body, "**actor:** st") {
 		t.Error("missing actor line")
 	}
 }

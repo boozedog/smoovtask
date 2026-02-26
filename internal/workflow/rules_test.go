@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestRequiresAssignee(t *testing.T) {
@@ -39,18 +39,18 @@ func TestCanReview(t *testing.T) {
 	_ = el.Append(event.Event{
 		TS:      ts,
 		Event:   event.StatusInProgress,
-		Ticket:  "sb_test01",
+		Ticket:  "st_test01",
 		Session: "sess-1",
 	})
 	_ = el.Append(event.Event{
 		TS:      ts.Add(time.Hour),
 		Event:   event.StatusReview,
-		Ticket:  "sb_test01",
+		Ticket:  "st_test01",
 		Session: "sess-1",
 	})
 
 	// sess-1 should NOT be able to review (touched it)
-	ok, err := CanReview(dir, "sb_test01", "sess-1")
+	ok, err := CanReview(dir, "st_test01", "sess-1")
 	if err != nil {
 		t.Fatalf("CanReview: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestCanReview(t *testing.T) {
 	}
 
 	// sess-2 should be able to review (never touched it)
-	ok, err = CanReview(dir, "sb_test01", "sess-2")
+	ok, err = CanReview(dir, "st_test01", "sess-2")
 	if err != nil {
 		t.Fatalf("CanReview: %v", err)
 	}

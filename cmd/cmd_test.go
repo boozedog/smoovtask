@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // testEnv sets up a temp config, tickets dir, and events dir.
@@ -229,7 +229,7 @@ func TestOverride_TicketNotFound(t *testing.T) {
 	env := newTestEnv(t)
 	_ = env
 
-	_, err := env.runCmd(t, "override", "sb_zzzzzz", "done")
+	_, err := env.runCmd(t, "override", "st_zzzzzz", "done")
 	if err == nil {
 		t.Fatal("expected error for missing ticket")
 	}

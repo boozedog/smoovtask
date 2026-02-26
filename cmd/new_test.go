@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boozedog/smoovbrain/internal/config"
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // newTestEnvResolved wraps newTestEnv and fixes the macOS /var → /private/var
@@ -67,8 +67,8 @@ func TestNew_HappyPath(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(out, "Created sb_") {
-		t.Errorf("output = %q, want substring %q", out, "Created sb_")
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
 	}
 	if !strings.Contains(out, "my first ticket") {
 		t.Errorf("output = %q, want title in output", out)
@@ -117,8 +117,8 @@ func TestNew_PriorityFlag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "Created sb_") {
-		t.Errorf("output = %q, want substring %q", out, "Created sb_")
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
 	}
 
 	tickets, err := env.Store.List(ticket.ListFilter{Project: "testproject"})
@@ -243,7 +243,7 @@ func TestNew_DependsOnMissingDep(t *testing.T) {
 
 	// Depend on a ticket ID that doesn't exist — CheckDependencies treats
 	// missing deps as unresolved, so the new ticket should auto-block.
-	out, err := env.runCmd(t, "new", "--depends-on", "sb_zzzzzz", "orphan dep ticket")
+	out, err := env.runCmd(t, "new", "--depends-on", "st_zzzzzz", "orphan dep ticket")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/boozedog/smoovbrain/cmd"
+import "github.com/boozedog/smoovtask/cmd"
 
 func main() {
 	cmd.Execute()

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // RequiresAssignee returns true if the target status requires a ticket assignee.
