@@ -4,15 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // Events handles the SSE endpoint for streaming events to the browser.
 func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "streaming not supported", http.StatusInternalServerError)
-		return
-	}
+	rc := http.NewResponseController(w)
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -23,14 +20,29 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
 	defer h.broker.Unsubscribe(ch)
 
 	// Send initial keepalive.
-	_, _ = fmt.Fprintf(w, ": keepalive\n\n")
-	flusher.Flush()
+	if _, err := fmt.Fprintf(w, ": keepalive\n\n"); err != nil {
+		return
+	}
+	if err := rc.Flush(); err != nil {
+		return
+	}
+
+	// Heartbeat detects stale connections when no events are flowing.
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-ticker.C:
+			if _, err := fmt.Fprintf(w, ": keepalive\n\n"); err != nil {
+				return
+			}
+			if err := rc.Flush(); err != nil {
+				return
+			}
 		case ev, ok := <-ch:
 			if !ok {
 				return
@@ -39,9 +51,12 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-			// Send as a "refresh" event that htmx SSE extension listens for.
-			_, _ = fmt.Fprintf(w, "event: refresh\ndata: %s\n\n", data)
-			flusher.Flush()
+			if _, err := fmt.Fprintf(w, "event: refresh\ndata: %s\n\n", data); err != nil {
+				return
+			}
+			if err := rc.Flush(); err != nil {
+				return
+			}
 		}
 	}
 }

@@ -15,76 +15,96 @@ type ListData struct {
 type ListFilter struct {
 	Project string
 	Status  string
+	Sort    string
+	Dir     string
 }
 
 templ ListPage(data ListData) {
 	@Layout("List", "/list") {
-		<div
-			hx-ext="sse"
-			sse-connect="/events"
-			sse-swap="refresh"
-			hx-get={ partialListURL(data.Filter) }
-			hx-trigger="sse:refresh"
-			hx-target="#list-content"
-			hx-swap="innerHTML"
-		>
-			<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
-				<select
-					name="project"
-					class="uk-select uk-form-small"
-					style="max-width: 200px;"
-					hx-get="/partials/list"
-					hx-target="#list-content"
-					hx-swap="innerHTML"
-					hx-include="[name='status']"
-				>
-					<option value="">All Projects</option>
-					for _, p := range data.Projects {
-						<option
-							value={ p }
-							if data.Filter.Project == p {
-								selected
-							}
-						>
-							{ p }
-						</option>
-					}
-				</select>
-				<select
-					name="status"
-					class="uk-select uk-form-small"
-					style="max-width: 200px;"
-					hx-get="/partials/list"
-					hx-target="#list-content"
-					hx-swap="innerHTML"
-					hx-include="[name='project']"
-				>
-					<option value="">All Statuses</option>
-					<option value="BACKLOG" if data.Filter.Status == "BACKLOG" { selected }>BACKLOG</option>
-					<option value="OPEN" if data.Filter.Status == "OPEN" { selected }>OPEN</option>
-					<option value="IN-PROGRESS" if data.Filter.Status == "IN-PROGRESS" { selected }>IN-PROGRESS</option>
-					<option value="REVIEW" if data.Filter.Status == "REVIEW" { selected }>REVIEW</option>
-					<option value="REWORK" if data.Filter.Status == "REWORK" { selected }>REWORK</option>
-					<option value="BLOCKED" if data.Filter.Status == "BLOCKED" { selected }>BLOCKED</option>
-					<option value="DONE" if data.Filter.Status == "DONE" { selected }>DONE</option>
-				</select>
-			</div>
-			<div id="list-content">
-				@ListContent(data)
-			</div>
-		</div>
+		@ListPartial(data)
 	}
 }
 
-func partialListURL(f ListFilter) string {
-	url := "/partials/list?"
+templ ListPartial(data ListData) {
+	<div
+		hx-get="/partials/list"
+		hx-trigger="sse:refresh"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+			<select
+				name="project"
+				class="uk-select uk-form-small"
+				style="max-width: 200px;"
+				hx-get="/partials/list-content"
+				hx-target="#list-content"
+				hx-swap="innerHTML"
+				hx-include="[name='status'],[name='sort'],[name='dir']"
+			>
+				<option value="">All Projects</option>
+				for _, p := range data.Projects {
+					<option
+						value={ p }
+						if data.Filter.Project == p {
+							selected
+						}
+					>
+						{ p }
+					</option>
+				}
+			</select>
+			<select
+				name="status"
+				class="uk-select uk-form-small"
+				style="max-width: 200px;"
+				hx-get="/partials/list-content"
+				hx-target="#list-content"
+				hx-swap="innerHTML"
+				hx-include="[name='project'],[name='sort'],[name='dir']"
+			>
+				<option value="">All Statuses</option>
+				<option value="BACKLOG" if data.Filter.Status == "BACKLOG" { selected }>BACKLOG</option>
+				<option value="OPEN" if data.Filter.Status == "OPEN" { selected }>OPEN</option>
+				<option value="IN-PROGRESS" if data.Filter.Status == "IN-PROGRESS" { selected }>IN-PROGRESS</option>
+				<option value="REVIEW" if data.Filter.Status == "REVIEW" { selected }>REVIEW</option>
+				<option value="REWORK" if data.Filter.Status == "REWORK" { selected }>REWORK</option>
+				<option value="BLOCKED" if data.Filter.Status == "BLOCKED" { selected }>BLOCKED</option>
+				<option value="DONE" if data.Filter.Status == "DONE" { selected }>DONE</option>
+			</select>
+			<input type="hidden" name="sort" value={ data.Filter.Sort }/>
+			<input type="hidden" name="dir" value={ data.Filter.Dir }/>
+		</div>
+		<div id="list-content">
+			@ListContent(data)
+		</div>
+	</div>
+}
+
+func sortHeaderURL(f ListFilter, field string) string {
+	dir := "asc"
+	if f.Sort == field && f.Dir == "asc" {
+		dir = "desc"
+	}
+	url := "/partials/list-content?"
 	if f.Project != "" {
 		url += "project=" + f.Project + "&"
 	}
 	if f.Status != "" {
 		url += "status=" + f.Status + "&"
 	}
+	url += "sort=" + field + "&dir=" + dir
 	return url
+}
+
+func sortIndicator(f ListFilter, field string) string {
+	if f.Sort != field {
+		return ""
+	}
+	if f.Dir == "desc" {
+		return " ↓"
+	}
+	return " ↑"
 }
 
 templ ListContent(data ListData) {
@@ -96,19 +116,43 @@ templ ListContent(data ListData) {
 		<table class="uk-table uk-table-small uk-table-divider uk-table-hover">
 			<thead>
 				<tr>
-					<th style="width: 100px;">ID</th>
-					<th>Title</th>
-					<th style="width: 120px;">Status</th>
-					<th style="width: 60px;">Priority</th>
-					<th style="width: 120px;">Project</th>
-					<th style="width: 160px;">Updated</th>
+					<th style="width: 100px;">
+						<a href="#" hx-get={ sortHeaderURL(data.Filter, "id") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
+							ID{ sortIndicator(data.Filter, "id") }
+						</a>
+					</th>
+					<th>
+						<a href="#" hx-get={ sortHeaderURL(data.Filter, "title") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
+							Title{ sortIndicator(data.Filter, "title") }
+						</a>
+					</th>
+					<th style="width: 120px;">
+						<a href="#" hx-get={ sortHeaderURL(data.Filter, "status") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
+							Status{ sortIndicator(data.Filter, "status") }
+						</a>
+					</th>
+					<th style="width: 60px;">
+						<a href="#" hx-get={ sortHeaderURL(data.Filter, "priority") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
+							Priority{ sortIndicator(data.Filter, "priority") }
+						</a>
+					</th>
+					<th style="width: 120px;">
+						<a href="#" hx-get={ sortHeaderURL(data.Filter, "project") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
+							Project{ sortIndicator(data.Filter, "project") }
+						</a>
+					</th>
+					<th style="width: 160px;">
+						<a href="#" hx-get={ sortHeaderURL(data.Filter, "updated") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
+							Updated{ sortIndicator(data.Filter, "updated") }
+						</a>
+					</th>
 				</tr>
 			</thead>
 			<tbody>
 				for _, tk := range data.Tickets {
-					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) }>
+					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s", tk.ID) }>
 						<td><code>{ tk.ID }</code></td>
-						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
+						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#content" hx-push-url={ fmt.Sprintf("/ticket/%s", tk.ID) } style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
 						<td>
 							@StatusBadge(tk.Status)
 						</td>

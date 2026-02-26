@@ -75,8 +75,10 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	// Partials for htmx.
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)
 	mux.HandleFunc("GET /partials/list", h.PartialList)
+	mux.HandleFunc("GET /partials/list-content", h.PartialListContent)
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
+	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
 
 	s.srv = &http.Server{
 		Addr: fmt.Sprintf(":%d", s.port),
@@ -84,9 +86,12 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 			middleware.CORS(),
 			middleware.RateLimit(ctx, middleware.DefaultRateLimitConfig()),
 		),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		ReadTimeout: 5 * time.Second,
+		// WriteTimeout is deliberately unset (0 = no timeout) because SSE
+		// connections are long-lived. A per-handler write timeout would
+		// kill the /events stream and trigger aggressive browser reconnects
+		// that exhaust the HTTP/1.1 connection pool.
+		IdleTimeout: 120 * time.Second,
 	}
 
 	// Graceful shutdown on context cancellation.

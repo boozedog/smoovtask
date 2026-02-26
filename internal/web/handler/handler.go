@@ -42,6 +42,21 @@ func groupByStatus(tickets []*ticket.Ticket) map[ticket.Status][]*ticket.Ticket 
 	return groups
 }
 
+// statusWeight returns a sort weight for ticket statuses:
+// active states first, then backlog, then done.
+func statusWeight(s ticket.Status) int {
+	switch s {
+	case ticket.StatusOpen, ticket.StatusInProgress, ticket.StatusReview, ticket.StatusRework, ticket.StatusBlocked:
+		return 0
+	case ticket.StatusBacklog:
+		return 1
+	case ticket.StatusDone:
+		return 2
+	default:
+		return 1
+	}
+}
+
 // recentEvents queries the most recent events, limited to count.
 func recentEvents(eventsDir string, q event.Query, limit int) []event.Event {
 	events, err := event.QueryEvents(eventsDir, q)

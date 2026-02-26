@@ -1,13 +1,12 @@
 package sse
 
 import (
-	"bufio"
-	"encoding/json"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/fsnotify/fsnotify"
@@ -76,6 +75,12 @@ func (w *Watcher) snapshotOffsets() {
 }
 
 func (w *Watcher) loop() {
+	// Debounce: collect file change notifications and flush at most once per second.
+	const debounce = time.Second
+	timer := time.NewTimer(debounce)
+	timer.Stop()
+	dirty := make(map[string]struct{})
+
 	for {
 		select {
 		case ev, ok := <-w.watcher.Events:
@@ -86,8 +91,18 @@ func (w *Watcher) loop() {
 				continue
 			}
 			if ev.Has(fsnotify.Write) || ev.Has(fsnotify.Create) {
-				w.readNewLines(ev.Name)
+				if len(dirty) == 0 {
+					timer.Reset(debounce)
+				}
+				dirty[ev.Name] = struct{}{}
 			}
+		case <-timer.C:
+			for path := range dirty {
+				w.consumeNewLines(path)
+			}
+			clear(dirty)
+			// Send a single refresh signal regardless of how many events arrived.
+			w.broker.Broadcast(event.Event{Event: "refresh"})
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
 				return
@@ -97,45 +112,14 @@ func (w *Watcher) loop() {
 	}
 }
 
-// readNewLines reads any new lines appended to the file since last read.
-func (w *Watcher) readNewLines(path string) {
+// consumeNewLines advances the offset past any new lines without broadcasting individually.
+func (w *Watcher) consumeNewLines(path string) {
 	w.mu.Lock()
-	offset := w.offsets[path]
-	w.mu.Unlock()
+	defer w.mu.Unlock()
 
-	f, err := os.Open(path)
+	info, err := os.Stat(path)
 	if err != nil {
-		slog.Error("open jsonl", "path", path, "err", err)
 		return
 	}
-	defer f.Close()
-
-	if offset > 0 {
-		if _, err := f.Seek(offset, 0); err != nil {
-			slog.Error("seek jsonl", "path", path, "err", err)
-			return
-		}
-	}
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-		var e event.Event
-		if err := json.Unmarshal(line, &e); err != nil {
-			slog.Warn("malformed jsonl line", "err", err)
-			continue
-		}
-		w.broker.Broadcast(e)
-	}
-
-	// Update offset to current position.
-	pos, err := f.Seek(0, 1) // current position
-	if err == nil {
-		w.mu.Lock()
-		w.offsets[path] = pos
-		w.mu.Unlock()
-	}
+	w.offsets[path] = info.Size()
 }

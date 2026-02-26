@@ -18,13 +18,37 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	_ = templates.ListPage(data).Render(r.Context(), w)
 }
 
-// PartialList renders just the list content for htmx swaps.
+// PartialList renders the list partial (with filters + SSE self-refresh wrapper) for htmx swaps.
 func (h *Handler) PartialList(w http.ResponseWriter, r *http.Request) {
 	data, err := h.buildListData(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	_ = templates.ListPartial(data).Render(r.Context(), w)
+}
+
+// PartialListContent renders just the list table content for filter/sort swaps.
+func (h *Handler) PartialListContent(w http.ResponseWriter, r *http.Request) {
+	data, err := h.buildListData(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Push canonical /list URL so filters are bookmarkable.
+	pushURL := "/list"
+	params := r.URL.Query()
+	for k := range params {
+		if params.Get(k) == "" {
+			params.Del(k)
+		}
+	}
+	if q := params.Encode(); q != "" {
+		pushURL += "?" + q
+	}
+	w.Header().Set("HX-Push-Url", pushURL)
+
 	_ = templates.ListContent(data).Render(r.Context(), w)
 }
 
@@ -42,6 +66,74 @@ func (h *Handler) buildListData(r *http.Request) (templates.ListData, error) {
 		return templates.ListData{}, err
 	}
 
+	sortField := r.URL.Query().Get("sort")
+	sortDir := r.URL.Query().Get("dir")
+	if sortDir == "" {
+		sortDir = "asc"
+	}
+
+	// Apply sort based on field.
+	switch sortField {
+	case "id":
+		sort.Slice(tickets, func(i, j int) bool {
+			if sortDir == "desc" {
+				return tickets[i].ID > tickets[j].ID
+			}
+			return tickets[i].ID < tickets[j].ID
+		})
+	case "title":
+		sort.Slice(tickets, func(i, j int) bool {
+			if sortDir == "desc" {
+				return tickets[i].Title > tickets[j].Title
+			}
+			return tickets[i].Title < tickets[j].Title
+		})
+	case "status":
+		sort.Slice(tickets, func(i, j int) bool {
+			wi, wj := statusWeight(tickets[i].Status), statusWeight(tickets[j].Status)
+			if wi != wj {
+				if sortDir == "desc" {
+					return wi > wj
+				}
+				return wi < wj
+			}
+			if sortDir == "desc" {
+				return tickets[i].Updated.Before(tickets[j].Updated)
+			}
+			return tickets[i].Updated.After(tickets[j].Updated)
+		})
+	case "priority":
+		sort.Slice(tickets, func(i, j int) bool {
+			if sortDir == "desc" {
+				return tickets[i].Priority > tickets[j].Priority
+			}
+			return tickets[i].Priority < tickets[j].Priority
+		})
+	case "project":
+		sort.Slice(tickets, func(i, j int) bool {
+			if sortDir == "desc" {
+				return tickets[i].Project > tickets[j].Project
+			}
+			return tickets[i].Project < tickets[j].Project
+		})
+	case "updated":
+		sort.Slice(tickets, func(i, j int) bool {
+			if sortDir == "desc" {
+				return tickets[i].Updated.Before(tickets[j].Updated)
+			}
+			return tickets[i].Updated.After(tickets[j].Updated)
+		})
+	default:
+		// Default sort: active tickets first, then by updated desc.
+		sort.Slice(tickets, func(i, j int) bool {
+			wi, wj := statusWeight(tickets[i].Status), statusWeight(tickets[j].Status)
+			if wi != wj {
+				return wi < wj
+			}
+			return tickets[i].Updated.After(tickets[j].Updated)
+		})
+	}
+
 	// Collect unique project names for the filter dropdown.
 	allTickets, _ := h.store.List(ticket.ListFilter{})
 	projects := uniqueProjects(allTickets)
@@ -52,6 +144,8 @@ func (h *Handler) buildListData(r *http.Request) (templates.ListData, error) {
 		Filter: templates.ListFilter{
 			Project: filterProject,
 			Status:  filterStatus,
+			Sort:    sortField,
+			Dir:     sortDir,
 		},
 	}, nil
 }

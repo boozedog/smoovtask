@@ -19,8 +19,18 @@ func (h *Handler) Activity(w http.ResponseWriter, r *http.Request) {
 	_ = templates.ActivityPage(data).Render(r.Context(), w)
 }
 
-// PartialActivity renders just the activity content for htmx swaps.
+// PartialActivity renders the activity partial (with filters + SSE self-refresh wrapper) for htmx swaps.
 func (h *Handler) PartialActivity(w http.ResponseWriter, r *http.Request) {
+	data, err := h.buildActivityData(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_ = templates.ActivityPartial(data).Render(r.Context(), w)
+}
+
+// PartialActivityContent renders just the activity event list for filter swaps.
+func (h *Handler) PartialActivityContent(w http.ResponseWriter, r *http.Request) {
 	data, err := h.buildActivityData(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -29,7 +39,13 @@ func (h *Handler) PartialActivity(w http.ResponseWriter, r *http.Request) {
 
 	// Push canonical /activity URL so filters are bookmarkable.
 	pushURL := "/activity"
-	if q := r.URL.Query().Encode(); q != "" {
+	params := r.URL.Query()
+	for k := range params {
+		if params.Get(k) == "" {
+			params.Del(k)
+		}
+	}
+	if q := params.Encode(); q != "" {
 		pushURL += "?" + q
 	}
 	w.Header().Set("HX-Push-Url", pushURL)
@@ -52,6 +68,15 @@ func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, er
 		var filtered []event.Event
 		for _, e := range events {
 			if strings.HasPrefix(e.Event, filterEventType+".") {
+				filtered = append(filtered, e)
+			}
+		}
+		events = filtered
+	} else {
+		// By default, exclude hook events.
+		var filtered []event.Event
+		for _, e := range events {
+			if !strings.HasPrefix(e.Event, "hook.") {
 				filtered = append(filtered, e)
 			}
 		}

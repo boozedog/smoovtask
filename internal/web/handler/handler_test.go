@@ -115,6 +115,9 @@ func TestPartialBoard(t *testing.T) {
 	if !strings.Contains(body, "st-board") {
 		t.Error("expected partial to contain board CSS class")
 	}
+	if !strings.Contains(body, "sse:refresh") {
+		t.Error("expected partial to contain SSE self-refresh trigger")
+	}
 	// Partial should NOT include the full layout.
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("partial should not include full HTML layout")
@@ -146,10 +149,10 @@ func TestList(t *testing.T) {
 func TestListFilterByStatus(t *testing.T) {
 	h, _, _ := testSetup(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/partials/list?status=OPEN", nil)
+	req := httptest.NewRequest(http.MethodGet, "/partials/list-content?status=OPEN", nil)
 	w := httptest.NewRecorder()
 
-	h.PartialList(w, req)
+	h.PartialListContent(w, req)
 
 	body := w.Body.String()
 	if !strings.Contains(body, "st_abc123") {
@@ -265,19 +268,22 @@ func TestPartialActivity(t *testing.T) {
 	if !strings.Contains(body, event.TicketCreated) {
 		t.Error("expected partial activity to contain ticket.created event")
 	}
+	if !strings.Contains(body, "sse:refresh") {
+		t.Error("expected partial to contain SSE self-refresh trigger")
+	}
 	// Partial should NOT include the full layout.
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("partial should not include full HTML layout")
 	}
 }
 
-func TestPartialActivityPushesURL(t *testing.T) {
+func TestPartialActivityContentPushesURL(t *testing.T) {
 	h, _, _ := testSetup(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/partials/activity?project=testproj&event_type=ticket", nil)
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity-content?project=testproj&event_type=ticket", nil)
 	w := httptest.NewRecorder()
 
-	h.PartialActivity(w, req)
+	h.PartialActivityContent(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusOK {
@@ -299,17 +305,34 @@ func TestPartialActivityPushesURL(t *testing.T) {
 	}
 }
 
-func TestPartialActivityPushesURLNoFilters(t *testing.T) {
+func TestPartialActivityContentPushesURLNoFilters(t *testing.T) {
 	h, _, _ := testSetup(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/partials/activity", nil)
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity-content", nil)
 	w := httptest.NewRecorder()
 
-	h.PartialActivity(w, req)
+	h.PartialActivityContent(w, req)
 
 	pushURL := w.Header().Get("HX-Push-Url")
 	if pushURL != "/activity" {
 		t.Errorf("expected push URL /activity with no filters, got %q", pushURL)
+	}
+}
+
+func TestPartialActivityContentStripsEmptyParams(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity-content?event_type=&project=testproj", nil)
+	w := httptest.NewRecorder()
+
+	h.PartialActivityContent(w, req)
+
+	pushURL := w.Header().Get("HX-Push-Url")
+	if strings.Contains(pushURL, "event_type=") {
+		t.Errorf("expected empty event_type param to be stripped, got %q", pushURL)
+	}
+	if !strings.Contains(pushURL, "project=testproj") {
+		t.Errorf("expected project=testproj to remain, got %q", pushURL)
 	}
 }
 
@@ -330,10 +353,10 @@ func TestActivityFilterByEventType(t *testing.T) {
 	}
 
 	// Filter for ticket events only — should include ticket.created but not hook.session_start.
-	req := httptest.NewRequest(http.MethodGet, "/partials/activity?event_type=ticket", nil)
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity-content?event_type=ticket", nil)
 	w := httptest.NewRecorder()
 
-	h.PartialActivity(w, req)
+	h.PartialActivityContent(w, req)
 
 	body := w.Body.String()
 	if !strings.Contains(body, "ticket.created") {
@@ -430,6 +453,203 @@ func TestSSEBrokerUnsubscribe(t *testing.T) {
 	}
 }
 
+func TestTicketTimestampFormatting(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+
+	// Create a ticket with ISO timestamps in the body.
+	store := ticket.NewStore(ticketsDir)
+	tk := &ticket.Ticket{
+		ID:       "st_ts0001",
+		Title:    "Timestamp test",
+		Project:  "testproj",
+		Status:   ticket.StatusOpen,
+		Priority: ticket.PriorityP3,
+		Created:  time.Date(2026, 2, 26, 10, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 10, 0, 0, 0, time.UTC),
+		Body:     "Created at 2026-02-26T02:46:49Z and updated at 2026-02-26T10:30:00+00:00.",
+	}
+	if err := store.Create(tk); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/ticket/st_ts0001", nil)
+	req.SetPathValue("id", "st_ts0001")
+	w := httptest.NewRecorder()
+
+	h.Ticket(w, req)
+
+	body := w.Body.String()
+	// ISO timestamps should be reformatted.
+	if strings.Contains(body, "2026-02-26T02:46:49Z") {
+		t.Error("expected ISO timestamp to be reformatted")
+	}
+	if !strings.Contains(body, "2026-02-26 02:46") {
+		t.Error("expected reformatted timestamp 2026-02-26 02:46")
+	}
+}
+
+func TestListSortOrder(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+
+	// Add a DONE ticket.
+	store := ticket.NewStore(ticketsDir)
+	tk := &ticket.Ticket{
+		ID:       "st_done01",
+		Title:    "Done ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusDone,
+		Priority: ticket.PriorityP3,
+		Created:  time.Date(2026, 2, 26, 9, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 12, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(tk); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/list-content", nil)
+	w := httptest.NewRecorder()
+	h.PartialListContent(w, req)
+
+	body := w.Body.String()
+	// Active tickets (OPEN, IN-PROGRESS) should appear before DONE.
+	openIdx := strings.Index(body, "st_abc123")
+	doneIdx := strings.Index(body, "st_done01")
+	if openIdx == -1 || doneIdx == -1 {
+		t.Fatal("expected both tickets in output")
+	}
+	if openIdx > doneIdx {
+		t.Error("expected active tickets before DONE tickets")
+	}
+}
+
+func TestListSortByPriority(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/list-content?sort=priority&dir=asc", nil)
+	w := httptest.NewRecorder()
+	h.PartialListContent(w, req)
+
+	body := w.Body.String()
+	// P1 (st_def456) should appear before P3 (st_abc123) when sorted by priority asc.
+	p1Idx := strings.Index(body, "st_def456")
+	p3Idx := strings.Index(body, "st_abc123")
+	if p1Idx == -1 || p3Idx == -1 {
+		t.Fatal("expected both tickets in output")
+	}
+	if p1Idx > p3Idx {
+		t.Error("expected P1 ticket before P3 ticket when sorted by priority asc")
+	}
+}
+
+func TestPartialListContentPushesURL(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/list-content?project=testproj&status=OPEN", nil)
+	w := httptest.NewRecorder()
+	h.PartialListContent(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	pushURL := w.Header().Get("HX-Push-Url")
+	if pushURL == "" {
+		t.Fatal("expected HX-Push-Url header to be set")
+	}
+	if !strings.Contains(pushURL, "/list?") {
+		t.Errorf("expected push URL to start with /list?, got %q", pushURL)
+	}
+	if !strings.Contains(pushURL, "project=testproj") {
+		t.Errorf("expected push URL to contain project=testproj, got %q", pushURL)
+	}
+}
+
+func TestPartialListContentPushesURLNoFilters(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/list-content", nil)
+	w := httptest.NewRecorder()
+	h.PartialListContent(w, req)
+
+	pushURL := w.Header().Get("HX-Push-Url")
+	if pushURL != "/list" {
+		t.Errorf("expected push URL /list with no filters, got %q", pushURL)
+	}
+}
+
+func TestPartialListContentStripsEmptyParams(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/list-content?status=&project=testproj", nil)
+	w := httptest.NewRecorder()
+	h.PartialListContent(w, req)
+
+	pushURL := w.Header().Get("HX-Push-Url")
+	if strings.Contains(pushURL, "status=") {
+		t.Errorf("expected empty status param to be stripped, got %q", pushURL)
+	}
+	if !strings.Contains(pushURL, "project=testproj") {
+		t.Errorf("expected project=testproj to remain, got %q", pushURL)
+	}
+}
+
+func TestActivityDefaultExcludesHooks(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	// Add a hook event.
+	evLog := event.NewEventLog(eventsDir)
+	hookEv := event.Event{
+		TS:      time.Now().UTC(),
+		Event:   "hook.session_start",
+		Project: "testproj",
+		Actor:   "agent",
+	}
+	if err := evLog.Append(hookEv); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity-content", nil)
+	w := httptest.NewRecorder()
+	h.PartialActivityContent(w, req)
+
+	body := w.Body.String()
+	if strings.Contains(body, "hook.session_start") {
+		t.Error("expected hook events to be hidden by default")
+	}
+	if !strings.Contains(body, "ticket.created") {
+		t.Error("expected ticket events to still be visible")
+	}
+}
+
+func TestActivityExplicitHookFilter(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	// Add a hook event.
+	evLog := event.NewEventLog(eventsDir)
+	hookEv := event.Event{
+		TS:      time.Now().UTC(),
+		Event:   "hook.session_start",
+		Project: "testproj",
+		Actor:   "agent",
+	}
+	if err := evLog.Append(hookEv); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/activity-content?event_type=hook", nil)
+	w := httptest.NewRecorder()
+	h.PartialActivityContent(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "hook.session_start") {
+		t.Error("expected hook events to be visible when explicitly filtered")
+	}
+	if strings.Contains(body, "ticket.created") {
+		t.Error("expected ticket events to be hidden when filtering for hooks")
+	}
+}
+
 func TestWatcher(t *testing.T) {
 	eventsDir := t.TempDir()
 	broker := sse.NewBroker()
@@ -457,13 +677,13 @@ func TestWatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The watcher should detect the new file and broadcast the event.
+	// The watcher debounces and broadcasts a single "refresh" event.
 	select {
 	case received := <-ch:
-		if received.Ticket != "st_test01" {
-			t.Errorf("expected ticket st_test01, got %s", received.Ticket)
+		if received.Event != "refresh" {
+			t.Errorf("expected refresh event, got %s", received.Event)
 		}
-	case <-time.After(2 * time.Second):
+	case <-time.After(3 * time.Second):
 		t.Fatal("timeout waiting for watcher to broadcast event")
 	}
 }

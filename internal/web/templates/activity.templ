@@ -1,8 +1,33 @@
 package templates
 
 import (
+	"fmt"
+
 	"github.com/boozedog/smoovtask/internal/event"
 )
+
+func eventContext(ev event.Event) string {
+	if ev.Data == nil {
+		return ""
+	}
+	var ctx string
+	switch {
+	case ev.Data["message"] != nil:
+		ctx = fmt.Sprintf("%v", ev.Data["message"])
+	case ev.Data["from"] != nil:
+		ctx = fmt.Sprintf("%v", ev.Data["from"])
+	case ev.Data["tool"] != nil:
+		ctx = fmt.Sprintf("%v", ev.Data["tool"])
+	case ev.Data["title"] != nil:
+		ctx = fmt.Sprintf("%v", ev.Data["title"])
+	default:
+		return ""
+	}
+	if len(ctx) > 80 {
+		ctx = ctx[:80] + "…"
+	}
+	return ctx
+}
 
 type ActivityData struct {
 	Events   []event.Event
@@ -17,58 +42,59 @@ type ActivityFilter struct {
 
 templ ActivityPage(data ActivityData) {
 	@Layout("Activity", "/activity") {
-		<div
-			hx-ext="sse"
-			sse-connect="/events"
-			sse-swap="refresh"
-			hx-get="/partials/activity"
-			hx-trigger="sse:refresh"
-			hx-target="#activity-content"
-			hx-swap="innerHTML"
-			hx-include="[name='project'],[name='event_type']"
-		>
-			<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
-				<select
-					name="project"
-					class="uk-select uk-form-small"
-					style="max-width: 200px;"
-					hx-get="/partials/activity"
-					hx-target="#activity-content"
-					hx-swap="innerHTML"
-					hx-include="[name='event_type']"
-				>
-					<option value="">All Projects</option>
-					for _, p := range data.Projects {
-						<option
-							value={ p }
-							if data.Filter.Project == p {
-								selected
-							}
-						>
-							{ p }
-						</option>
-					}
-				</select>
-				<select
-					name="event_type"
-					class="uk-select uk-form-small"
-					style="max-width: 200px;"
-					hx-get="/partials/activity"
-					hx-target="#activity-content"
-					hx-swap="innerHTML"
-					hx-include="[name='project']"
-				>
-					<option value="">All Events</option>
-					<option value="ticket" if data.Filter.EventType == "ticket" { selected }>Ticket Events</option>
-					<option value="status" if data.Filter.EventType == "status" { selected }>Status Changes</option>
-					<option value="hook" if data.Filter.EventType == "hook" { selected }>Hook Events</option>
-				</select>
-			</div>
-			<div id="activity-content">
-				@ActivityContent(data)
-			</div>
-		</div>
+		@ActivityPartial(data)
 	}
+}
+
+templ ActivityPartial(data ActivityData) {
+	<div
+		hx-get="/partials/activity"
+		hx-trigger="sse:refresh"
+		hx-target="this"
+		hx-swap="outerHTML"
+		hx-include="[name='project'],[name='event_type']"
+	>
+		<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+			<select
+				name="project"
+				class="uk-select uk-form-small"
+				style="max-width: 200px;"
+				hx-get="/partials/activity-content"
+				hx-target="#activity-content"
+				hx-swap="innerHTML"
+				hx-include="[name='event_type']"
+			>
+				<option value="">All Projects</option>
+				for _, p := range data.Projects {
+					<option
+						value={ p }
+						if data.Filter.Project == p {
+							selected
+						}
+					>
+						{ p }
+					</option>
+				}
+			</select>
+			<select
+				name="event_type"
+				class="uk-select uk-form-small"
+				style="max-width: 200px;"
+				hx-get="/partials/activity-content"
+				hx-target="#activity-content"
+				hx-swap="innerHTML"
+				hx-include="[name='project']"
+			>
+				<option value="">All Events</option>
+				<option value="ticket" if data.Filter.EventType == "ticket" { selected }>Ticket Events</option>
+				<option value="status" if data.Filter.EventType == "status" { selected }>Status Changes</option>
+				<option value="hook" if data.Filter.EventType == "hook" { selected }>Hook Events</option>
+			</select>
+		</div>
+		<div id="activity-content">
+			@ActivityContent(data)
+		</div>
+	</div>
 }
 
 templ ActivityContent(data ActivityData) {
@@ -87,7 +113,7 @@ templ ActivityContent(data ActivityData) {
 						{ ev.Event }
 					</span>
 					if ev.Ticket != "" {
-						<a href={ templ.SafeURL("/ticket/" + ev.Ticket) } style="font-size: 0.85rem;">
+						<a href={ templ.SafeURL("/ticket/" + ev.Ticket) } hx-get={ "/partials/ticket/" + ev.Ticket } hx-target="#content" hx-push-url={ "/ticket/" + ev.Ticket } style="font-size: 0.85rem;">
 							{ ev.Ticket }
 						</a>
 					}
@@ -95,6 +121,11 @@ templ ActivityContent(data ActivityData) {
 						<span style="opacity: 0.6; font-size: 0.8rem;">{ ev.Project }</span>
 					}
 					<span style="opacity: 0.6; font-size: 0.8rem;">{ ev.Actor }</span>
+					if eventContext(ev) != "" {
+						<span style="opacity: 0.5; font-size: 0.8rem; font-style: italic;">
+							— { eventContext(ev) }
+						</span>
+					}
 				</div>
 			}
 		</div>

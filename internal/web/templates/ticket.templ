@@ -11,25 +11,29 @@ type TicketData struct {
 
 templ TicketPage(data TicketData) {
 	@Layout(data.Ticket.Title, "/ticket") {
-		<div
-			hx-ext="sse"
-			sse-connect="/events"
-			sse-swap="refresh"
-			hx-get={ "/partials/ticket/" + data.Ticket.ID }
-			hx-trigger="sse:refresh"
-			hx-target="#ticket-content"
-			hx-swap="innerHTML"
-		>
-			<div id="ticket-content">
-				@TicketContent(data)
-			</div>
-		</div>
+		@TicketPartial(data)
 	}
 }
 
+templ TicketPartial(data TicketData) {
+	<div
+		hx-get={ "/partials/ticket/" + data.Ticket.ID }
+		hx-trigger="sse:refresh"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		@TicketContent(data)
+	</div>
+}
+
 templ TicketContent(data TicketData) {
-	<div style="display: grid; grid-template-columns: 1fr 280px; gap: 2rem;">
+	<div class="st-ticket-grid">
 		<div>
+			<nav style="margin-bottom: 0.75rem; font-size: 0.85rem;">
+				<a href="/" hx-get="/partials/board" hx-target="#content" hx-push-url="/" style="opacity: 0.6; color: inherit; text-decoration: none;">Board</a>
+				<span style="opacity: 0.4;"> / </span>
+				<span>{ data.Ticket.ID }</span>
+			</nav>
 			<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
 				{ data.Ticket.Title }
 			</h1>
@@ -89,7 +93,7 @@ templ TicketContent(data TicketData) {
 					<div class="st-sidebar-value">
 						for _, dep := range data.Ticket.DependsOn {
 							<div>
-								<a href={ templ.SafeURL("/ticket/" + dep) } style="font-size: 0.85rem;">{ dep }</a>
+								<a href={ templ.SafeURL("/ticket/" + dep) } hx-get={ "/partials/ticket/" + dep } hx-target="#content" hx-push-url={ "/ticket/" + dep } style="font-size: 0.85rem;">{ dep }</a>
 							</div>
 						}
 					</div>

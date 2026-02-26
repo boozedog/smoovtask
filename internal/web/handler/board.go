@@ -17,14 +17,14 @@ func (h *Handler) Board(w http.ResponseWriter, r *http.Request) {
 	_ = templates.BoardPage(data).Render(r.Context(), w)
 }
 
-// PartialBoard renders just the board content for htmx swaps.
+// PartialBoard renders the board partial (with SSE self-refresh wrapper) for htmx swaps.
 func (h *Handler) PartialBoard(w http.ResponseWriter, r *http.Request) {
 	data, err := h.buildBoardData()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	_ = templates.BoardContent(data).Render(r.Context(), w)
+	_ = templates.BoardPartial(data).Render(r.Context(), w)
 }
 
 func (h *Handler) buildBoardData() (templates.BoardData, error) {

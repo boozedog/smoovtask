@@ -83,6 +83,9 @@ func TestCORSPreflight(t *testing.T) {
 }
 
 func TestRateLimitAllows(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
 	cfg := RateLimitConfig{
 		Rate:       10,
 		Burst:      10,
@@ -91,7 +94,7 @@ func TestRateLimitAllows(t *testing.T) {
 		ExemptPath: "/events",
 	}
 
-	h := RateLimit(context.Background(), cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := RateLimit(ctx, cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -105,6 +108,9 @@ func TestRateLimitAllows(t *testing.T) {
 }
 
 func TestRateLimitRejects(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
 	cfg := RateLimitConfig{
 		Rate:       rate.Limit(1),
 		Burst:      1,
@@ -113,7 +119,7 @@ func TestRateLimitRejects(t *testing.T) {
 		ExemptPath: "/events",
 	}
 
-	h := RateLimit(context.Background(), cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := RateLimit(ctx, cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -133,6 +139,9 @@ func TestRateLimitRejects(t *testing.T) {
 }
 
 func TestRateLimitSSEExempt(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
 	cfg := RateLimitConfig{
 		Rate:       rate.Limit(1),
 		Burst:      1,
@@ -141,7 +150,7 @@ func TestRateLimitSSEExempt(t *testing.T) {
 		ExemptPath: "/events",
 	}
 
-	h := RateLimit(context.Background(), cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := RateLimit(ctx, cfg)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -177,18 +186,24 @@ func TestRateLimitCleanupStopsOnContextCancel(t *testing.T) {
 	before := runtime.NumGoroutine()
 	_ = RateLimit(ctx, cfg)
 
-	// Wait for the goroutine to start.
-	time.Sleep(10 * time.Millisecond)
-	afterStart := runtime.NumGoroutine()
-	if afterStart <= before {
-		t.Fatal("expected cleanup goroutine to be running")
+	// Poll until the cleanup goroutine is running.
+	deadline := time.Now().Add(time.Second)
+	for runtime.NumGoroutine() <= before {
+		if time.Now().After(deadline) {
+			t.Fatal("timed out waiting for cleanup goroutine to start")
+		}
+		runtime.Gosched()
 	}
 
 	cancel()
-	// Wait for the goroutine to exit.
-	time.Sleep(50 * time.Millisecond)
-	afterCancel := runtime.NumGoroutine()
-	if afterCancel > before {
-		t.Errorf("expected cleanup goroutine to stop after cancel: before=%d, after=%d", before, afterCancel)
+
+	// Poll until the cleanup goroutine exits.
+	deadline = time.Now().Add(time.Second)
+	for runtime.NumGoroutine() > before {
+		if time.Now().After(deadline) {
+			t.Errorf("timed out waiting for cleanup goroutine to stop: before=%d, now=%d", before, runtime.NumGoroutine())
+			break
+		}
+		runtime.Gosched()
 	}
 }

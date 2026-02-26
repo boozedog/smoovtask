@@ -15,41 +15,59 @@ type BoardColumn struct {
 	Tickets []*ticket.Ticket
 }
 
+func columnClasses(col BoardColumn) string {
+	base := "st-column"
+	if isDoneCollapsible(col) {
+		base += " st-column-collapsed"
+	}
+	return base
+}
+
+func isDoneCollapsible(col BoardColumn) bool {
+	return col.Status == ticket.StatusDone && len(col.Tickets) > 5
+}
+
 templ BoardPage(data BoardData) {
 	@Layout("Board", "/") {
-		<div
-			hx-ext="sse"
-			sse-connect="/events"
-			sse-swap="refresh"
-			hx-get="/partials/board"
-			hx-trigger="sse:refresh"
-			hx-target="#board"
-			hx-swap="innerHTML"
-		>
-			<div id="board">
-				@BoardContent(data)
-			</div>
-		</div>
+		@BoardPartial(data)
 	}
 }
 
+templ BoardPartial(data BoardData) {
+	<div
+		hx-get="/partials/board"
+		hx-trigger="sse:refresh"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		@BoardContent(data)
+	</div>
+}
+
 templ BoardContent(data BoardData) {
-	<div class="st-board">
-		for _, col := range data.Columns {
-			<div class="st-column">
-				<div class={ "st-column-header " + statusClass(col.Status) }>
-					{ string(col.Status) }
-					<span class="st-column-count">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
-				</div>
-				for _, tk := range col.Tickets {
-					@TicketCard(tk)
-				}
-				if len(col.Tickets) == 0 {
-					<div style="padding: 0.75rem; opacity: 0.4; font-size: 0.8rem; text-align: center;">
-						No tickets
+	<div class="st-board-wrapper">
+		<div class="st-board">
+			for _, col := range data.Columns {
+				<div class={ columnClasses(col) }>
+					<div class={ "st-column-header " + statusClass(col.Status) }>
+						{ string(col.Status) }
+						<span class="st-column-count">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
 					</div>
-				}
-			</div>
-		}
+					for _, tk := range col.Tickets {
+						@TicketCard(tk)
+					}
+					if len(col.Tickets) == 0 {
+						<div style="padding: 0.75rem; opacity: 0.4; font-size: 0.8rem; text-align: center;">
+							No tickets
+						</div>
+					}
+					if isDoneCollapsible(col) {
+						<button class="st-toggle-done" onclick="toggleDone(this)" data-count={ fmt.Sprintf("%d", len(col.Tickets)) }>
+							Show all ({ fmt.Sprintf("%d", len(col.Tickets)) })
+						</button>
+					}
+				</div>
+			}
+		</div>
 	</div>
 }
