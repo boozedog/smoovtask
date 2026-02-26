@@ -1,0 +1,164 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/boozedog/smoovbrain/internal/config"
+	"github.com/boozedog/smoovbrain/internal/event"
+	"github.com/boozedog/smoovbrain/internal/identity"
+	"github.com/boozedog/smoovbrain/internal/ticket"
+	"github.com/boozedog/smoovbrain/internal/workflow"
+	"github.com/spf13/cobra"
+)
+
+var statusCmd = &cobra.Command{
+	Use:   "status <status>",
+	Short: "Transition current ticket to a new status",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runStatus,
+}
+
+var statusTicket string
+
+func init() {
+	statusCmd.Flags().StringVar(&statusTicket, "ticket", "", "ticket ID (default: current ticket)")
+	rootCmd.AddCommand(statusCmd)
+
+	// Aliases
+	submitCmd := &cobra.Command{
+		Use:    "submit",
+		Short:  "Submit current ticket for review (alias for `sb status review`)",
+		Args:   cobra.NoArgs,
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runStatus(cmd, []string{"review"})
+		},
+	}
+	rootCmd.AddCommand(submitCmd)
+}
+
+func runStatus(_ *cobra.Command, args []string) error {
+	targetStatus, err := workflow.StatusFromAlias(strings.ToLower(args[0]))
+	if err != nil {
+		return err
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	ticketsDir, err := cfg.TicketsDir()
+	if err != nil {
+		return fmt.Errorf("get tickets dir: %w", err)
+	}
+
+	store := ticket.NewStore(ticketsDir)
+	sessionID := identity.SessionID()
+	actor := identity.Actor()
+
+	tk, err := resolveCurrentTicket(store, cfg, sessionID)
+	if err != nil {
+		return err
+	}
+
+	// Validate transition
+	if err := workflow.ValidateTransition(tk.Status, targetStatus); err != nil {
+		return err
+	}
+
+	// Check rules
+	if workflow.RequiresAssignee(targetStatus) && tk.Assignee == "" {
+		return fmt.Errorf("cannot move to %s — ticket has no assignee. Run `sb pick %s` first", targetStatus, tk.ID)
+	}
+
+	now := time.Now().UTC()
+	oldStatus := tk.Status
+	tk.Status = targetStatus
+	tk.Updated = now
+
+	heading := statusHeading(targetStatus)
+
+	ticket.AppendSection(tk, heading, actor, sessionID, "", nil, now)
+
+	if err := store.Save(tk); err != nil {
+		return fmt.Errorf("save ticket: %w", err)
+	}
+
+	// Log event
+	eventsDir, err := cfg.EventsDir()
+	if err != nil {
+		return fmt.Errorf("get events dir: %w", err)
+	}
+	el := event.NewEventLog(eventsDir)
+	evType := "status." + strings.ToLower(string(targetStatus))
+	_ = el.Append(event.Event{
+		TS:      now,
+		Event:   evType,
+		Ticket:  tk.ID,
+		Project: tk.Project,
+		Actor:   actor,
+		Session: sessionID,
+		Data:    map[string]any{"from": string(oldStatus)},
+	})
+
+	fmt.Printf("%s: %s → %s\n", tk.ID, oldStatus, targetStatus)
+	return nil
+}
+
+// statusHeading converts a status to a human-readable section heading.
+func statusHeading(s ticket.Status) string {
+	headings := map[ticket.Status]string{
+		ticket.StatusBacklog:    "Backlog",
+		ticket.StatusOpen:       "Open",
+		ticket.StatusInProgress: "In Progress",
+		ticket.StatusReview:     "Review Requested",
+		ticket.StatusRework:     "Rework",
+		ticket.StatusDone:       "Done",
+		ticket.StatusBlocked:    "Blocked",
+	}
+	if h, ok := headings[s]; ok {
+		return h
+	}
+	return string(s)
+}
+
+// resolveCurrentTicket finds the ticket to operate on.
+// Priority: --ticket flag > scan for ticket assigned to current session.
+func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, sessionID string) (*ticket.Ticket, error) {
+	if statusTicket != "" {
+		return store.Get(statusTicket)
+	}
+
+	// Scan for ticket assigned to current session
+	if sessionID == "" {
+		return nil, fmt.Errorf("no --ticket specified and no CLAUDE_SESSION_ID set")
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get working directory: %w", err)
+	}
+
+	proj := ""
+	if cfg != nil {
+		proj = findProjectFromCwd(cfg, cwd)
+	}
+
+	tickets, err := store.List(ticket.ListFilter{Project: proj})
+	if err != nil {
+		return nil, fmt.Errorf("list tickets: %w", err)
+	}
+
+	for _, tk := range tickets {
+		if tk.Assignee == sessionID &&
+			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
+			return tk, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no active ticket found for session %q — use `sb pick` first or specify --ticket", sessionID)
+}
