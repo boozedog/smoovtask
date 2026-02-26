@@ -352,7 +352,7 @@ Single binary. All commands go through it.
 
 ```
 sb init                              # Register current dir as a project
-sb new "title" [--priority high]     # Create a ticket for current project
+sb new "title" [--priority high] [--depends-on X]  # Create a ticket for current project
 sb list [--project X] [--status Y]   # List tickets with filters
 sb show sb_xxxxxx                    # Show full ticket detail
 sb board                             # TUI kanban (bubbletea)
@@ -366,7 +366,6 @@ sb pick [sb_xxxxxx]                  # Pick up a ticket (assigns to current sess
 sb note "message"                    # Append a note to current ticket
 sb status <status>                   # Transition current ticket to new status
 sb review sb_xxxxxx                  # Request to review a specific ticket
-sb spawn "title" [--depends-on X]    # Create a sub-ticket with dependency
 sb context                           # Print current session context (used by hooks)
 ```
 
@@ -388,7 +387,7 @@ sb hook pre-tool                     # Called by PreToolUse — logs tool call
 sb hook post-tool                    # Called by PostToolUse — logs tool result
 sb hook subagent-start               # Called by SubagentStart — injects ticket context
 sb hook subagent-stop                # Called by SubagentStop — logs completion
-sb hook task-completed               # Called by TaskCompleted — validates completion
+sb hook task-completed               # Called by TaskCompleted — logs completion
 sb hook teammate-idle                # Called by TeammateIdle — logs idle state
 sb hook permission-request           # Called by PermissionRequest — auto-approve (plugin)
 sb hook stop                         # Called by Stop — logs session stop
@@ -450,7 +449,7 @@ Global hooks in `~/.claude/settings.json`:
     ],
     "TaskCompleted": [
       {
-        "hooks": [{ "type": "command", "command": "sb hook task-completed" }]
+        "hooks": [{ "type": "command", "command": "sb hook task-completed", "async": true }]
       }
     ],
     "TeammateIdle": [
@@ -486,13 +485,13 @@ Global hooks in `~/.claude/settings.json`:
 | `post-tool` | No (async) | Logs tool result to JSONL. |
 | `subagent-start` | **Yes** (returns context) | Logs subagent spawn. Returns `additionalContext` to inject sb workflow instructions into the subagent (which ticket to work on, commands to use). |
 | `subagent-stop` | No (async) | Logs subagent completion. |
-| `task-completed` | **Yes** (can block) | When a Claude Code task completes, sb can verify the associated sb ticket's requirements are met. Exit 2 to block premature completion. |
+| `task-completed` | No (async) | Logs task completion to JSONL. Does not block — ticket completion is decided by reviewers via `sb review`, not by the task system. |
 | `teammate-idle` | No (async) | Logs teammate idle state for monitoring. |
 | `permission-request` | **Yes** (can auto-approve) | If auto-approve plugin is enabled and agent has an active ticket, auto-approves trusted tools. Otherwise passes through. |
 | `stop` | No (async) | Logs session stop. |
 | `session-end` | No (async) | Logs session end. Cleans up any session state. |
 
-**Key design choice:** Most hooks are `async: true` (non-blocking). Only `session-start`, `subagent-start`, and `task-completed` are synchronous because they need to inject context or enforce rules. This keeps sb from slowing down the agent.
+**Key design choice:** Most hooks are `async: true` (non-blocking). Only `session-start` and `subagent-start` are synchronous because they need to inject context. Ticket completion is enforced by reviewers via `sb review`, not by hooks. This keeps sb from slowing down the agent.
 
 ### SubagentStart Context Injection
 
@@ -736,7 +735,7 @@ Claude Code has a built-in task system (TaskCreate, TaskUpdate, TaskList, TaskGe
 | **Scope** | Single agent team session | Cross-session, persistent |
 | **Lifetime** | Dies when session ends | Lives until DONE |
 | **Purpose** | Coordinate teammates within one team | Track work across days/weeks/projects |
-| **Created by** | Team lead via TaskCreate | Human or agent via `sb new` / `sb spawn` |
+| **Created by** | Team lead via TaskCreate | Human or agent via `sb new` |
 | **Visible to** | Teammates in that session | Everyone, forever (Obsidian + web UI) |
 
 ### How They Interact
@@ -749,10 +748,10 @@ When an orchestrator agent picks up a batch of smoovbrain tickets and creates a 
 4. **Teammate runs `sb pick sb_a7Kx2m`** → sb moves ticket to IN-PROGRESS
 5. **Teammate does the work** → PreToolUse/PostToolUse hooks log activity to JSONL
 6. **Teammate runs `sb status review`** → sb moves ticket to REVIEW
-7. **Teammate marks Claude Code task complete** → `TaskCompleted` hook fires, sb logs it
+7. **Teammate marks Claude Code task complete** → `TaskCompleted` hook fires, sb logs it to JSONL
 8. **Session ends** → Claude Code tasks vanish, but sb tickets persist with full history
 
-The `TaskCompleted` hook is the bridge: when a Claude Code task is marked done, sb can check that the associated sb ticket was properly transitioned (e.g., moved to REVIEW, not left in IN-PROGRESS). If the teammate tries to mark their task complete without running `sb status review`, sb can block it with exit 2.
+The `TaskCompleted` hook logs the event but does not block. Ticket completion is decided by reviewers via `sb review`, not by the task system. The two systems have different lifecycles and sb does not interfere with Claude Code's task management.
 
 ### What sb Does NOT Do
 

@@ -6,27 +6,24 @@ import (
 
 	"github.com/boozedog/smoovbrain/internal/config"
 	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/identity"
 	"github.com/boozedog/smoovbrain/internal/ticket"
 	"github.com/spf13/cobra"
 )
 
-var noteCmd = &cobra.Command{
-	Use:   "note <message>",
-	Short: "Append a note to the current ticket",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runNote,
+var assignCmd = &cobra.Command{
+	Use:   "assign <ticket-id> <agent-id>",
+	Short: "Manually assign a ticket to an agent",
+	Args:  cobra.ExactArgs(2),
+	RunE:  runAssign,
 }
-
-var noteTicket string
 
 func init() {
-	noteCmd.Flags().StringVar(&noteTicket, "ticket", "", "ticket ID (default: current ticket)")
-	rootCmd.AddCommand(noteCmd)
+	rootCmd.AddCommand(assignCmd)
 }
 
-func runNote(_ *cobra.Command, args []string) error {
-	message := args[0]
+func runAssign(_ *cobra.Command, args []string) error {
+	id := args[0]
+	agentID := args[1]
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -39,16 +36,19 @@ func runNote(_ *cobra.Command, args []string) error {
 	}
 
 	store := ticket.NewStore(ticketsDir)
-	sessionID := identity.SessionID()
-	actor := identity.Actor()
 
-	tk, err := resolveCurrentTicket(store, cfg, sessionID, noteTicket)
+	tk, err := store.Get(id)
 	if err != nil {
-		return err
+		return fmt.Errorf("get ticket: %w", err)
 	}
 
 	now := time.Now().UTC()
-	ticket.AppendSection(tk, "Note", actor, sessionID, message, nil, now)
+	tk.Assignee = agentID
+	tk.Updated = now
+
+	ticket.AppendSection(tk, "Assigned", "human", "", "", map[string]string{
+		"assignee": agentID,
+	}, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -62,14 +62,13 @@ func runNote(_ *cobra.Command, args []string) error {
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      now,
-		Event:   "ticket.note",
+		Event:   event.TicketAssigned,
 		Ticket:  tk.ID,
 		Project: tk.Project,
-		Actor:   actor,
-		Session: sessionID,
-		Data:    map[string]any{"message": message},
+		Actor:   "human",
+		Data:    map[string]any{"assignee": agentID},
 	})
 
-	fmt.Printf("Note added to %s\n", tk.ID)
+	fmt.Printf("Assigned %s to %s\n", tk.ID, agentID)
 	return nil
 }

@@ -1,7 +1,9 @@
 package hook
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/boozedog/smoovbrain/internal/config"
@@ -54,21 +56,76 @@ func HandleSessionStart(input *Input) (Output, error) {
 	return Output{AdditionalContext: summary}, nil
 }
 
+// priorityWeight returns the scoring weight for a ticket priority.
+// P0=60, P1=50, P2=40, P3=30, P4=20, P5=10.
+var priorityWeight = map[ticket.Priority]int{
+	ticket.PriorityP0: 60,
+	ticket.PriorityP1: 50,
+	ticket.PriorityP2: 40,
+	ticket.PriorityP3: 30,
+	ticket.PriorityP4: 20,
+	ticket.PriorityP5: 10,
+}
+
+// statusBoost is the score bonus for REVIEW tickets.
+const statusBoostReview = 5
+
+// ticketScore calculates the priority score for a ticket.
+// Score = priority weight + status boost (REVIEW gets +5, OPEN gets +0).
+func ticketScore(tk *ticket.Ticket) int {
+	score := priorityWeight[tk.Priority]
+	if tk.Status == ticket.StatusReview {
+		score += statusBoostReview
+	}
+	return score
+}
+
+// sortByPriority sorts tickets by priority (P0 first, P5 last).
+func sortByPriority(tickets []*ticket.Ticket) {
+	slices.SortFunc(tickets, func(a, b *ticket.Ticket) int {
+		return cmp.Compare(priorityWeight[b.Priority], priorityWeight[a.Priority])
+	})
+}
+
 // buildBoardSummary formats the board summary for session context injection.
+// It uses score-based batch selection: score all tickets, find the highest,
+// then present ALL tickets of that same status type sorted by priority.
 func buildBoardSummary(proj string, openTickets, reviewTickets []*ticket.Ticket) string {
-	// Prefer review tickets if any exist (clearing the review queue unblocks others)
+	if len(openTickets) == 0 && len(reviewTickets) == 0 {
+		return ""
+	}
+
+	// Find the max score across both lists to determine which batch to show.
+	maxScore := -1
+	showReview := false
+
+	for _, tk := range openTickets {
+		if s := ticketScore(tk); s > maxScore {
+			maxScore = s
+			showReview = false
+		}
+	}
+	for _, tk := range reviewTickets {
+		if s := ticketScore(tk); s > maxScore {
+			maxScore = s
+			showReview = true
+		}
+	}
+
 	var tickets []*ticket.Ticket
 	var statusLabel string
 
-	if len(reviewTickets) > 0 {
-		tickets = reviewTickets
+	if showReview {
+		tickets = make([]*ticket.Ticket, len(reviewTickets))
+		copy(tickets, reviewTickets)
 		statusLabel = "REVIEW"
-	} else if len(openTickets) > 0 {
-		tickets = openTickets
-		statusLabel = "OPEN"
 	} else {
-		return ""
+		tickets = make([]*ticket.Ticket, len(openTickets))
+		copy(tickets, openTickets)
+		statusLabel = "OPEN"
 	}
+
+	sortByPriority(tickets)
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "smoovbrain — %s — %d %s tickets ready\n\n", proj, len(tickets), statusLabel)

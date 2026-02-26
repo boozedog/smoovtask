@@ -9,8 +9,8 @@ import (
 
 func TestBuildBoardSummaryOpen(t *testing.T) {
 	open := []*ticket.Ticket{
-		{ID: "sb_a7Kx2m", Title: "Add rate limiting", Priority: ticket.PriorityP2},
-		{ID: "sb_c1Dw4n", Title: "Fix CORS headers", Priority: ticket.PriorityP3},
+		{ID: "sb_a7Kx2m", Title: "Add rate limiting", Priority: ticket.PriorityP2, Status: ticket.StatusOpen},
+		{ID: "sb_c1Dw4n", Title: "Fix CORS headers", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 	}
 
 	summary := buildBoardSummary("api-server", open, nil)
@@ -28,7 +28,7 @@ func TestBuildBoardSummaryOpen(t *testing.T) {
 
 func TestBuildBoardSummaryReview(t *testing.T) {
 	review := []*ticket.Ticket{
-		{ID: "sb_test01", Title: "Reviewed ticket", Priority: ticket.PriorityP2},
+		{ID: "sb_test01", Title: "Reviewed ticket", Priority: ticket.PriorityP2, Status: ticket.StatusReview},
 	}
 
 	summary := buildBoardSummary("proj", nil, review)
@@ -50,19 +50,189 @@ func TestBuildBoardSummaryEmpty(t *testing.T) {
 
 func TestBuildBoardSummaryReviewPreferred(t *testing.T) {
 	open := []*ticket.Ticket{
-		{ID: "sb_open01", Title: "Open ticket", Priority: ticket.PriorityP3},
+		{ID: "sb_open01", Title: "Open ticket", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 	}
 	review := []*ticket.Ticket{
-		{ID: "sb_rev01", Title: "Review ticket", Priority: ticket.PriorityP2},
+		{ID: "sb_rev01", Title: "Review ticket", Priority: ticket.PriorityP2, Status: ticket.StatusReview},
 	}
 
 	summary := buildBoardSummary("proj", open, review)
 
-	// Review should be preferred over open
+	// Review P2 (45) beats Open P3 (30), so show REVIEW
 	if !strings.Contains(summary, "REVIEW") {
-		t.Error("review tickets should be preferred")
+		t.Error("review tickets should be preferred when highest score is REVIEW")
 	}
 	if strings.Contains(summary, "sb_open01") {
-		t.Error("open tickets should not appear when review tickets exist")
+		t.Error("open tickets should not appear when review batch is selected")
+	}
+}
+
+func TestBuildBoardSummarySortedByPriority(t *testing.T) {
+	open := []*ticket.Ticket{
+		{ID: "sb_low", Title: "Low priority", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
+		{ID: "sb_high", Title: "High priority", Priority: ticket.PriorityP1, Status: ticket.StatusOpen},
+		{ID: "sb_mid", Title: "Mid priority", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
+	}
+
+	summary := buildBoardSummary("proj", open, nil)
+
+	highIdx := strings.Index(summary, "sb_high")
+	midIdx := strings.Index(summary, "sb_mid")
+	lowIdx := strings.Index(summary, "sb_low")
+
+	if highIdx == -1 || midIdx == -1 || lowIdx == -1 {
+		t.Fatalf("missing ticket IDs in summary:\n%s", summary)
+	}
+	if highIdx > midIdx || midIdx > lowIdx {
+		t.Errorf("tickets not sorted by priority (P1 < P3 < P4), got:\n%s", summary)
+	}
+}
+
+func TestBuildBoardSummaryReviewBeatsSamePriority(t *testing.T) {
+	// REVIEW gets +5 boost, so P3 REVIEW (35) beats P3 OPEN (30)
+	open := []*ticket.Ticket{
+		{ID: "sb_open01", Title: "Open P3", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
+	}
+	review := []*ticket.Ticket{
+		{ID: "sb_rev01", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+	}
+
+	summary := buildBoardSummary("proj", open, review)
+
+	if !strings.Contains(summary, "REVIEW") {
+		t.Error("REVIEW should win at same priority due to +5 boost")
+	}
+	if strings.Contains(summary, "sb_open01") {
+		t.Error("should not show OPEN tickets when REVIEW wins")
+	}
+}
+
+func TestBuildBoardSummaryHigherOpenBeatsLowerReview(t *testing.T) {
+	// P2 OPEN (40) beats P3 REVIEW (35)
+	open := []*ticket.Ticket{
+		{ID: "sb_open01", Title: "Open P2", Priority: ticket.PriorityP2, Status: ticket.StatusOpen},
+		{ID: "sb_open02", Title: "Open P4", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
+	}
+	review := []*ticket.Ticket{
+		{ID: "sb_rev01", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+	}
+
+	summary := buildBoardSummary("proj", open, review)
+
+	if !strings.Contains(summary, "OPEN") {
+		t.Error("higher-priority OPEN should beat lower-priority REVIEW")
+	}
+	if strings.Contains(summary, "sb_rev01") {
+		t.Error("should not show REVIEW tickets when OPEN wins")
+	}
+	// Both open tickets should be present
+	if !strings.Contains(summary, "sb_open01") || !strings.Contains(summary, "sb_open02") {
+		t.Error("all OPEN tickets should be shown when OPEN batch wins")
+	}
+}
+
+func TestBuildBoardSummaryReviewBeatsNextPriorityDown(t *testing.T) {
+	// P3 REVIEW (35) beats P3 OPEN (30) — the +5 boost means REVIEW
+	// beats the same priority level.
+	// P2 REVIEW (45) also beats P3 OPEN (30).
+	// But does P3 REVIEW (35) beat P3 OPEN (30)? Yes: 35 > 30.
+	open := []*ticket.Ticket{
+		{ID: "sb_open01", Title: "Open P3", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
+		{ID: "sb_open02", Title: "Open P4", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
+	}
+	review := []*ticket.Ticket{
+		{ID: "sb_rev01", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+		{ID: "sb_rev02", Title: "Review P3", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+	}
+
+	summary := buildBoardSummary("proj", open, review)
+
+	if !strings.Contains(summary, "REVIEW") {
+		t.Error("P3 REVIEW (35) should beat P3 OPEN (30)")
+	}
+	if !strings.Contains(summary, "2 REVIEW tickets") {
+		t.Errorf("should show 2 REVIEW tickets, got:\n%s", summary)
+	}
+}
+
+func TestBuildBoardSummaryDesignExample1(t *testing.T) {
+	// From DESIGN.md example:
+	// OPEN: P2, P3, P4  |  REVIEW: P3, P3
+	// Highest = P2 OPEN (40) → show all OPEN, sorted: P2, P3, P4
+	open := []*ticket.Ticket{
+		{ID: "sb_p3open", Title: "P3 Open", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
+		{ID: "sb_p2open", Title: "P2 Open", Priority: ticket.PriorityP2, Status: ticket.StatusOpen},
+		{ID: "sb_p4open", Title: "P4 Open", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
+	}
+	review := []*ticket.Ticket{
+		{ID: "sb_p3rev1", Title: "P3 Review 1", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+		{ID: "sb_p3rev2", Title: "P3 Review 2", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+	}
+
+	summary := buildBoardSummary("proj", open, review)
+
+	if !strings.Contains(summary, "3 OPEN tickets") {
+		t.Errorf("expected 3 OPEN tickets, got:\n%s", summary)
+	}
+
+	// Verify sort order: P2 before P3 before P4
+	p2Idx := strings.Index(summary, "sb_p2open")
+	p3Idx := strings.Index(summary, "sb_p3open")
+	p4Idx := strings.Index(summary, "sb_p4open")
+	if p2Idx > p3Idx || p3Idx > p4Idx {
+		t.Errorf("tickets not sorted P2 < P3 < P4, got:\n%s", summary)
+	}
+}
+
+func TestBuildBoardSummaryDesignExample2(t *testing.T) {
+	// From DESIGN.md example:
+	// OPEN: P3, P4  |  REVIEW: P2, P3
+	// Highest = P2 REVIEW (45) → show all REVIEW, sorted: P2, P3
+	open := []*ticket.Ticket{
+		{ID: "sb_p3open", Title: "P3 Open", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
+		{ID: "sb_p4open", Title: "P4 Open", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
+	}
+	review := []*ticket.Ticket{
+		{ID: "sb_p3rev", Title: "P3 Review", Priority: ticket.PriorityP3, Status: ticket.StatusReview},
+		{ID: "sb_p2rev", Title: "P2 Review", Priority: ticket.PriorityP2, Status: ticket.StatusReview},
+	}
+
+	summary := buildBoardSummary("proj", open, review)
+
+	if !strings.Contains(summary, "2 REVIEW tickets") {
+		t.Errorf("expected 2 REVIEW tickets, got:\n%s", summary)
+	}
+
+	// Verify sort order: P2 before P3
+	p2Idx := strings.Index(summary, "sb_p2rev")
+	p3Idx := strings.Index(summary, "sb_p3rev")
+	if p2Idx > p3Idx {
+		t.Errorf("tickets not sorted P2 < P3, got:\n%s", summary)
+	}
+}
+
+func TestTicketScore(t *testing.T) {
+	tests := []struct {
+		name     string
+		priority ticket.Priority
+		status   ticket.Status
+		want     int
+	}{
+		{"P0 OPEN", ticket.PriorityP0, ticket.StatusOpen, 60},
+		{"P0 REVIEW", ticket.PriorityP0, ticket.StatusReview, 65},
+		{"P3 OPEN", ticket.PriorityP3, ticket.StatusOpen, 30},
+		{"P3 REVIEW", ticket.PriorityP3, ticket.StatusReview, 35},
+		{"P5 OPEN", ticket.PriorityP5, ticket.StatusOpen, 10},
+		{"P5 REVIEW", ticket.PriorityP5, ticket.StatusReview, 15},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tk := &ticket.Ticket{Priority: tt.priority, Status: tt.status}
+			got := ticketScore(tk)
+			if got != tt.want {
+				t.Errorf("ticketScore() = %d, want %d", got, tt.want)
+			}
+		})
 	}
 }

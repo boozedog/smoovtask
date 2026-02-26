@@ -6,27 +6,24 @@ import (
 
 	"github.com/boozedog/smoovbrain/internal/config"
 	"github.com/boozedog/smoovbrain/internal/event"
-	"github.com/boozedog/smoovbrain/internal/identity"
 	"github.com/boozedog/smoovbrain/internal/ticket"
 	"github.com/spf13/cobra"
 )
 
-var noteCmd = &cobra.Command{
-	Use:   "note <message>",
-	Short: "Append a note to the current ticket",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runNote,
+var holdCmd = &cobra.Command{
+	Use:   "hold <ticket-id> <reason>",
+	Short: "Block a ticket with a human hold",
+	Args:  cobra.ExactArgs(2),
+	RunE:  runHold,
 }
-
-var noteTicket string
 
 func init() {
-	noteCmd.Flags().StringVar(&noteTicket, "ticket", "", "ticket ID (default: current ticket)")
-	rootCmd.AddCommand(noteCmd)
+	rootCmd.AddCommand(holdCmd)
 }
 
-func runNote(_ *cobra.Command, args []string) error {
-	message := args[0]
+func runHold(_ *cobra.Command, args []string) error {
+	id := args[0]
+	reason := args[1]
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -39,16 +36,23 @@ func runNote(_ *cobra.Command, args []string) error {
 	}
 
 	store := ticket.NewStore(ticketsDir)
-	sessionID := identity.SessionID()
-	actor := identity.Actor()
 
-	tk, err := resolveCurrentTicket(store, cfg, sessionID, noteTicket)
+	tk, err := store.Get(id)
 	if err != nil {
-		return err
+		return fmt.Errorf("get ticket: %w", err)
+	}
+
+	if tk.Status == ticket.StatusBlocked {
+		return fmt.Errorf("ticket %s is already BLOCKED", tk.ID)
 	}
 
 	now := time.Now().UTC()
-	ticket.AppendSection(tk, "Note", actor, sessionID, message, nil, now)
+	oldStatus := tk.Status
+	tk.PriorStatus = &oldStatus
+	tk.Status = ticket.StatusBlocked
+	tk.Updated = now
+
+	ticket.AppendSection(tk, "Blocked (Hold)", "human", "", reason, nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -62,14 +66,17 @@ func runNote(_ *cobra.Command, args []string) error {
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      now,
-		Event:   "ticket.note",
+		Event:   event.StatusBlocked,
 		Ticket:  tk.ID,
 		Project: tk.Project,
-		Actor:   actor,
-		Session: sessionID,
-		Data:    map[string]any{"message": message},
+		Actor:   "human",
+		Data: map[string]any{
+			"reason":       "hold",
+			"message":      reason,
+			"prior_status": string(oldStatus),
+		},
 	})
 
-	fmt.Printf("Note added to %s\n", tk.ID)
+	fmt.Printf("Held %s: %s\n", tk.ID, reason)
 	return nil
 }

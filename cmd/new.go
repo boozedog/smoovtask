@@ -21,13 +21,15 @@ var newCmd = &cobra.Command{
 }
 
 var (
-	newPriority string
-	newTags     string
+	newPriority  string
+	newTags      string
+	newDependsOn string
 )
 
 func init() {
 	newCmd.Flags().StringVar(&newPriority, "priority", "P3", "ticket priority (P0-P5)")
 	newCmd.Flags().StringVar(&newTags, "tags", "", "comma-separated tags")
+	newCmd.Flags().StringVar(&newDependsOn, "depends-on", "", "comma-separated ticket IDs this ticket depends on")
 	rootCmd.AddCommand(newCmd)
 }
 
@@ -61,19 +63,29 @@ func runNew(_ *cobra.Command, args []string) error {
 		}
 	}
 
+	var dependsOn []string
+	if newDependsOn != "" {
+		for _, d := range strings.Split(newDependsOn, ",") {
+			dependsOn = append(dependsOn, strings.TrimSpace(d))
+		}
+	}
+
 	now := time.Now().UTC()
 	tk := &ticket.Ticket{
 		Title:     title,
 		Project:   proj,
 		Status:    ticket.StatusOpen,
 		Priority:  priority,
-		DependsOn: []string{},
+		DependsOn: dependsOn,
 		Created:   now,
 		Updated:   now,
 		Tags:      tags,
 	}
 	if tk.Tags == nil {
 		tk.Tags = []string{}
+	}
+	if tk.DependsOn == nil {
+		tk.DependsOn = []string{}
 	}
 
 	ticketsDir, err := cfg.TicketsDir()
@@ -108,5 +120,40 @@ func runNew(_ *cobra.Command, args []string) error {
 	})
 
 	fmt.Printf("Created %s: %s\n", tk.ID, title)
+
+	// Auto-block if any dependencies are not DONE
+	if len(dependsOn) > 0 {
+		unresolved, checkErr := ticket.CheckDependencies(store, tk)
+		if checkErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: dependency check failed: %v\n", checkErr)
+		} else if len(unresolved) > 0 {
+			openStatus := ticket.StatusOpen
+			tk.PriorStatus = &openStatus
+			tk.Status = ticket.StatusBlocked
+			tk.Updated = now
+
+			ticket.AppendSection(tk, "Blocked (Dependencies)", "sb", "", fmt.Sprintf("Unresolved dependencies: %s", strings.Join(unresolved, ", ")), nil, now)
+
+			if err := store.Save(tk); err != nil {
+				return fmt.Errorf("save ticket after auto-block: %w", err)
+			}
+
+			_ = el.Append(event.Event{
+				TS:      now,
+				Event:   event.StatusBlocked,
+				Ticket:  tk.ID,
+				Project: proj,
+				Actor:   "sb",
+				Data: map[string]any{
+					"reason":       "depends-on",
+					"refs":         dependsOn,
+					"prior_status": "OPEN",
+				},
+			})
+
+			fmt.Printf("Auto-blocked %s: waiting on %s\n", tk.ID, strings.Join(unresolved, ", "))
+		}
+	}
+
 	return nil
 }

@@ -15,10 +15,15 @@ const (
 	StatusDone       = "status.done"
 	StatusBlocked    = "status.blocked"
 
-	HookPreTool      = "hook.pre-tool"
-	HookPostTool     = "hook.post-tool"
-	HookSessionStart = "hook.session-start"
-	HookStop         = "hook.stop"
+	HookPreTool       = "hook.pre-tool"
+	HookPostTool      = "hook.post-tool"
+	HookSessionStart  = "hook.session-start"
+	HookStop          = "hook.stop"
+	HookSubagentStop  = "hook.subagent-stop"
+	HookTaskCompleted = "hook.task-completed"
+	HookTeammateIdle  = "hook.teammate-idle"
+	HookPermissionReq = "hook.permission-request"
+	HookSessionEnd    = "hook.session-end"
 )
 
 // Event represents a single event in the system log.

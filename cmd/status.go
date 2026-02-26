@@ -60,7 +60,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 	sessionID := identity.SessionID()
 	actor := identity.Actor()
 
-	tk, err := resolveCurrentTicket(store, cfg, sessionID)
+	tk, err := resolveCurrentTicket(store, cfg, sessionID, statusTicket)
 	if err != nil {
 		return err
 	}
@@ -106,6 +106,28 @@ func runStatus(_ *cobra.Command, args []string) error {
 	})
 
 	fmt.Printf("%s: %s → %s\n", tk.ID, oldStatus, targetStatus)
+
+	// Auto-unblock dependents when a ticket moves to DONE
+	if targetStatus == ticket.StatusDone {
+		unblocked, unblockedErr := ticket.AutoUnblock(store, tk.ID)
+		if unblockedErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: auto-unblock check failed: %v\n", unblockedErr)
+		}
+		for _, ut := range unblocked {
+			snapStatus := "status." + strings.ToLower(string(ut.Status))
+			_ = el.Append(event.Event{
+				TS:      now,
+				Event:   snapStatus,
+				Ticket:  ut.ID,
+				Project: ut.Project,
+				Actor:   "sb",
+				Session: sessionID,
+				Data:    map[string]any{"from": string(ticket.StatusBlocked), "reason": "auto-unblock"},
+			})
+			fmt.Printf("Auto-unblocked: %s → %s\n", ut.ID, ut.Status)
+		}
+	}
+
 	return nil
 }
 
@@ -124,41 +146,4 @@ func statusHeading(s ticket.Status) string {
 		return h
 	}
 	return string(s)
-}
-
-// resolveCurrentTicket finds the ticket to operate on.
-// Priority: --ticket flag > scan for ticket assigned to current session.
-func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, sessionID string) (*ticket.Ticket, error) {
-	if statusTicket != "" {
-		return store.Get(statusTicket)
-	}
-
-	// Scan for ticket assigned to current session
-	if sessionID == "" {
-		return nil, fmt.Errorf("no --ticket specified and no CLAUDE_SESSION_ID set")
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("get working directory: %w", err)
-	}
-
-	proj := ""
-	if cfg != nil {
-		proj = findProjectFromCwd(cfg, cwd)
-	}
-
-	tickets, err := store.List(ticket.ListFilter{Project: proj})
-	if err != nil {
-		return nil, fmt.Errorf("list tickets: %w", err)
-	}
-
-	for _, tk := range tickets {
-		if tk.Assignee == sessionID &&
-			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
-			return tk, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no active ticket found for session %q — use `sb pick` first or specify --ticket", sessionID)
 }

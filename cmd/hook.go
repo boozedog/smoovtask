@@ -56,6 +56,28 @@ func runHook(_ *cobra.Command, args []string) error {
 	case "stop":
 		return hook.HandleStop(input)
 
+	case "subagent-stop":
+		return hook.HandleSubagentStop(input)
+
+	case "task-completed":
+		return hook.HandleTaskCompleted(input)
+
+	case "teammate-idle":
+		return hook.HandleTeammateIdle(input)
+
+	case "permission-request":
+		out, err := hook.HandlePermissionRequest(input)
+		if err != nil {
+			return err
+		}
+		if out.Decision != nil {
+			return hook.WriteOutput(out)
+		}
+		return nil
+
+	case "session-end":
+		return hook.HandleSessionEnd(input)
+
 	default:
 		// Unknown hook events are silently ignored (don't break Claude Code)
 		return nil
