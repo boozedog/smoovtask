@@ -35,8 +35,10 @@ That's it. Claude Code sessions now see the ticket board on startup, and all age
 
 ```
 BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
-                      ↑            ↓
-                      └── REWORK ←─┘
+   ↑          ↑        ↑            ↓        │
+   │          │        └── REWORK ←─┘        │
+   └──────────┴────────────────────────────── ┘
+                  (any status → BACKLOG)
 
       BLOCKED ←── (any status)
       BLOCKED ──→ (snaps back to prior status)
@@ -62,6 +64,7 @@ BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
 | REVIEW | DONE | Reviewer must not have touched the ticket |
 | REVIEW | REWORK | Reviewer adds rejection reason |
 | REWORK | IN-PROGRESS | Assignee picks it back up |
+| (any) | BACKLOG | Deprioritize — clears assignee, no snap-back |
 | (any) | BLOCKED | Requires a dependency or human hold reason |
 | BLOCKED | (prior) | Auto-unblocks when dependency resolves or human releases hold |
 
@@ -105,8 +108,9 @@ At session start, smoovtask scores available tickets by priority and status weig
 ```
 st init                                    Register current directory as a project
 st new <title> [--priority P0-P5]          Create a ticket (default: P3)
-                [--tags a,b]
-                [--depends-on st_x,st_y]
+       [--title T]                         Title as flag (alternative to positional)
+       [--tags a,b]
+       [--depends-on st_x,st_y]
 st list [--project X] [--status Y]         List tickets (auto-detects project from PWD)
 st show <ticket-id>                        Show full ticket detail (frontmatter + body)
 ```

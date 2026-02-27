@@ -15,7 +15,7 @@ import (
 type Query struct {
 	TicketID string
 	Project  string
-	RunID string
+	RunID    string
 	After    time.Time
 	Before   time.Time
 }

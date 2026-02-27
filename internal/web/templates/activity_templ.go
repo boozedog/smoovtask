@@ -130,7 +130,7 @@ func ActivityPartial(data ActivityData) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/partials/activity\" hx-trigger=\"sse:refresh\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\" hx-include=\"[name='project'],[name='event_type']\"><div style=\"margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;\"><select name=\"project\" class=\"uk-select uk-form-small\" style=\"max-width: 200px;\" hx-get=\"/partials/activity-content\" hx-target=\"#activity-content\" hx-swap=\"innerHTML\" hx-include=\"[name='event_type']\"><option value=\"\">All Projects</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/partials/activity\" hx-trigger=\"sse:refresh\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\" hx-include=\"[name='project'],[name='event_type']\"><div class=\"mb-4 flex gap-3 items-center\"><select name=\"project\" class=\"uk-select uk-form-small\" style=\"max-width: 200px;\" hx-get=\"/partials/activity-content\" hx-target=\"#activity-content\" hx-swap=\"innerHTML\" hx-include=\"[name='event_type']\"><option value=\"\">All Projects</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -264,7 +264,7 @@ func ActivityContent(data ActivityData) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(data.Events) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div style=\"padding: 2rem; text-align: center; opacity: 0.5;\">No events found.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"p-8 text-center opacity-50\">No events found.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -274,7 +274,7 @@ func ActivityContent(data ActivityData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, ev := range data.Events {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"st-event-row\" style=\"display: flex; gap: 1rem; align-items: baseline;\"><span class=\"st-event-time\" style=\"min-width: 140px;\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"st-event-row flex gap-4 items-baseline\"><span class=\"st-event-time\" style=\"min-width: 140px;\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -399,7 +399,7 @@ func ActivityContent(data ActivityData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if eventContext(ev) != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<span style=\"opacity: 0.5; font-size: 0.8rem; font-style: italic;\">— ")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<span class=\"opacity-50\" style=\"font-size: 0.8rem; font-style: italic;\">— ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

@@ -101,7 +101,8 @@ func runStatus(_ *cobra.Command, args []string) error {
 	tk.Updated = now
 
 	// Clear assignee when submitting for review — the reviewer will claim it via `st review`.
-	if targetStatus == ticket.StatusReview {
+	// Clear assignee when moving to backlog — ticket is being deprioritized.
+	if targetStatus == ticket.StatusReview || targetStatus == ticket.StatusBacklog {
 		tk.Assignee = ""
 	}
 

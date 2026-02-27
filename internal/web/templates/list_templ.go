@@ -96,7 +96,7 @@ func ListPartial(data ListData) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/partials/list\" hx-trigger=\"sse:refresh\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\"><div style=\"margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;\"><select name=\"project\" class=\"uk-select uk-form-small\" style=\"max-width: 200px;\" hx-get=\"/partials/list-content\" hx-target=\"#list-content\" hx-swap=\"innerHTML\" hx-include=\"[name='status'],[name='sort'],[name='dir']\"><option value=\"\">All Projects</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/partials/list\" hx-trigger=\"sse:refresh\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\"><div class=\"mb-4 flex gap-3 items-center\"><select name=\"project\" class=\"uk-select uk-form-small\" style=\"max-width: 200px;\" hx-get=\"/partials/list-content\" hx-target=\"#list-content\" hx-swap=\"innerHTML\" hx-include=\"[name='status'],[name='sort'],[name='dir']\"><option value=\"\">All Projects</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -302,7 +302,7 @@ func ListContent(data ListData) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(data.Tickets) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div style=\"padding: 2rem; text-align: center; opacity: 0.5;\">No tickets found.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"p-8 text-center opacity-50\">No tickets found.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

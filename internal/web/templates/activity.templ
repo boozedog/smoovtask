@@ -69,7 +69,7 @@ templ ActivityPartial(data ActivityData) {
 		hx-disinherit="hx-swap"
 		hx-include="[name='project'],[name='event_type']"
 	>
-		<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+		<div class="mb-4 flex gap-3 items-center">
 			<select
 				name="project"
 				class="uk-select uk-form-small"
@@ -115,13 +115,13 @@ templ ActivityPartial(data ActivityData) {
 
 templ ActivityContent(data ActivityData) {
 	if len(data.Events) == 0 {
-		<div style="padding: 2rem; text-align: center; opacity: 0.5;">
+		<div class="p-8 text-center opacity-50">
 			No events found.
 		</div>
 	} else {
 		<div>
 			for _, ev := range data.Events {
-				<div class="st-event-row" style="display: flex; gap: 1rem; align-items: baseline;">
+				<div class="st-event-row flex gap-4 items-baseline">
 					<span class="st-event-time" style="min-width: 140px;">
 						{ ev.TS.Format("2006-01-02 15:04:05") }
 					</span>
@@ -138,7 +138,7 @@ templ ActivityContent(data ActivityData) {
 					}
 					<span style="opacity: 0.6; font-size: 0.8rem;">{ ev.Actor }</span>
 					if eventContext(ev) != "" {
-						<span style="opacity: 0.5; font-size: 0.8rem; font-style: italic;">
+						<span class="opacity-50" style="font-size: 0.8rem; font-style: italic;">
 							— { eventContext(ev) }
 						</span>
 					}

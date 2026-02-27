@@ -15,9 +15,9 @@ import (
 )
 
 var newCmd = &cobra.Command{
-	Use:   "new <title>",
+	Use:   "new [title]",
 	Short: "Create a new ticket for the current project",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runNew,
 }
 
@@ -27,6 +27,7 @@ var (
 	newDependsOn   string
 	newDescription string
 	newProject     string
+	newTitle       string
 )
 
 func init() {
@@ -35,11 +36,20 @@ func init() {
 	newCmd.Flags().StringVar(&newTags, "tags", "", "comma-separated tags")
 	newCmd.Flags().StringVar(&newDependsOn, "depends-on", "", "comma-separated ticket IDs this ticket depends on")
 	newCmd.Flags().StringVar(&newProject, "project", "", "project name (defaults to auto-detect from current directory)")
+	newCmd.Flags().StringVarP(&newTitle, "title", "t", "", "ticket title (alternative to positional argument)")
 	rootCmd.AddCommand(newCmd)
 }
 
 func runNew(_ *cobra.Command, args []string) error {
-	title := args[0]
+	var title string
+	switch {
+	case newTitle != "":
+		title = newTitle
+	case len(args) > 0:
+		title = args[0]
+	default:
+		return fmt.Errorf("title is required — use --title or pass as argument")
+	}
 
 	cfg, err := config.Load()
 	if err != nil {

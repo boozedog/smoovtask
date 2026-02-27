@@ -169,6 +169,7 @@ func resetFlags() {
 	newDependsOn = ""
 	newDescription = ""
 	newProject = ""
+	newTitle = ""
 	pickTicket = ""
 	reviewTicket = ""
 }

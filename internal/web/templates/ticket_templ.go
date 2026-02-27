@@ -169,7 +169,7 @@ func TicketHeader(data TicketData) templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"st-ticket-header\"><h1 style=\"font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; overflow-wrap: break-word;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"st-ticket-header\"><h1 class=\"font-bold mb-2\" style=\"font-size: 1.5rem; overflow-wrap: break-word;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

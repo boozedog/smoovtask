@@ -142,5 +142,13 @@ func runPick(_ *cobra.Command, args []string) error {
 	fmt.Printf("- Verify scope — ask what is in and out of scope if uncertain\n")
 	fmt.Printf("- Resolve ambiguity — don't guess at intent, ask\n")
 	fmt.Printf("\nOnly begin implementation once you fully understand what is expected.\n")
+	fmt.Printf("\n--- Logging ---\n")
+	fmt.Printf("Log your work frequently with `st note`. Good things to log:\n")
+	fmt.Printf("- Key decisions and why you made them\n")
+	fmt.Printf("- Discussions with the user — especially clarifications, scope changes, or approvals\n")
+	fmt.Printf("- Design trade-offs considered and the chosen approach\n")
+	fmt.Printf("- Significant progress milestones or blockers encountered\n")
+	fmt.Printf("- Brief code snippets where they help explain a change or decision\n")
+	fmt.Printf("Notes become the ticket's audit trail — another agent should be able to understand what happened.\n")
 	return nil
 }

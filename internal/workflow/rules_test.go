@@ -93,16 +93,16 @@ func TestCanReview(t *testing.T) {
 
 	// sess-1 worked on the ticket
 	_ = el.Append(event.Event{
-		TS:      ts,
-		Event:   event.StatusInProgress,
-		Ticket:  "st_test01",
-		RunID:   "sess-1",
+		TS:     ts,
+		Event:  event.StatusInProgress,
+		Ticket: "st_test01",
+		RunID:  "sess-1",
 	})
 	_ = el.Append(event.Event{
-		TS:      ts.Add(time.Hour),
-		Event:   event.StatusReview,
-		Ticket:  "st_test01",
-		RunID:   "sess-1",
+		TS:     ts.Add(time.Hour),
+		Event:  event.StatusReview,
+		Ticket: "st_test01",
+		RunID:  "sess-1",
 	})
 
 	// sess-1 should NOT be able to review (touched it)

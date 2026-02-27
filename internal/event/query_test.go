@@ -116,7 +116,7 @@ func TestQueryBySession(t *testing.T) {
 	dir := t.TempDir()
 	setupTestEvents(t, dir)
 
-	events, err := QueryEvents(dir, Query{RunID:   "sess-def"})
+	events, err := QueryEvents(dir, Query{RunID: "sess-def"})
 	if err != nil {
 		t.Fatalf("QueryEvents: %v", err)
 	}
@@ -223,10 +223,10 @@ func TestRunIDsForTicketMultiple(t *testing.T) {
 	// Same ticket, multiple sessions.
 	for i, sess := range []string{"sess-1", "sess-2", "sess-1", "sess-3"} {
 		e := Event{
-			TS:      ts.Add(time.Duration(i) * time.Minute),
-			Event:   HookPostTool,
-			Ticket:  "st_multi1",
-			RunID:   sess,
+			TS:     ts.Add(time.Duration(i) * time.Minute),
+			Event:  HookPostTool,
+			Ticket: "st_multi1",
+			RunID:  sess,
 		}
 		if err := log.Append(e); err != nil {
 			t.Fatalf("append: %v", err)

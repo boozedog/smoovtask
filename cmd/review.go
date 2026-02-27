@@ -124,5 +124,12 @@ func runReview(_ *cobra.Command, _ []string) error {
 	fmt.Printf("      runtime issues), ask the user to confirm the fix works before approving\n")
 	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
 	fmt.Printf("\nReminder: `st note` is required before approving (`st status done`) or rejecting (`st status rework`).\n")
+	fmt.Printf("\n--- Logging ---\n")
+	fmt.Printf("Log your work frequently with `st note`. Good things to log:\n")
+	fmt.Printf("- Key decisions and why you made them\n")
+	fmt.Printf("- Discussions with the user — especially clarifications, scope changes, or approvals\n")
+	fmt.Printf("- Anything surprising or noteworthy discovered during review\n")
+	fmt.Printf("- Brief code snippets where they help explain a finding or concern\n")
+	fmt.Printf("Notes become the ticket's audit trail — another agent should be able to understand what happened.\n")
 	return nil
 }

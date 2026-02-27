@@ -137,8 +137,10 @@ They are complementary. st writes both atomically on every operation.
 
 ```
 BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
-                      ↑            ↓
-                      └── REWORK ←─┘
+   ↑          ↑        ↑            ↓        │
+   │          │        └── REWORK ←─┘        │
+   └──────────┴────────────────────────────── ┘
+                  (any status → BACKLOG)
 
       BLOCKED ←── (any status)
       BLOCKED ──→ (snaps back to prior status)
@@ -165,6 +167,7 @@ BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
 | REVIEW | REWORK | Reviewer must add rejection reason |
 | REWORK | IN-PROGRESS | Assignee picks it back up |
 | IN-PROGRESS | REVIEW | (After rework, same rules apply — cycles back through review) |
+| (any) | BACKLOG | Deprioritize — clears assignee, no snap-back |
 | (any) | BLOCKED | Requires either a `depends-on` ticket or a human hold reason |
 | BLOCKED | (prior) | Auto-unblock when dependency resolves, or human releases hold |
 
@@ -352,7 +355,7 @@ Single binary. All commands go through it.
 
 ```
 st init                              # Register current dir as a project
-st new "title" [--priority high] [--depends-on X]  # Create a ticket for current project
+st new "title" [--title T] [--priority P0-P5] [--depends-on X]  # Create a ticket
 st list [--project X] [--status Y]   # List tickets with filters
 st show st_xxxxxx                    # Show full ticket detail
 st board                             # TUI kanban (bubbletea)

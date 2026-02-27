@@ -34,7 +34,7 @@ templ ListPartial(data ListData) {
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"
 	>
-		<div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+		<div class="mb-4 flex gap-3 items-center">
 			<select
 				name="project"
 				class="uk-select uk-form-small"
@@ -111,7 +111,7 @@ func sortIndicator(f ListFilter, field string) string {
 
 templ ListContent(data ListData) {
 	if len(data.Tickets) == 0 {
-		<div style="padding: 2rem; text-align: center; opacity: 0.5;">
+		<div class="p-8 text-center opacity-50">
 			No tickets found.
 		</div>
 	} else {

@@ -24,6 +24,13 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusInProgress, ticket.StatusBlocked, true},
 		{ticket.StatusBlocked, ticket.StatusOpen, true}, // snap back
 
+		// Backlog transitions — any status can move to backlog
+		{ticket.StatusOpen, ticket.StatusBacklog, true},
+		{ticket.StatusInProgress, ticket.StatusBacklog, true},
+		{ticket.StatusReview, ticket.StatusBacklog, true},
+		{ticket.StatusRework, ticket.StatusBacklog, true},
+		{ticket.StatusDone, ticket.StatusBacklog, true},
+
 		// Invalid transitions
 		{ticket.StatusBacklog, ticket.StatusDone, false},
 		{ticket.StatusOpen, ticket.StatusReview, false},

@@ -136,11 +136,11 @@ func TestConcurrentAppends(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			e := Event{
-				TS:      ts,
-				Event:   HookPostTool,
-				Ticket:  "st_conc01",
-				RunID:   "session-test",
-				Data:    map[string]any{"index": i},
+				TS:     ts,
+				Event:  HookPostTool,
+				Ticket: "st_conc01",
+				RunID:  "session-test",
+				Data:   map[string]any{"index": i},
 			}
 			if err := log.Append(e); err != nil {
 				t.Errorf("concurrent Append %d: %v", i, err)

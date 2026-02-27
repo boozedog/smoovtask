@@ -222,7 +222,7 @@ func BoardContent(data BoardData) templ.Component {
 				}
 			}
 			if len(col.Tickets) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div style=\"padding: 0.75rem; opacity: 0.4; font-size: 0.8rem; text-align: center;\">No tickets</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"p-3 opacity-40 text-center\" style=\"font-size: 0.8rem;\">No tickets</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

@@ -327,6 +327,93 @@ func TestNew_InvalidPriority(t *testing.T) {
 	}
 }
 
+func TestNew_TitleFlag(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	out, err := env.runCmd(t, "new", "--title", "flag-based title")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
+	}
+	if !strings.Contains(out, "flag-based title") {
+		t.Errorf("output = %q, want title in output", out)
+	}
+
+	tickets, err := env.Store.List(ticket.ListFilter{Project: "testproject"})
+	if err != nil {
+		t.Fatalf("list tickets: %v", err)
+	}
+	if len(tickets) != 1 {
+		t.Fatalf("got %d tickets, want 1", len(tickets))
+	}
+	if tickets[0].Title != "flag-based title" {
+		t.Errorf("title = %q, want %q", tickets[0].Title, "flag-based title")
+	}
+}
+
+func TestNew_TitleFlagOverridesArg(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	out, err := env.runCmd(t, "new", "--title", "from flag", "from arg")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "from flag") {
+		t.Errorf("output = %q, want flag title to win", out)
+	}
+
+	tickets, err := env.Store.List(ticket.ListFilter{Project: "testproject"})
+	if err != nil {
+		t.Fatalf("list tickets: %v", err)
+	}
+	if len(tickets) != 1 {
+		t.Fatalf("got %d tickets, want 1", len(tickets))
+	}
+	if tickets[0].Title != "from flag" {
+		t.Errorf("title = %q, want %q", tickets[0].Title, "from flag")
+	}
+}
+
+func TestNew_NoTitleError(t *testing.T) {
+	env := newTestEnvResolved(t)
+
+	_, err := env.runCmd(t, "new")
+	if err == nil {
+		t.Fatal("expected error when no title provided")
+	}
+	if !strings.Contains(err.Error(), "title is required") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "title is required")
+	}
+}
+
+func TestNew_TitleFlagWithProject(t *testing.T) {
+	env := newTestEnv(t)
+
+	out, err := env.runCmd(t, "new", "--project", "testproject", "--title", "combined flags")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
+	}
+
+	tickets, err := env.Store.List(ticket.ListFilter{Project: "testproject"})
+	if err != nil {
+		t.Fatalf("list tickets: %v", err)
+	}
+	if len(tickets) != 1 {
+		t.Fatalf("got %d tickets, want 1", len(tickets))
+	}
+	if tickets[0].Title != "combined flags" {
+		t.Errorf("title = %q, want %q", tickets[0].Title, "combined flags")
+	}
+}
+
 func TestNew_DescriptionFlag(t *testing.T) {
 	env := newTestEnvResolved(t)
 

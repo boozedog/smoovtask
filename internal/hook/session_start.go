@@ -170,12 +170,14 @@ func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*tic
 		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"message\"` — document progress as you work\n")
 		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> review` — submit when done\n")
 		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT start editing code without picking a ticket first.\n")
+		b.WriteString("\nLOG FREQUENTLY: Use `st note` throughout your work — not just at the end. Log key decisions, discussions with the user (clarifications, scope changes, approvals), and anything surprising. Include brief code snippets where they help explain a change. Notes are the ticket's audit trail.\n")
 	} else {
 		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
 		b.WriteString("1. `st review --ticket st_xxxxxx --run-id <your-run-id>` — claim a ticket for review\n")
 		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"<findings>\"` — document your review findings\n")
 		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> done` (approve) or `st status --ticket st_xxxxxx --run-id <your-run-id> rework` (reject)\n")
 		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT approve or reject without documenting findings via `st note` first.\n")
+		b.WriteString("\nLOG FREQUENTLY: Use `st note` throughout your work — not just at the end. Log key decisions, discussions with the user (clarifications, scope changes, approvals), and anything surprising. Include brief code snippets where they help explain a change. Notes are the ticket's audit trail.\n")
 	}
 
 	return b.String()

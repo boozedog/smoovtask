@@ -10,11 +10,12 @@ import (
 // transitions defines the valid status transitions.
 var transitions = map[ticket.Status][]ticket.Status{
 	ticket.StatusBacklog:    {ticket.StatusOpen, ticket.StatusBlocked},
-	ticket.StatusOpen:       {ticket.StatusInProgress, ticket.StatusBlocked},
-	ticket.StatusInProgress: {ticket.StatusReview, ticket.StatusBlocked},
-	ticket.StatusReview:     {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked},
-	ticket.StatusRework:     {ticket.StatusInProgress, ticket.StatusBlocked},
+	ticket.StatusOpen:       {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog},
+	ticket.StatusInProgress: {ticket.StatusReview, ticket.StatusBlocked, ticket.StatusBacklog},
+	ticket.StatusReview:     {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog},
+	ticket.StatusRework:     {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog},
 	ticket.StatusBlocked:    {}, // unblocks to prior status, handled separately
+	ticket.StatusDone:       {ticket.StatusBacklog},
 }
 
 // CanTransition returns true if the transition from → to is valid.
