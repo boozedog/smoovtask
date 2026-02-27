@@ -24,7 +24,6 @@ func New(ticketsDir, eventsDir string, broker *sse.Broker) *Handler {
 
 // statusOrder defines the column order for the kanban board.
 var statusOrder = []ticket.Status{
-	ticket.StatusBacklog,
 	ticket.StatusOpen,
 	ticket.StatusInProgress,
 	ticket.StatusReview,
