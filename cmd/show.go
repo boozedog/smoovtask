@@ -10,18 +10,28 @@ import (
 )
 
 var showCmd = &cobra.Command{
-	Use:   "show <ticket-id>",
+	Use:   "show [ticket-id]",
 	Short: "Show full ticket detail",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runShow,
 }
 
+var showTicket string
+
 func init() {
+	showCmd.Flags().StringVar(&showTicket, "ticket", "", "ticket ID to show")
 	rootCmd.AddCommand(showCmd)
 }
 
 func runShow(_ *cobra.Command, args []string) error {
-	id := args[0]
+	// --ticket flag takes precedence, then positional arg
+	id := showTicket
+	if id == "" && len(args) == 1 {
+		id = args[0]
+	}
+	if id == "" {
+		return fmt.Errorf("ticket ID required — pass --ticket or provide as argument")
+	}
 
 	cfg, err := config.Load()
 	if err != nil {

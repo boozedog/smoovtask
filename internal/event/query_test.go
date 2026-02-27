@@ -1,6 +1,7 @@
 package event
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -247,6 +248,52 @@ func TestRunIDsForTicketMultiple(t *testing.T) {
 		if s != want[i] {
 			t.Errorf("session[%d] = %q, want %q", i, s, want[i])
 		}
+	}
+}
+
+func TestUnmarshalLegacySessionField(t *testing.T) {
+	dir := t.TempDir()
+
+	// Write a JSONL line using the old "session" field format (no "run_id")
+	legacy := `{"ts":"2026-02-24T09:00:00Z","event":"hook.pre-tool","ticket":"st_old001","project":"testproj","actor":"agent","session":"legacy-sess-id","data":{"tool":"Bash"}}` + "\n"
+	if err := os.WriteFile(dir+"/2026-02-24.jsonl", []byte(legacy), 0o644); err != nil {
+		t.Fatalf("write legacy file: %v", err)
+	}
+
+	events, err := QueryEvents(dir, Query{TicketID: "st_old001"})
+	if err != nil {
+		t.Fatalf("QueryEvents: %v", err)
+	}
+
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want 1", len(events))
+	}
+
+	if events[0].RunID != "legacy-sess-id" {
+		t.Errorf("RunID = %q, want %q (from legacy session field)", events[0].RunID, "legacy-sess-id")
+	}
+}
+
+func TestUnmarshalRunIDTakesPrecedence(t *testing.T) {
+	dir := t.TempDir()
+
+	// Write a JSONL line that has both "run_id" and "session" — run_id should win
+	both := `{"ts":"2026-02-24T09:00:00Z","event":"hook.pre-tool","ticket":"st_both01","project":"testproj","actor":"agent","run_id":"new-run-id","session":"old-sess-id","data":{}}` + "\n"
+	if err := os.WriteFile(dir+"/2026-02-24.jsonl", []byte(both), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	events, err := QueryEvents(dir, Query{TicketID: "st_both01"})
+	if err != nil {
+		t.Fatalf("QueryEvents: %v", err)
+	}
+
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want 1", len(events))
+	}
+
+	if events[0].RunID != "new-run-id" {
+		t.Errorf("RunID = %q, want %q (run_id should take precedence over session)", events[0].RunID, "new-run-id")
 	}
 }
 

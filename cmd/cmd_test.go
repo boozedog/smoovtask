@@ -168,6 +168,9 @@ func resetFlags() {
 	newTags = ""
 	newDependsOn = ""
 	newDescription = ""
+	newProject = ""
+	pickTicket = ""
+	reviewTicket = ""
 }
 
 func TestOverride_HappyPath(t *testing.T) {

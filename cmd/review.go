@@ -46,7 +46,7 @@ func runReview(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("run ID required — pass --run-id or set CLAUDE_SESSION_ID")
 	}
 
-	tk, err := resolveReviewTicket(store, cfg, runID, reviewTicket)
+	tk, err := resolveReviewTicket(store, cfg, reviewTicket)
 	if err != nil {
 		return err
 	}

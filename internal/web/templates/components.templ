@@ -46,7 +46,7 @@ templ StatusBadge(s ticket.Status) {
 }
 
 templ TicketCard(tk *ticket.Ticket) {
-	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#content" hx-push-url={ fmt.Sprintf("/ticket/%s", tk.ID) } class="st-card">
+	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="st-card">
 		<div class="st-card-title">{ tk.Title }</div>
 		<div class="st-card-meta">
 			@PriorityBadge(tk.Priority)

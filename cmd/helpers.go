@@ -52,7 +52,7 @@ func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, runID, ticket
 
 // resolveReviewTicket finds a ticket to review.
 // Priority: ticketOverride (from --ticket flag) > scan for REVIEW-status tickets in the current project.
-func resolveReviewTicket(store *ticket.Store, cfg *config.Config, runID, ticketOverride string) (*ticket.Ticket, error) {
+func resolveReviewTicket(store *ticket.Store, cfg *config.Config, ticketOverride string) (*ticket.Ticket, error) {
 	if ticketOverride != "" {
 		return store.Get(ticketOverride)
 	}

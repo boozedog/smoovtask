@@ -1,6 +1,9 @@
 package event
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Event type constants.
 const (
@@ -36,4 +39,27 @@ type Event struct {
 	Actor   string         `json:"actor"`
 	RunID   string         `json:"run_id"`
 	Data    map[string]any `json:"data"`
+}
+
+// eventAlias is used by UnmarshalJSON to avoid infinite recursion.
+type eventAlias Event
+
+// eventCompat handles backwards compatibility with the old "session" JSON field.
+type eventCompat struct {
+	eventAlias
+	Session string `json:"session"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling to support the legacy
+// "session" field. Old JSONL events used "session" instead of "run_id".
+func (e *Event) UnmarshalJSON(data []byte) error {
+	var c eventCompat
+	if err := json.Unmarshal(data, &c); err != nil {
+		return err
+	}
+	*e = Event(c.eventAlias)
+	if e.RunID == "" && c.Session != "" {
+		e.RunID = c.Session
+	}
+	return nil
 }

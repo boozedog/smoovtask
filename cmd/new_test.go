@@ -254,6 +254,69 @@ func TestNew_DependsOnMissingDep(t *testing.T) {
 	}
 }
 
+func TestNew_ProjectFlag_HappyPath(t *testing.T) {
+	env := newTestEnv(t)
+
+	// Use --project to bypass cwd detection
+	out, err := env.runCmd(t, "new", "--project", "testproject", "project flag ticket")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
+	}
+
+	tickets, err := env.Store.List(ticket.ListFilter{Project: "testproject"})
+	if err != nil {
+		t.Fatalf("list tickets: %v", err)
+	}
+	if len(tickets) != 1 {
+		t.Fatalf("got %d tickets, want 1", len(tickets))
+	}
+	if tickets[0].Project != "testproject" {
+		t.Errorf("project = %q, want %q", tickets[0].Project, "testproject")
+	}
+}
+
+func TestNew_ProjectFlag_UnknownProject(t *testing.T) {
+	env := newTestEnv(t)
+	_ = env
+
+	_, err := env.runCmd(t, "new", "--project", "nonexistent", "bad project ticket")
+	if err == nil {
+		t.Fatal("expected error for unknown project")
+	}
+	if !strings.Contains(err.Error(), "unknown project") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "unknown project")
+	}
+}
+
+func TestNew_ProjectFlag_BypassesCwdDetection(t *testing.T) {
+	env := newTestEnv(t)
+
+	// Change to a directory that is NOT the project path.
+	// With --project, it should still work.
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	out, err := env.runCmd(t, "new", "--project", "testproject", "bypassed cwd ticket")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Created st_") {
+		t.Errorf("output = %q, want substring %q", out, "Created st_")
+	}
+}
+
 func TestNew_InvalidPriority(t *testing.T) {
 	env := newTestEnvResolved(t)
 	_ = env

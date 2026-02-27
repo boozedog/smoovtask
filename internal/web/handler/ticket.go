@@ -24,11 +24,17 @@ func (h *Handler) Ticket(w http.ResponseWriter, r *http.Request) {
 	_ = templates.TicketPage(data).Render(r.Context(), w)
 }
 
-// PartialTicket renders the ticket partial (with SSE self-refresh wrapper) for htmx swaps.
+// PartialTicket renders the ticket partial for htmx swaps.
+// When the request targets the modal (HX-Target or ?modal=1), it renders
+// the modal-specific partial with OOB header swap; otherwise the standard partial.
 func (h *Handler) PartialTicket(w http.ResponseWriter, r *http.Request) {
 	data, err := h.buildTicketData(r)
 	if err != nil {
 		http.Error(w, "Ticket not found", http.StatusNotFound)
+		return
+	}
+	if r.Header.Get("HX-Target") == "ticket-modal-body" || r.URL.Query().Get("modal") == "1" {
+		_ = templates.TicketModalPartial(data).Render(r.Context(), w)
 		return
 	}
 	_ = templates.TicketPartial(data).Render(r.Context(), w)

@@ -80,6 +80,23 @@ func existingIDs(ticketsDir string) (map[string]bool, error) {
 	return ids, nil
 }
 
+// LooksLikeTicketID returns true if s matches the st_xxxxxx pattern.
+func LooksLikeTicketID(s string) bool {
+	if !strings.HasPrefix(s, IDPrefix) {
+		return false
+	}
+	rest := s[len(IDPrefix):]
+	if len(rest) != IDLength {
+		return false
+	}
+	for _, c := range rest {
+		if !strings.ContainsRune(base62Chars, c) {
+			return false
+		}
+	}
+	return true
+}
+
 // extractIDFromFilename extracts the ticket ID from a filename like
 // 2026-02-25T10:00-st_a7Kx2m.md
 func extractIDFromFilename(name string) string {

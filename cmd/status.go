@@ -85,11 +85,13 @@ func runStatus(_ *cobra.Command, args []string) error {
 			return fmt.Errorf("check note requirement: %w", noteErr)
 		}
 		if !hasNote {
-			msg := "cannot move to %s — a note is required before review. Run `st note \"message\"` first"
+			noteCmd := fmt.Sprintf("st note --ticket %s --run-id %s \"<message>\"", tk.ID, runID)
+			msg := "cannot move to %s — a very detailed note is required before review. Run `%s` first"
 			if tk.Status == ticket.StatusReview {
-				msg = "cannot move to %s — a review note is required. Document your findings with `st note \"<findings>\"` first"
+				noteCmd = fmt.Sprintf("st note --ticket %s --run-id %s \"<findings>\"", tk.ID, runID)
+				msg = "cannot move to %s — a very detailed review note is required. Document your findings with `%s` first"
 			}
-			return fmt.Errorf(msg, targetStatus)
+			return fmt.Errorf(msg, targetStatus, noteCmd)
 		}
 	}
 

@@ -51,6 +51,68 @@ func TestPick_ByExplicitID(t *testing.T) {
 	}
 }
 
+func TestPick_ByTicketFlag(t *testing.T) {
+	env := newTestEnv(t)
+	t.Setenv("CLAUDE_SESSION_ID", "test-session-flag")
+
+	tk := env.createTicket(t, "flag pick me", ticket.StatusOpen)
+
+	out, err := env.runCmd(t, "pick", "--ticket", tk.ID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Picked up "+tk.ID) {
+		t.Errorf("output = %q, want substring %q", out, "Picked up "+tk.ID)
+	}
+
+	updated, err := env.Store.Get(tk.ID)
+	if err != nil {
+		t.Fatalf("get ticket: %v", err)
+	}
+	if updated.Status != ticket.StatusInProgress {
+		t.Errorf("status = %s, want IN-PROGRESS", updated.Status)
+	}
+	if updated.Assignee != "test-session-flag" {
+		t.Errorf("assignee = %q, want %q", updated.Assignee, "test-session-flag")
+	}
+}
+
+func TestPick_TicketFlagPrecedence(t *testing.T) {
+	env := newTestEnv(t)
+	t.Setenv("CLAUDE_SESSION_ID", "test-session-precedence")
+
+	tkFlag := env.createTicket(t, "flag target", ticket.StatusOpen)
+	tkPos := env.createTicket(t, "positional target", ticket.StatusOpen)
+
+	// --ticket flag should take precedence over positional arg
+	out, err := env.runCmd(t, "pick", "--ticket", tkFlag.ID, tkPos.ID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Picked up "+tkFlag.ID) {
+		t.Errorf("output = %q, want picked up flag ticket %s", out, tkFlag.ID)
+	}
+
+	updated, err := env.Store.Get(tkFlag.ID)
+	if err != nil {
+		t.Fatalf("get ticket: %v", err)
+	}
+	if updated.Status != ticket.StatusInProgress {
+		t.Errorf("flag ticket status = %s, want IN-PROGRESS", updated.Status)
+	}
+
+	// Positional ticket should remain unchanged
+	posUpdated, err := env.Store.Get(tkPos.ID)
+	if err != nil {
+		t.Fatalf("get positional ticket: %v", err)
+	}
+	if posUpdated.Status != ticket.StatusOpen {
+		t.Errorf("positional ticket status = %s, want OPEN (unchanged)", posUpdated.Status)
+	}
+}
+
 func TestPick_AutoSelect(t *testing.T) {
 	env := newTestEnvResolved(t)
 	t.Setenv("CLAUDE_SESSION_ID", "test-session-auto")

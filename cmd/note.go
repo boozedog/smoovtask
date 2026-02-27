@@ -36,6 +36,9 @@ func runNote(_ *cobra.Command, args []string) error {
 		message = args[1]
 	} else {
 		// Single arg — if --ticket is not set and arg looks like a ticket ID, error helpfully
+		if ticketFlag == "" && ticket.LooksLikeTicketID(args[0]) {
+			return fmt.Errorf("argument %q looks like a ticket ID — did you mean: st note %s \"<message>\"?", args[0], args[0])
+		}
 		message = args[0]
 	}
 

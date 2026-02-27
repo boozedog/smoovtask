@@ -50,9 +50,10 @@ templ Layout(title string, currentPath string) {
 				.st-ticket-body pre { background: hsl(var(--card)); padding: 1rem; border-radius: 0.375rem; overflow-x: auto; margin-bottom: 1rem; max-width: 100%; }
 				.st-ticket-body code { font-size: 0.85em; }
 				.st-ticket-body ul, .st-ticket-body ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
-				.st-sidebar-item { padding: 0.5rem 0; border-bottom: 1px solid hsl(var(--border)); }
-				.st-sidebar-label { font-size: 0.75rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; }
-				.st-sidebar-value { font-weight: 500; }
+				.st-ticket-detail { max-width: 66%; margin: 0 auto; }
+				.st-ticket-header { margin-bottom: 0; }
+				.st-ticket-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; }
+				.st-meta-sep { width: 1px; height: 1rem; background: hsl(var(--border)); }
 				.st-nav-active { color: hsl(var(--primary)) !important; border-bottom: 2px solid hsl(var(--primary)); }
 				.uk-navbar { display: flex; align-items: center; }
 				.uk-navbar-left { display: flex; align-items: center; }
@@ -68,13 +69,8 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper::after { right: 0; background: linear-gradient(to left, hsl(var(--background)), transparent); }
 				.st-board-wrapper.scroll-left::before { opacity: 1; }
 				.st-board-wrapper.scroll-right::after { opacity: 1; }
-				.st-ticket-grid { display: grid; grid-template-columns: 1fr 280px; gap: 2rem; height: 100%; max-width: 66%; margin: 0 auto; }
-				.st-ticket-grid > div, .st-ticket-grid > aside { overflow-y: auto; min-height: 0; min-width: 0; }
-				@media (max-width: 768px) {
-					.st-ticket-grid { grid-template-columns: 1fr; width: 100%; height: auto; gap: 1rem; }
-					.st-ticket-grid > aside { order: -1; display: flex; flex-wrap: wrap; gap: 0.5rem; }
-					.st-ticket-grid > aside .st-sidebar-item { border-bottom: none; padding: 0.25rem 0.75rem; background: hsl(var(--card)); border-radius: 0.375rem; border: 1px solid hsl(var(--border)); }
-				}
+				.st-modal-ticket { width: 66vw; max-width: 1200px; }
+				.st-modal-ticket .st-ticket-detail { max-width: 100%; }
 			</style>
 		</head>
 		<body hx-ext="sse" sse-connect="/events" style="background-color: hsl(var(--background)); color: hsl(var(--foreground)); height: 100vh; display: flex; flex-direction: column; overflow: hidden;">
@@ -136,13 +132,9 @@ templ Layout(title string, currentPath string) {
 				document.addEventListener('click', function(e) {
 					var row = e.target.closest('tr[data-href]');
 					if (row && !e.target.closest('a')) {
-						var href = row.dataset.href;
 						var partial = row.dataset.partial;
 						if (partial) {
-							htmx.ajax('GET', partial, {target: '#content', swap: 'innerHTML'});
-							history.pushState({}, '', href);
-						} else {
-							window.location.href = href;
+							htmx.ajax('GET', partial, {target: '#ticket-modal-body', swap: 'innerHTML'});
 						}
 					}
 				});
@@ -206,6 +198,13 @@ templ Layout(title string, currentPath string) {
 				});
 				// Handle browser back/forward.
 				window.addEventListener('popstate', function() {
+					// If ticket modal is open, close it and return.
+					var modalEl = document.getElementById('ticket-modal');
+					if (modalEl && _ticketModalOpen) {
+						_modalClosingFromHistory = true;
+						UIkit.modal(modalEl).hide();
+						return;
+					}
 					var path = window.location.pathname;
 					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/activity': '/partials/activity'};
 					var partial = partialMap[path];
@@ -226,6 +225,41 @@ templ Layout(title string, currentPath string) {
 							}
 						});
 					}
+				});
+			</script>
+			<div id="ticket-modal" data-uk-modal>
+				<div class="uk-modal-dialog st-modal-ticket">
+					<button class="uk-modal-close" type="button" data-uk-close style="position: absolute; right: 1rem; top: 1rem; z-index: 1;"></button>
+					<div class="uk-modal-header" id="ticket-modal-header"></div>
+					<div class="uk-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
+				</div>
+			</div>
+			<script>
+				// Ticket modal management.
+				var _ticketModalOpen = false;
+				var _modalClosingFromHistory = false;
+				document.addEventListener('htmx:afterSwap', function(e) {
+					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
+						var url = e.detail.xhr ? e.detail.xhr.responseURL : '';
+						var match = url.match(/\/ticket\/(st_[A-Za-z0-9]+)/);
+						var id = match ? match[1] : '';
+						if (_ticketModalOpen) {
+							if (id) history.replaceState({ticketModal: true}, '', '/ticket/' + id);
+						} else {
+							UIkit.modal('#ticket-modal').show();
+							_ticketModalOpen = true;
+							if (id) history.pushState({ticketModal: true}, '', '/ticket/' + id);
+						}
+					}
+				});
+				UIkit.util.on('#ticket-modal', 'hidden', function() {
+					_ticketModalOpen = false;
+					if (!_modalClosingFromHistory) {
+						history.back();
+					}
+					_modalClosingFromHistory = false;
+					document.getElementById('ticket-modal-header').innerHTML = '';
+					document.getElementById('ticket-modal-body').innerHTML = '';
 				});
 			</script>
 		</body>

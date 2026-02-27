@@ -61,78 +61,71 @@ templ TicketPartial(data TicketData) {
 	</div>
 }
 
-templ TicketContent(data TicketData) {
-	<div class="st-ticket-grid">
-		<div>
-			<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; overflow-wrap: break-word;">
-				{ data.Ticket.Title }
-			</h1>
-			<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center;">
-				<code style="font-size: 0.8rem;">{ data.Ticket.ID }</code>
-				@StatusBadge(data.Ticket.Status)
-				@PriorityBadge(data.Ticket.Priority)
-			</div>
-			<div class="st-ticket-body">
-				@templ.Raw(data.BodyHTML)
-			</div>
-		</div>
-		<aside>
-			<div class="st-sidebar-item">
-				<div class="st-sidebar-label">Status</div>
-				<div class="st-sidebar-value">
-					@StatusBadge(data.Ticket.Status)
-				</div>
-			</div>
-			<div class="st-sidebar-item">
-				<div class="st-sidebar-label">Priority</div>
-				<div class="st-sidebar-value">
-					@PriorityBadge(data.Ticket.Priority)
-				</div>
-			</div>
-			<div class="st-sidebar-item">
-				<div class="st-sidebar-label">Project</div>
-				<div class="st-sidebar-value">{ data.Ticket.Project }</div>
-			</div>
+templ TicketHeader(data TicketData) {
+	<div class="st-ticket-header">
+		<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; overflow-wrap: break-word;">
+			{ data.Ticket.Title }
+		</h1>
+		<div class="st-ticket-meta">
+			<code style="font-size: 0.8rem;">{ data.Ticket.ID }</code>
+			@StatusBadge(data.Ticket.Status)
+			@PriorityBadge(data.Ticket.Priority)
+			<span class="st-meta-sep"></span>
+			<span>{ data.Ticket.Project }</span>
 			if data.Ticket.Assignee != "" {
-				<div class="st-sidebar-item">
-					<div class="st-sidebar-label">Assignee</div>
-					<div class="st-sidebar-value" style="font-size: 0.85rem; word-break: break-all;">{ data.Ticket.Assignee }</div>
-				</div>
+				<span class="st-meta-sep"></span>
+				<span title={ data.Ticket.Assignee } style="font-family: 'Maple Mono', monospace; font-size: 0.8rem;">{ shortAssignee(data.Ticket.Assignee) }</span>
 			}
-			<div class="st-sidebar-item">
-				<div class="st-sidebar-label">Created</div>
-				<div class="st-sidebar-value" style="font-size: 0.85rem;">
-					<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") }>{ relativeTime(data.Ticket.Created) }</time>
-				</div>
-			</div>
-			<div class="st-sidebar-item">
-				<div class="st-sidebar-label">Updated</div>
-				<div class="st-sidebar-value" style="font-size: 0.85rem;">
-					<time title={ data.Ticket.Updated.Format("2006-01-02 15:04:05 MST") }>{ relativeTime(data.Ticket.Updated) }</time>
-				</div>
-			</div>
+			<span class="st-meta-sep"></span>
+			<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") } style="opacity: 0.6;">{ relativeTime(data.Ticket.Created) }</time>
+			<span style="opacity: 0.4;">·</span>
+			<time title={ data.Ticket.Updated.Format("2006-01-02 15:04:05 MST") } style="opacity: 0.6;">updated { relativeTime(data.Ticket.Updated) }</time>
 			if len(data.Ticket.Tags) > 0 {
-				<div class="st-sidebar-item">
-					<div class="st-sidebar-label">Tags</div>
-					<div class="st-sidebar-value" style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
-						for _, tag := range data.Ticket.Tags {
-							<span class="st-badge" style="background: #374151; color: #9ca3af;">{ tag }</span>
-						}
-					</div>
-				</div>
+				<span class="st-meta-sep"></span>
+				for _, tag := range data.Ticket.Tags {
+					<span class="st-badge" style="background: #374151; color: #9ca3af;">{ tag }</span>
+				}
 			}
 			if len(data.Ticket.DependsOn) > 0 {
-				<div class="st-sidebar-item">
-					<div class="st-sidebar-label">Depends On</div>
-					<div class="st-sidebar-value">
-						for _, dep := range data.Ticket.DependsOn {
-							<div>
-								<a href={ templ.SafeURL("/ticket/" + dep) } hx-get={ "/partials/ticket/" + dep } hx-target="#content" hx-push-url={ "/ticket/" + dep } style="font-size: 0.85rem;">{ dep }</a>
-							</div>
-						}
-					</div>
-				</div>
+				<span class="st-meta-sep"></span>
+				for _, dep := range data.Ticket.DependsOn {
+					<a href={ templ.SafeURL("/ticket/" + dep) } hx-get={ "/partials/ticket/" + dep } hx-target="#ticket-modal-body" style="font-size: 0.8rem;">{ dep }</a>
+				}
 			}
-		</aside>
+		</div>
+	</div>
+}
+
+templ TicketBodyOnly(data TicketData) {
+	<div class="st-ticket-body">
+		@templ.Raw(data.BodyHTML)
+	</div>
+}
+
+templ TicketContent(data TicketData) {
+	<div class="st-ticket-detail">
+		@TicketHeader(data)
+		@TicketBodyOnly(data)
+	</div>
+}
+
+func ticketModalPartialURL(id string) string {
+	return "/partials/ticket/" + id + "?modal=1"
+}
+
+templ TicketModalPartial(data TicketData) {
+	<div
+		hx-get={ ticketModalPartialURL(data.Ticket.ID) }
+		hx-trigger="sse:refresh"
+		hx-target="#ticket-modal-body"
+		hx-swap="innerHTML"
+		hx-disinherit="hx-swap"
+	>
+		<div class="st-ticket-detail">
+			@TicketBodyOnly(data)
+		</div>
+	</div>
+	<div class="uk-modal-header" id="ticket-modal-header" hx-swap-oob="true">
+		@TicketHeader(data)
 	</div>
 }
