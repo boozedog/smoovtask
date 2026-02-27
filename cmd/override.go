@@ -56,9 +56,9 @@ func runOverride(_ *cobra.Command, args []string) error {
 	tk.Updated = now
 
 	actor := identity.Actor()
-	sessionID := identity.SessionID()
+	runID := identity.RunID()
 	content := fmt.Sprintf("%s → %s", oldStatus, targetStatus)
-	ticket.AppendSection(tk, "Override", actor, sessionID, content, nil, now)
+	ticket.AppendSection(tk, "Override", actor, runID, content, nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -76,7 +76,7 @@ func runOverride(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data: map[string]any{
 			"from":   string(oldStatus),
 			"to":     string(targetStatus),

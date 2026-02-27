@@ -58,8 +58,8 @@ func runUnhold(_ *cobra.Command, args []string) error {
 	tk.Updated = now
 
 	actor := identity.Actor()
-	sessionID := identity.SessionID()
-	ticket.AppendSection(tk, "Unhold", actor, sessionID, "", nil, now)
+	runID := identity.RunID()
+	ticket.AppendSection(tk, "Unhold", actor, runID, "", nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -78,7 +78,7 @@ func runUnhold(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data: map[string]any{
 			"from":   string(ticket.StatusBlocked),
 			"reason": "unhold",

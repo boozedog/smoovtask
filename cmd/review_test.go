@@ -15,7 +15,7 @@ func TestReview_CleanSession(t *testing.T) {
 
 	tk := env.createTicket(t, "review me", ticket.StatusReview)
 
-	out, err := env.runCmd(t, "review", tk.ID)
+	out, err := env.runCmd(t, "review", "--ticket", tk.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -63,10 +63,10 @@ func TestReview_SessionTouchedTicket(t *testing.T) {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   "agent",
-		Session: "tainted-session",
+		RunID:   "tainted-session",
 	})
 
-	_, err := env.runCmd(t, "review", tk.ID)
+	_, err := env.runCmd(t, "review", "--ticket", tk.ID)
 	if err == nil {
 		t.Fatal("expected error for session that touched ticket")
 	}
@@ -81,7 +81,7 @@ func TestReview_NotInReviewStatus(t *testing.T) {
 
 	tk := env.createTicket(t, "not in review", ticket.StatusInProgress)
 
-	_, err := env.runCmd(t, "review", tk.ID)
+	_, err := env.runCmd(t, "review", "--ticket", tk.ID)
 	if err == nil {
 		t.Fatal("expected error for ticket not in REVIEW status")
 	}
@@ -95,7 +95,7 @@ func TestReview_TicketNotFound(t *testing.T) {
 	t.Setenv("CLAUDE_SESSION_ID", "clean-reviewer")
 	_ = env
 
-	_, err := env.runCmd(t, "review", "st_zzzzzz")
+	_, err := env.runCmd(t, "review", "--ticket", "st_zzzzzz")
 	if err == nil {
 		t.Fatal("expected error for missing ticket")
 	}

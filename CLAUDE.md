@@ -49,17 +49,9 @@ just clean          # remove build artifacts
 - Events: `~/.smoovtask/events/YYYY-MM-DD.jsonl`
 - Tickets: `<vault_path>/tickets/YYYY-MM-DDTHH:MM-st_xxxxxx.md` (default vault: `~/obsidian/smoovtask`)
 
-## Agent Workflow (REQUIRED)
+## Design Principle
 
-When working on this project, you MUST use the `st` ticketing workflow:
-
-1. **`st pick st_xxxxxx`** — claim a ticket before starting any code changes
-2. **`st note "message"`** — document progress as you work (at least once before submitting)
-3. **`st status review`** — submit the ticket when done
-
-Do NOT edit code without an active ticket. The hooks will log all tool usage, and unattributed work creates audit gaps.
-
-If no tickets exist for your task, create one first with `st new "title"`.
+`st` is fully self-contained. All workflow instructions are injected at runtime via hooks — never rely on CLAUDE.md, memory files, or skills to convey workflow guidance to the agent. If the agent needs to know something, `st` tells it directly.
 
 ## Conventions
 

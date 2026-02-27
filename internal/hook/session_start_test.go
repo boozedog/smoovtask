@@ -72,7 +72,7 @@ func TestBuildBoardSummaryOpen(t *testing.T) {
 	if !strings.Contains(summary, "smoovtask — api-server — 2 OPEN tickets ready") {
 		t.Errorf("missing header, got:\n%s", summary)
 	}
-	if !strings.Contains(summary, "Session: sess-abc123") {
+	if !strings.Contains(summary, "Run: sess-abc123") {
 		t.Errorf("missing session ID, got:\n%s", summary)
 	}
 	if !strings.Contains(summary, "st_a7Kx2m") {
@@ -87,7 +87,7 @@ func TestBuildBoardSummaryOpen(t *testing.T) {
 	if !strings.Contains(summary, "st note") {
 		t.Error("missing note instruction")
 	}
-	if !strings.Contains(summary, "st status review") {
+	if !strings.Contains(summary, "st status --ticket") {
 		t.Error("missing status review instruction")
 	}
 }
@@ -102,11 +102,32 @@ func TestBuildBoardSummaryReview(t *testing.T) {
 	if !strings.Contains(summary, "REVIEW") {
 		t.Error("should show REVIEW when review tickets exist")
 	}
-	if !strings.Contains(summary, "REQUIRED") {
-		t.Error("missing REQUIRED prefix on review instruction")
+	if !strings.Contains(summary, "REQUIRED workflow") {
+		t.Error("missing REQUIRED workflow heading")
 	}
 	if !strings.Contains(summary, "st review") {
-		t.Error("missing review instruction")
+		t.Error("missing step 1: st review instruction")
+	}
+	if !strings.Contains(summary, "st note") {
+		t.Error("missing step 2: st note instruction")
+	}
+	if !strings.Contains(summary, "st status --ticket st_xxxxxx --run-id <your-run-id> done") {
+		t.Error("missing step 3: st status done instruction")
+	}
+	if !strings.Contains(summary, "st status --ticket st_xxxxxx --run-id <your-run-id> rework") {
+		t.Error("missing step 3: st status rework instruction")
+	}
+	if !strings.Contains(summary, "Do NOT approve or reject") {
+		t.Error("missing warning about documenting findings first")
+	}
+	if !strings.Contains(summary, "st note --ticket") {
+		t.Error("missing --ticket flag on st note in review workflow")
+	}
+	if !strings.Contains(summary, "st status --ticket") {
+		t.Error("missing --ticket flag on st status in review workflow")
+	}
+	if !strings.Contains(summary, "ALWAYS pass --ticket and --run-id") {
+		t.Error("missing ALWAYS pass --ticket and --run-id warning in review workflow")
 	}
 }
 

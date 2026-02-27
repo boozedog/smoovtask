@@ -64,7 +64,7 @@ func HandleSessionStart(input *Input) error {
 		Event:   event.HookSessionStart,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 		Data: map[string]any{
 			"open_count":   len(openTickets),
 			"review_count": len(reviewTickets),
@@ -74,6 +74,8 @@ func HandleSessionStart(input *Input) error {
 	summary := buildBoardSummary(proj, input.SessionID, openTickets, reviewTickets)
 	if summary != "" {
 		fmt.Print(summary)
+	} else {
+		fmt.Printf("smoovtask — %s — no open tickets\n\nIf no ticket exists for your task, create one first with `st new \"title\"`.\n", proj)
 	}
 
 	return nil
@@ -153,7 +155,7 @@ func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*tic
 	var b strings.Builder
 	fmt.Fprintf(&b, "smoovtask — %s — %d %s tickets ready\n", proj, len(tickets), statusLabel)
 	if sessionID != "" {
-		fmt.Fprintf(&b, "Session: %s\n", sessionID)
+		fmt.Fprintf(&b, "Run: %s\n", sessionID)
 	}
 	b.WriteString("\n")
 
@@ -164,12 +166,16 @@ func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*tic
 	b.WriteString("\n")
 	if statusLabel == "OPEN" {
 		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
-		b.WriteString("1. `st pick st_xxxxxx` — claim a ticket before starting any work\n")
-		b.WriteString("2. `st note \"message\"` — document progress as you work\n")
-		b.WriteString("3. `st status review` — submit when done\n")
-		b.WriteString("\nDo NOT start editing code without picking a ticket first.\n")
+		b.WriteString("1. `st pick st_xxxxxx --run-id <your-run-id>` — claim a ticket before starting any work\n")
+		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"message\"` — document progress as you work\n")
+		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> review` — submit when done\n")
+		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT start editing code without picking a ticket first.\n")
 	} else {
-		b.WriteString("REQUIRED: Review a ticket with `st review st_xxxxxx`.\n")
+		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
+		b.WriteString("1. `st review --ticket st_xxxxxx --run-id <your-run-id>` — claim a ticket for review\n")
+		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"<findings>\"` — document your review findings\n")
+		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> done` (approve) or `st status --ticket st_xxxxxx --run-id <your-run-id> rework` (reject)\n")
+		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT approve or reject without documenting findings via `st note` first.\n")
 	}
 
 	return b.String()

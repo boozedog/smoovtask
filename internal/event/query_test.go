@@ -17,7 +17,7 @@ func setupTestEvents(t *testing.T, dir string) {
 			Ticket:  "st_aaa001",
 			Project: "api-server",
 			Actor:   "human",
-			Session: "",
+			RunID:   "",
 			Data:    map[string]any{"title": "First ticket"},
 		},
 		{
@@ -26,7 +26,7 @@ func setupTestEvents(t *testing.T, dir string) {
 			Ticket:  "st_aaa001",
 			Project: "api-server",
 			Actor:   "agent-01",
-			Session: "sess-abc",
+			RunID:   "sess-abc",
 		},
 		{
 			TS:      time.Date(2026, 2, 25, 11, 0, 0, 0, time.UTC),
@@ -34,7 +34,7 @@ func setupTestEvents(t *testing.T, dir string) {
 			Ticket:  "st_aaa001",
 			Project: "api-server",
 			Actor:   "agent-01",
-			Session: "sess-abc",
+			RunID:   "sess-abc",
 			Data:    map[string]any{"tool": "Edit"},
 		},
 		{
@@ -43,7 +43,7 @@ func setupTestEvents(t *testing.T, dir string) {
 			Ticket:  "st_bbb002",
 			Project: "smoovtask",
 			Actor:   "human",
-			Session: "",
+			RunID:   "",
 			Data:    map[string]any{"title": "Second ticket"},
 		},
 		{
@@ -52,7 +52,7 @@ func setupTestEvents(t *testing.T, dir string) {
 			Ticket:  "st_aaa001",
 			Project: "api-server",
 			Actor:   "agent-01",
-			Session: "sess-abc",
+			RunID:   "sess-abc",
 		},
 		{
 			TS:      time.Date(2026, 2, 26, 9, 0, 0, 0, time.UTC),
@@ -60,7 +60,7 @@ func setupTestEvents(t *testing.T, dir string) {
 			Ticket:  "st_bbb002",
 			Project: "smoovtask",
 			Actor:   "agent-02",
-			Session: "sess-def",
+			RunID:   "sess-def",
 		},
 	}
 
@@ -115,7 +115,7 @@ func TestQueryBySession(t *testing.T) {
 	dir := t.TempDir()
 	setupTestEvents(t, dir)
 
-	events, err := QueryEvents(dir, Query{Session: "sess-def"})
+	events, err := QueryEvents(dir, Query{RunID:   "sess-def"})
 	if err != nil {
 		t.Fatalf("QueryEvents: %v", err)
 	}
@@ -124,8 +124,8 @@ func TestQueryBySession(t *testing.T) {
 		t.Fatalf("got %d events, want 1", len(events))
 	}
 
-	if events[0].Session != "sess-def" {
-		t.Errorf("session = %q, want %q", events[0].Session, "sess-def")
+	if events[0].RunID != "sess-def" {
+		t.Errorf("session = %q, want %q", events[0].RunID, "sess-def")
 	}
 }
 
@@ -159,7 +159,7 @@ func TestQueryCombinedFilters(t *testing.T) {
 
 	events, err := QueryEvents(dir, Query{
 		TicketID: "st_aaa001",
-		Session:  "sess-abc",
+		RunID:    "sess-abc",
 	})
 	if err != nil {
 		t.Fatalf("QueryEvents: %v", err)
@@ -195,13 +195,13 @@ func TestQueryNonexistentDir(t *testing.T) {
 	}
 }
 
-func TestSessionsForTicket(t *testing.T) {
+func TestRunIDsForTicket(t *testing.T) {
 	dir := t.TempDir()
 	setupTestEvents(t, dir)
 
-	sessions, err := SessionsForTicket(dir, "st_aaa001")
+	sessions, err := RunIDsForTicket(dir, "st_aaa001")
 	if err != nil {
-		t.Fatalf("SessionsForTicket: %v", err)
+		t.Fatalf("RunIDsForTicket: %v", err)
 	}
 
 	if len(sessions) != 1 {
@@ -213,7 +213,7 @@ func TestSessionsForTicket(t *testing.T) {
 	}
 }
 
-func TestSessionsForTicketMultiple(t *testing.T) {
+func TestRunIDsForTicketMultiple(t *testing.T) {
 	dir := t.TempDir()
 	log := NewEventLog(dir)
 
@@ -225,16 +225,16 @@ func TestSessionsForTicketMultiple(t *testing.T) {
 			TS:      ts.Add(time.Duration(i) * time.Minute),
 			Event:   HookPostTool,
 			Ticket:  "st_multi1",
-			Session: sess,
+			RunID:   sess,
 		}
 		if err := log.Append(e); err != nil {
 			t.Fatalf("append: %v", err)
 		}
 	}
 
-	sessions, err := SessionsForTicket(dir, "st_multi1")
+	sessions, err := RunIDsForTicket(dir, "st_multi1")
 	if err != nil {
-		t.Fatalf("SessionsForTicket: %v", err)
+		t.Fatalf("RunIDsForTicket: %v", err)
 	}
 
 	if len(sessions) != 3 {
@@ -250,13 +250,13 @@ func TestSessionsForTicketMultiple(t *testing.T) {
 	}
 }
 
-func TestSessionsForTicketNone(t *testing.T) {
+func TestRunIDsForTicketNone(t *testing.T) {
 	dir := t.TempDir()
 	setupTestEvents(t, dir)
 
-	sessions, err := SessionsForTicket(dir, "st_nonexistent")
+	sessions, err := RunIDsForTicket(dir, "st_nonexistent")
 	if err != nil {
-		t.Fatalf("SessionsForTicket: %v", err)
+		t.Fatalf("RunIDsForTicket: %v", err)
 	}
 
 	if len(sessions) != 0 {

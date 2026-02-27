@@ -19,6 +19,22 @@ func statusLabel(s ticket.Status) string {
 	return string(s)
 }
 
+func shortAssignee(s string) string {
+	if s == "" {
+		return ""
+	}
+	// Truncate UUIDs to first 8 chars.
+	if len(s) > 8 && s[8] == '-' {
+		return s[:8]
+	}
+	return s
+}
+
+func showAssignee(tk *ticket.Ticket) bool {
+	return tk.Assignee != "" &&
+		(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusReview)
+}
+
 templ PriorityBadge(p ticket.Priority) {
 	<span class={ priorityClass(p) }>{ string(p) }</span>
 }
@@ -30,7 +46,7 @@ templ StatusBadge(s ticket.Status) {
 }
 
 templ TicketCard(tk *ticket.Ticket) {
-	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#content" hx-push-url={ fmt.Sprintf("/ticket/%s", tk.ID) } class="st-card" style="display: block; text-decoration: none; color: inherit;">
+	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#content" hx-push-url={ fmt.Sprintf("/ticket/%s", tk.ID) } class="st-card">
 		<div class="st-card-title">{ tk.Title }</div>
 		<div class="st-card-meta">
 			@PriorityBadge(tk.Priority)
@@ -39,5 +55,10 @@ templ TicketCard(tk *ticket.Ticket) {
 				<span>{ tk.Project }</span>
 			}
 		</div>
+		if showAssignee(tk) {
+			<div style="margin-top: 0.25rem; text-align: right;">
+				<span title={ tk.Assignee } style="display: inline-block; padding: 0.1rem 0.4rem; border-radius: 9999px; font-family: 'Maple Mono', monospace; font-size: 0.65rem; font-weight: 600; background: #22c55e; color: #000;">{ shortAssignee(tk.Assignee) }</span>
+			</div>
+		}
 	</a>
 }

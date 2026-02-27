@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var sessionFlag string
+var runIDFlag string
 
 var rootCmd = &cobra.Command{
 	Use:           "st",
@@ -17,14 +17,14 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
-		if sessionFlag != "" {
-			identity.SetSessionID(sessionFlag)
+		if runIDFlag != "" {
+			identity.SetRunID(runIDFlag)
 		}
 	},
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&sessionFlag, "session", "", "session ID (overrides CLAUDE_SESSION_ID)")
+	rootCmd.PersistentFlags().StringVar(&runIDFlag, "run-id", "", "run ID for this agent session (overrides CLAUDE_SESSION_ID)")
 }
 
 // Execute runs the root command and exits on error.

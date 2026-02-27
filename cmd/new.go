@@ -26,6 +26,7 @@ var (
 	newTags        string
 	newDependsOn   string
 	newDescription string
+	newProject     string
 )
 
 func init() {
@@ -33,6 +34,7 @@ func init() {
 	newCmd.Flags().StringVarP(&newDescription, "description", "d", "", "ticket description/acceptance criteria")
 	newCmd.Flags().StringVar(&newTags, "tags", "", "comma-separated tags")
 	newCmd.Flags().StringVar(&newDependsOn, "depends-on", "", "comma-separated ticket IDs this ticket depends on")
+	newCmd.Flags().StringVar(&newProject, "project", "", "project name (defaults to auto-detect from current directory)")
 	rootCmd.AddCommand(newCmd)
 }
 
@@ -44,14 +46,21 @@ func runNew(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	proj := project.Detect(cfg, cwd)
-	if proj == "" {
-		return fmt.Errorf("not in a registered project — run `st init` first")
+	var proj string
+	if newProject != "" {
+		if _, ok := cfg.Projects[newProject]; !ok {
+			return fmt.Errorf("unknown project %q — check `st init` or config", newProject)
+		}
+		proj = newProject
+	} else {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("get working directory: %w", err)
+		}
+		proj = project.Detect(cfg, cwd)
+		if proj == "" {
+			return fmt.Errorf("not in a registered project — run `st init` or use --project")
+		}
 	}
 
 	priority := ticket.Priority(newPriority)
@@ -102,12 +111,12 @@ func runNew(_ *cobra.Command, args []string) error {
 	}
 
 	actor := identity.Actor()
-	sessionID := identity.SessionID()
+	runID := identity.RunID()
 	sectionContent := title
 	if newDescription != "" {
 		sectionContent = newDescription
 	}
-	ticket.AppendSection(tk, "Created", actor, sessionID, sectionContent, nil, now)
+	ticket.AppendSection(tk, "Created", actor, runID, sectionContent, nil, now)
 
 	if err := store.Create(tk); err != nil {
 		return fmt.Errorf("create ticket: %w", err)
@@ -129,7 +138,7 @@ func runNew(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: proj,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data:    evData,
 	})
 

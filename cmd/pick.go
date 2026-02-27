@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -21,7 +22,10 @@ var pickCmd = &cobra.Command{
 	RunE:  runPick,
 }
 
+var pickTicket string
+
 func init() {
+	pickCmd.Flags().StringVar(&pickTicket, "ticket", "", "ticket ID to pick up")
 	rootCmd.AddCommand(pickCmd)
 }
 
@@ -37,12 +41,22 @@ func runPick(_ *cobra.Command, args []string) error {
 	}
 
 	store := ticket.NewStore(ticketsDir)
-	sessionID := identity.SessionID()
+	runID := identity.RunID()
 	actor := identity.Actor()
 
+	if actor == "agent" && runID == "" {
+		return fmt.Errorf("run ID required — pass --run-id or set CLAUDE_SESSION_ID")
+	}
+
+	// Resolve ticket ID: --ticket flag takes precedence, then positional arg, then auto-detect
+	ticketID := pickTicket
+	if ticketID == "" && len(args) == 1 {
+		ticketID = args[0]
+	}
+
 	var tk *ticket.Ticket
-	if len(args) == 1 {
-		tk, err = store.Get(args[0])
+	if ticketID != "" {
+		tk, err = store.Get(ticketID)
 		if err != nil {
 			return fmt.Errorf("get ticket: %w", err)
 		}
@@ -74,13 +88,13 @@ func runPick(_ *cobra.Command, args []string) error {
 
 	now := time.Now().UTC()
 	tk.Status = ticket.StatusInProgress
-	tk.Assignee = sessionID
+	tk.Assignee = runID
 	if tk.Assignee == "" {
 		tk.Assignee = actor
 	}
 	tk.Updated = now
 
-	ticket.AppendSection(tk, "In Progress", actor, sessionID, "", map[string]string{
+	ticket.AppendSection(tk, "In Progress", actor, runID, "", map[string]string{
 		"assignee": tk.Assignee,
 	}, now)
 
@@ -100,10 +114,33 @@ func runPick(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data:    map[string]any{"assignee": tk.Assignee},
 	})
 
-	fmt.Printf("Picked up %s: %s\n", tk.ID, tk.Title)
+	fmt.Printf("Picked up %s: %s\n\n", tk.ID, tk.Title)
+
+	// Print ticket context
+	fmt.Printf("--- Ticket Metadata ---\n")
+	fmt.Printf("ID:       %s\n", tk.ID)
+	fmt.Printf("Priority: %s\n", tk.Priority)
+	fmt.Printf("Project:  %s\n", tk.Project)
+	if len(tk.Tags) > 0 {
+		fmt.Printf("Tags:     %s\n", strings.Join(tk.Tags, ", "))
+	}
+	fmt.Println()
+
+	if tk.Body != "" {
+		fmt.Printf("--- Ticket Body ---\n")
+		fmt.Println(tk.Body)
+	}
+
+	fmt.Printf("--- Before You Start ---\n")
+	fmt.Printf("Read the ticket description carefully. If ANYTHING is unclear or ambiguous:\n")
+	fmt.Printf("- Ask the user to clarify requirements before writing any code\n")
+	fmt.Printf("- Confirm acceptance criteria if they are missing or vague\n")
+	fmt.Printf("- Verify scope — ask what is in and out of scope if uncertain\n")
+	fmt.Printf("- Resolve ambiguity — don't guess at intent, ask\n")
+	fmt.Printf("\nOnly begin implementation once you fully understand what is expected.\n")
 	return nil
 }

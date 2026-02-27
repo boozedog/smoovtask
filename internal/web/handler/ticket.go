@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"html"
 	"net/http"
-	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/web/templates"
@@ -61,31 +59,8 @@ func (h *Handler) buildTicketData(r *http.Request) (templates.TicketData, error)
 		return t.Format("2006-01-02 15:04")
 	})
 
-	backURL, backName := backNav(r)
-
 	return templates.TicketData{
 		Ticket:   tk,
 		BodyHTML: html,
-		BackURL:  backURL,
-		BackName: backName,
 	}, nil
-}
-
-// backNav determines the back navigation target from the Referer header or query param.
-func backNav(r *http.Request) (string, string) {
-	// Explicit query param takes priority.
-	if from := r.URL.Query().Get("from"); from == "list" {
-		return "/list", "List"
-	}
-
-	// Fall back to Referer header.
-	if ref := r.Header.Get("Referer"); ref != "" {
-		if u, err := url.Parse(ref); err == nil {
-			if strings.HasPrefix(u.Path, "/list") || strings.HasPrefix(u.Path, "/partials/list") {
-				return "/list", "List"
-			}
-		}
-	}
-
-	return "/", "Board"
 }

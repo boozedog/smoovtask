@@ -12,9 +12,9 @@ import (
 )
 
 var noteCmd = &cobra.Command{
-	Use:   "note <message>",
+	Use:   "note [ticket-id] <message>",
 	Short: "Append a note to the current ticket",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.RangeArgs(1, 2),
 	RunE:  runNote,
 }
 
@@ -26,7 +26,18 @@ func init() {
 }
 
 func runNote(_ *cobra.Command, args []string) error {
-	message := args[0]
+	// Support both: st note <message> and st note <ticket-id> <message>
+	var message string
+	ticketFlag := noteTicket
+	if len(args) == 2 {
+		if ticketFlag == "" {
+			ticketFlag = args[0]
+		}
+		message = args[1]
+	} else {
+		// Single arg — if --ticket is not set and arg looks like a ticket ID, error helpfully
+		message = args[0]
+	}
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -39,16 +50,16 @@ func runNote(_ *cobra.Command, args []string) error {
 	}
 
 	store := ticket.NewStore(ticketsDir)
-	sessionID := identity.SessionID()
+	runID := identity.RunID()
 	actor := identity.Actor()
 
-	tk, err := resolveCurrentTicket(store, cfg, sessionID, noteTicket)
+	tk, err := resolveCurrentTicket(store, cfg, runID, ticketFlag)
 	if err != nil {
 		return err
 	}
 
 	now := time.Now().UTC()
-	ticket.AppendSection(tk, "Note", actor, sessionID, message, nil, now)
+	ticket.AppendSection(tk, "Note", actor, runID, message, nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -66,7 +77,7 @@ func runNote(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data:    map[string]any{"message": message},
 	})
 

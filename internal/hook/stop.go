@@ -28,6 +28,6 @@ func HandleStop(input *Input) error {
 		Event:   event.HookStop,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 	})
 }

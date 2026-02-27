@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/templates"
@@ -34,6 +35,24 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 	}
 
 	groups := groupByStatus(tickets)
+
+	// Sort tickets within each column.
+	for status, tks := range groups {
+		if status == ticket.StatusDone {
+			// Done: reverse chronological by Updated (most recently completed first).
+			sort.Slice(tks, func(i, j int) bool {
+				return tks[i].Updated.After(tks[j].Updated)
+			})
+		} else {
+			// All others: priority ascending (P0 first), then creation date ascending.
+			sort.Slice(tks, func(i, j int) bool {
+				if tks[i].Priority != tks[j].Priority {
+					return tks[i].Priority < tks[j].Priority
+				}
+				return tks[i].Created.Before(tks[j].Created)
+			})
+		}
+	}
 
 	var columns []templates.BoardColumn
 	for _, status := range statusOrder {

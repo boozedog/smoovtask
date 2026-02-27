@@ -39,6 +39,7 @@ templ BoardPartial(data BoardData) {
 		hx-trigger="sse:refresh"
 		hx-target="this"
 		hx-swap="outerHTML"
+		hx-disinherit="hx-swap"
 	>
 		@BoardContent(data)
 	</div>

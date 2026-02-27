@@ -30,7 +30,7 @@ func HandlePermissionRequest(input *Input) (Output, error) {
 		Event:   event.HookPermissionReq,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 	})
 
 	return Output{}, nil

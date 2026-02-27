@@ -44,7 +44,7 @@ func smoovtaskHooks() map[string][]hookGroup {
 	return map[string][]hookGroup{
 		"SessionStart": {
 			{
-				Matcher: "startup",
+				Matcher: "startup|resume|clear|compact",
 				Hooks:   []hookEntry{{Type: "command", Command: "st hook session-start"}},
 			},
 		},

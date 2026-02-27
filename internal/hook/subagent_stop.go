@@ -28,6 +28,6 @@ func HandleSubagentStop(input *Input) error {
 		Event:   event.HookSubagentStop,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 	})
 }

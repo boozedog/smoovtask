@@ -28,6 +28,6 @@ func HandleTeammateIdle(input *Input) error {
 		Event:   event.HookTeammateIdle,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 	})
 }

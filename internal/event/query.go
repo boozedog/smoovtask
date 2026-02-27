@@ -15,7 +15,7 @@ import (
 type Query struct {
 	TicketID string
 	Project  string
-	Session  string
+	RunID string
 	After    time.Time
 	Before   time.Time
 }
@@ -39,8 +39,8 @@ func QueryEvents(dir string, q Query) ([]Event, error) {
 	return results, nil
 }
 
-// SessionsForTicket returns unique session IDs that appear in events for a ticket.
-func SessionsForTicket(dir, ticketID string) ([]string, error) {
+// RunIDsForTicket returns unique run IDs that appear in events for a ticket.
+func RunIDsForTicket(dir, ticketID string) ([]string, error) {
 	events, err := QueryEvents(dir, Query{TicketID: ticketID})
 	if err != nil {
 		return nil, err
@@ -49,12 +49,12 @@ func SessionsForTicket(dir, ticketID string) ([]string, error) {
 	seen := make(map[string]struct{})
 	var sessions []string
 	for _, e := range events {
-		if e.Session == "" {
+		if e.RunID == "" {
 			continue
 		}
-		if _, ok := seen[e.Session]; !ok {
-			seen[e.Session] = struct{}{}
-			sessions = append(sessions, e.Session)
+		if _, ok := seen[e.RunID]; !ok {
+			seen[e.RunID] = struct{}{}
+			sessions = append(sessions, e.RunID)
 		}
 	}
 
@@ -145,7 +145,7 @@ func matches(e Event, q Query) bool {
 	if q.Project != "" && e.Project != q.Project {
 		return false
 	}
-	if q.Session != "" && e.Session != q.Session {
+	if q.RunID != "" && e.RunID != q.RunID {
 		return false
 	}
 	if !q.After.IsZero() && e.TS.Before(q.After) {

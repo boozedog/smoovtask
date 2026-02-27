@@ -93,8 +93,8 @@ func assertEvent(t *testing.T, ev event.Event, wantType, wantSession, wantProjec
 	if ev.Event != wantType {
 		t.Errorf("event type = %q, want %q", ev.Event, wantType)
 	}
-	if ev.Session != wantSession {
-		t.Errorf("session = %q, want %q", ev.Session, wantSession)
+	if ev.RunID != wantSession {
+		t.Errorf("session = %q, want %q", ev.RunID, wantSession)
 	}
 	if ev.Project != wantProject {
 		t.Errorf("project = %q, want %q", ev.Project, wantProject)

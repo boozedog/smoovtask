@@ -48,8 +48,8 @@ func runAssign(_ *cobra.Command, args []string) error {
 	tk.Updated = now
 
 	actor := identity.Actor()
-	sessionID := identity.SessionID()
-	ticket.AppendSection(tk, "Assigned", actor, sessionID, "", map[string]string{
+	runID := identity.RunID()
+	ticket.AppendSection(tk, "Assigned", actor, runID, "", map[string]string{
 		"assignee": agentID,
 	}, now)
 
@@ -69,7 +69,7 @@ func runAssign(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data:    map[string]any{"assignee": agentID},
 	})
 

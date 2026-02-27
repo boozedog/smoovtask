@@ -34,6 +34,6 @@ type Event struct {
 	Ticket  string         `json:"ticket"`
 	Project string         `json:"project"`
 	Actor   string         `json:"actor"`
-	Session string         `json:"session"`
+	RunID   string         `json:"run_id"`
 	Data    map[string]any `json:"data"`
 }

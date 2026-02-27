@@ -34,26 +34,13 @@ func relativeTime(t time.Time) string {
 	}
 }
 
-func backPartialURL(backURL string) string {
-	if backURL == "/list" {
-		return "/partials/list"
-	}
-	return "/partials/board"
-}
-
-func ticketPartialURL(data TicketData) string {
-	u := "/partials/ticket/" + data.Ticket.ID
-	if data.BackURL == "/list" {
-		u += "?from=list"
-	}
-	return u
+func ticketPartialURL(id string) string {
+	return "/partials/ticket/" + id
 }
 
 type TicketData struct {
 	Ticket   *ticket.Ticket
 	BodyHTML string
-	BackURL  string // "/list" or "/" (board), derived from referrer
-	BackName string // "List" or "Board"
 }
 
 templ TicketPage(data TicketData) {
@@ -64,10 +51,11 @@ templ TicketPage(data TicketData) {
 
 templ TicketPartial(data TicketData) {
 	<div
-		hx-get={ ticketPartialURL(data) }
+		hx-get={ ticketPartialURL(data.Ticket.ID) }
 		hx-trigger="sse:refresh"
 		hx-target="this"
 		hx-swap="outerHTML"
+		hx-disinherit="hx-swap"
 	>
 		@TicketContent(data)
 	</div>
@@ -76,20 +64,7 @@ templ TicketPartial(data TicketData) {
 templ TicketContent(data TicketData) {
 	<div class="st-ticket-grid">
 		<div>
-			<nav style="margin-bottom: 0.75rem; font-size: 0.85rem;">
-				<a
-					href={ templ.SafeURL(data.BackURL) }
-					hx-get={ backPartialURL(data.BackURL) }
-					hx-target="#content"
-					hx-push-url={ data.BackURL }
-					style="opacity: 0.6; color: inherit; text-decoration: none;"
-				>
-					&larr; { data.BackName }
-				</a>
-				<span style="opacity: 0.4;"> / </span>
-				<span>{ data.Ticket.ID }</span>
-			</nav>
-			<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+			<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; overflow-wrap: break-word;">
 				{ data.Ticket.Title }
 			</h1>
 			<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center;">

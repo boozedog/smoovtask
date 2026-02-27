@@ -28,6 +28,6 @@ func HandleSessionEnd(input *Input) error {
 		Event:   event.HookSessionEnd,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 	})
 }

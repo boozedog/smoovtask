@@ -45,13 +45,13 @@ func HasNoteSince(eventsDir, ticketID string, since time.Time) (bool, error) {
 	return false, nil
 }
 
-// CanReview checks whether the given session is eligible to review a ticket.
-// A session that has previously touched the ticket (appears in JSONL) is not eligible.
-func CanReview(eventsDir, ticketID, sessionID string) (bool, error) {
-	sessions, err := event.SessionsForTicket(eventsDir, ticketID)
+// CanReview checks whether the given run is eligible to review a ticket.
+// A run that has previously touched the ticket (appears in JSONL) is not eligible.
+func CanReview(eventsDir, ticketID, runID string) (bool, error) {
+	runIDs, err := event.RunIDsForTicket(eventsDir, ticketID)
 	if err != nil {
-		return false, fmt.Errorf("query sessions: %w", err)
+		return false, fmt.Errorf("query run IDs: %w", err)
 	}
 
-	return !slices.Contains(sessions, sessionID), nil
+	return !slices.Contains(runIDs, runID), nil
 }

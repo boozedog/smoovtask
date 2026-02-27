@@ -29,6 +29,6 @@ func HandleTaskCompleted(input *Input) error {
 		Event:   event.HookTaskCompleted,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 	})
 }

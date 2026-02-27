@@ -14,19 +14,20 @@ import (
 )
 
 var reviewCmd = &cobra.Command{
-	Use:   "review <ticket-id>",
+	Use:   "review",
 	Short: "Claim a ticket for review (eligibility check enforced)",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.NoArgs,
 	RunE:  runReview,
 }
 
+var reviewTicket string
+
 func init() {
+	reviewCmd.Flags().StringVar(&reviewTicket, "ticket", "", "ticket ID (default: current ticket)")
 	rootCmd.AddCommand(reviewCmd)
 }
 
-func runReview(_ *cobra.Command, args []string) error {
-	id := args[0]
-
+func runReview(_ *cobra.Command, _ []string) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -38,17 +39,21 @@ func runReview(_ *cobra.Command, args []string) error {
 	}
 
 	store := ticket.NewStore(ticketsDir)
-	tk, err := store.Get(id)
+	runID := identity.RunID()
+	actor := identity.Actor()
+
+	if actor == "agent" && runID == "" {
+		return fmt.Errorf("run ID required — pass --run-id or set CLAUDE_SESSION_ID")
+	}
+
+	tk, err := resolveReviewTicket(store, cfg, runID, reviewTicket)
 	if err != nil {
-		return fmt.Errorf("get ticket: %w", err)
+		return err
 	}
 
 	if tk.Status != ticket.StatusReview {
 		return fmt.Errorf("ticket %s is %s, not REVIEW", tk.ID, tk.Status)
 	}
-
-	sessionID := identity.SessionID()
-	actor := identity.Actor()
 
 	// Check review eligibility
 	eventsDir, err := cfg.EventsDir()
@@ -56,24 +61,24 @@ func runReview(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("get events dir: %w", err)
 	}
 
-	if sessionID != "" {
-		eligible, err := workflow.CanReview(eventsDir, tk.ID, sessionID)
+	if runID != "" {
+		eligible, err := workflow.CanReview(eventsDir, tk.ID, runID)
 		if err != nil {
 			return fmt.Errorf("check review eligibility: %w", err)
 		}
 		if !eligible {
-			return fmt.Errorf("review denied — session %q has previously touched ticket %s", sessionID, tk.ID)
+			return fmt.Errorf("review denied — run %q has previously touched ticket %s", runID, tk.ID)
 		}
 	}
 
 	now := time.Now().UTC()
-	tk.Assignee = sessionID
+	tk.Assignee = runID
 	if tk.Assignee == "" {
 		tk.Assignee = actor
 	}
 	tk.Updated = now
 
-	ticket.AppendSection(tk, "Review Claimed", actor, sessionID, "", map[string]string{
+	ticket.AppendSection(tk, "Review Claimed", actor, runID, "", map[string]string{
 		"reviewer": tk.Assignee,
 	}, now)
 
@@ -89,7 +94,7 @@ func runReview(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data:    map[string]any{"reviewer": tk.Assignee},
 	})
 
@@ -115,6 +120,8 @@ func runReview(_ *cobra.Command, args []string) error {
 	fmt.Printf("- [ ] Verify the implementation matches the requirements\n")
 	fmt.Printf("- [ ] Check for edge cases and error handling\n")
 	fmt.Printf("- [ ] Review code quality and test coverage\n")
+	fmt.Printf("- [ ] If the fix cannot be fully verified through code review alone (e.g., UI behavior,\n")
+	fmt.Printf("      runtime issues), ask the user to confirm the fix works before approving\n")
 	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
 	fmt.Printf("\nReminder: `st note` is required before approving (`st status done`) or rejecting (`st status rework`).\n")
 	return nil

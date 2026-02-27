@@ -139,7 +139,7 @@ func TestConcurrentAppends(t *testing.T) {
 				TS:      ts,
 				Event:   HookPostTool,
 				Ticket:  "st_conc01",
-				Session: "session-test",
+				RunID:   "session-test",
 				Data:    map[string]any{"index": i},
 			}
 			if err := log.Append(e); err != nil {

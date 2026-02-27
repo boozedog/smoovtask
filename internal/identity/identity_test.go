@@ -5,37 +5,37 @@ import (
 	"testing"
 )
 
-func TestSessionID(t *testing.T) {
+func TestRunID(t *testing.T) {
 	orig := os.Getenv("CLAUDE_SESSION_ID")
 	defer os.Setenv("CLAUDE_SESSION_ID", orig)
-	defer func() { sessionOverride = "" }()
+	defer func() { runIDOverride = "" }()
 
 	os.Setenv("CLAUDE_SESSION_ID", "test-session-123")
-	if got := SessionID(); got != "test-session-123" {
-		t.Errorf("SessionID() = %q, want %q", got, "test-session-123")
+	if got := RunID(); got != "test-session-123" {
+		t.Errorf("RunID() = %q, want %q", got, "test-session-123")
 	}
 
 	os.Setenv("CLAUDE_SESSION_ID", "")
-	if got := SessionID(); got != "" {
-		t.Errorf("SessionID() = %q, want empty", got)
+	if got := RunID(); got != "" {
+		t.Errorf("RunID() = %q, want empty", got)
 	}
 }
 
-func TestSessionIDOverride(t *testing.T) {
+func TestRunIDOverride(t *testing.T) {
 	orig := os.Getenv("CLAUDE_SESSION_ID")
 	defer os.Setenv("CLAUDE_SESSION_ID", orig)
-	defer func() { sessionOverride = "" }()
+	defer func() { runIDOverride = "" }()
 
 	os.Setenv("CLAUDE_SESSION_ID", "env-session")
-	SetSessionID("override-session")
-	if got := SessionID(); got != "override-session" {
-		t.Errorf("SessionID() = %q, want %q", got, "override-session")
+	SetRunID("override-session")
+	if got := RunID(); got != "override-session" {
+		t.Errorf("RunID() = %q, want %q", got, "override-session")
 	}
 
 	// Clear override, falls back to env
-	SetSessionID("")
-	if got := SessionID(); got != "env-session" {
-		t.Errorf("SessionID() = %q, want %q", got, "env-session")
+	SetRunID("")
+	if got := RunID(); got != "env-session" {
+		t.Errorf("RunID() = %q, want %q", got, "env-session")
 	}
 }
 
@@ -44,16 +44,16 @@ func TestActor(t *testing.T) {
 	origClaude := os.Getenv("CLAUDECODE")
 	defer os.Setenv("CLAUDE_SESSION_ID", origSession)
 	defer os.Setenv("CLAUDECODE", origClaude)
-	defer func() { sessionOverride = "" }()
+	defer func() { runIDOverride = "" }()
 
-	// Session ID set → agent
+	// Run ID set → agent
 	os.Setenv("CLAUDE_SESSION_ID", "sess-123")
 	os.Setenv("CLAUDECODE", "")
 	if got := Actor(); got != "agent" {
-		t.Errorf("Actor() with session = %q, want %q", got, "agent")
+		t.Errorf("Actor() with run ID = %q, want %q", got, "agent")
 	}
 
-	// CLAUDECODE=1 without session → agent
+	// CLAUDECODE=1 without run ID → agent
 	os.Setenv("CLAUDE_SESSION_ID", "")
 	os.Setenv("CLAUDECODE", "1")
 	if got := Actor(); got != "agent" {
@@ -68,7 +68,7 @@ func TestActor(t *testing.T) {
 	}
 
 	// Override → agent
-	SetSessionID("flag-session")
+	SetRunID("flag-session")
 	if got := Actor(); got != "agent" {
 		t.Errorf("Actor() with override = %q, want %q", got, "agent")
 	}

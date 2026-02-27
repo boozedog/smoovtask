@@ -57,10 +57,10 @@ func runStatus(_ *cobra.Command, args []string) error {
 	}
 
 	store := ticket.NewStore(ticketsDir)
-	sessionID := identity.SessionID()
+	runID := identity.RunID()
 	actor := identity.Actor()
 
-	tk, err := resolveCurrentTicket(store, cfg, sessionID, statusTicket)
+	tk, err := resolveCurrentTicket(store, cfg, runID, statusTicket)
 	if err != nil {
 		return err
 	}
@@ -98,6 +98,11 @@ func runStatus(_ *cobra.Command, args []string) error {
 	tk.Status = targetStatus
 	tk.Updated = now
 
+	// Clear assignee when submitting for review — the reviewer will claim it via `st review`.
+	if targetStatus == ticket.StatusReview {
+		tk.Assignee = ""
+	}
+
 	heading := statusHeading(targetStatus)
 
 	var sectionFields map[string]string
@@ -105,7 +110,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 		sectionFields = map[string]string{"reviewed-by": tk.Assignee}
 	}
 
-	ticket.AppendSection(tk, heading, actor, sessionID, "", sectionFields, now)
+	ticket.AppendSection(tk, heading, actor, runID, "", sectionFields, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -124,7 +129,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data:    map[string]any{"from": string(oldStatus)},
 	})
 
@@ -144,7 +149,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 				Ticket:  ut.ID,
 				Project: ut.Project,
 				Actor:   "st",
-				Session: sessionID,
+				RunID:   runID,
 				Data:    map[string]any{"from": string(ticket.StatusBlocked), "reason": "auto-unblock"},
 			})
 			fmt.Printf("Auto-unblocked: %s → %s\n", ut.ID, ut.Status)

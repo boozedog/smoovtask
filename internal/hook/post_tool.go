@@ -28,7 +28,7 @@ func HandlePostTool(input *Input) error {
 		Event:   event.HookPostTool,
 		Project: proj,
 		Actor:   "agent",
-		Session: input.SessionID,
+		RunID:   input.SessionID,
 		Data: map[string]any{
 			"tool": input.ToolName,
 		},

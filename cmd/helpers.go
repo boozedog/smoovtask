@@ -15,14 +15,14 @@ func findProjectFromCwd(cfg *config.Config, cwd string) string {
 }
 
 // resolveCurrentTicket finds the ticket to operate on.
-// Priority: ticketOverride (from --ticket flag) > scan for ticket assigned to current session.
-func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, sessionID, ticketOverride string) (*ticket.Ticket, error) {
+// Priority: ticketOverride (from --ticket flag) > scan for ticket assigned to current run.
+func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, runID, ticketOverride string) (*ticket.Ticket, error) {
 	if ticketOverride != "" {
 		return store.Get(ticketOverride)
 	}
 
-	if sessionID == "" {
-		return nil, fmt.Errorf("no --ticket specified and no CLAUDE_SESSION_ID set — use --ticket <id> or run `st pick` first")
+	if runID == "" {
+		return nil, fmt.Errorf("no --ticket specified and no run ID set — use --ticket <id> or run `st pick` first")
 	}
 
 	cwd, err := os.Getwd()
@@ -41,11 +41,42 @@ func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, sessionID, ti
 	}
 
 	for _, tk := range tickets {
-		if tk.Assignee == sessionID &&
+		if tk.Assignee == runID &&
 			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
 			return tk, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no active ticket found for session %q — use `st pick` first or specify --ticket", sessionID)
+	return nil, fmt.Errorf("no active ticket found for run %q — use `st pick` first or specify --ticket", runID)
+}
+
+// resolveReviewTicket finds a ticket to review.
+// Priority: ticketOverride (from --ticket flag) > scan for REVIEW-status tickets in the current project.
+func resolveReviewTicket(store *ticket.Store, cfg *config.Config, runID, ticketOverride string) (*ticket.Ticket, error) {
+	if ticketOverride != "" {
+		return store.Get(ticketOverride)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get working directory: %w", err)
+	}
+
+	proj := ""
+	if cfg != nil {
+		proj = findProjectFromCwd(cfg, cwd)
+	}
+
+	tickets, err := store.List(ticket.ListFilter{Project: proj})
+	if err != nil {
+		return nil, fmt.Errorf("list tickets: %w", err)
+	}
+
+	for _, tk := range tickets {
+		if tk.Status == ticket.StatusReview {
+			return tk, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no ticket in REVIEW status found — use --ticket <id>")
 }

@@ -260,8 +260,8 @@ func TestContext_NoSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, `"session_id": ""`) {
-		t.Errorf("output = %q, want session_id empty", out)
+	if !strings.Contains(out, `"run_id": ""`) {
+		t.Errorf("output = %q, want run_id empty", out)
 	}
 	if !strings.Contains(out, `"active_ticket": null`) {
 		t.Errorf("output = %q, want active_ticket null", out)
@@ -282,8 +282,8 @@ func TestContext_WithActiveTicket(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, `"session_id": "test-session-123"`) {
-		t.Errorf("output = %q, want session_id test-session-123", out)
+	if !strings.Contains(out, `"run_id": "test-session-123"`) {
+		t.Errorf("output = %q, want run_id test-session-123", out)
 	}
 	if !strings.Contains(out, tk.ID) {
 		t.Errorf("output = %q, want active_ticket %s", out, tk.ID)

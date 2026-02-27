@@ -3,8 +3,6 @@ package templates
 import (
 	"testing"
 	"time"
-
-	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestRelativeTime(t *testing.T) {
@@ -33,56 +31,20 @@ func TestRelativeTime(t *testing.T) {
 	}
 }
 
-func TestBackPartialURL(t *testing.T) {
-	tests := []struct {
-		name    string
-		backURL string
-		want    string
-	}{
-		{"list returns partials/list", "/list", "/partials/list"},
-		{"board returns partials/board", "/", "/partials/board"},
-		{"other returns partials/board", "/something", "/partials/board"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := backPartialURL(tt.backURL)
-			if got != tt.want {
-				t.Errorf("backPartialURL(%q) = %q, want %q", tt.backURL, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestTicketPartialURL(t *testing.T) {
 	tests := []struct {
 		name string
-		data TicketData
+		id   string
 		want string
 	}{
-		{
-			"from board",
-			TicketData{
-				Ticket:  &ticket.Ticket{ID: "st_abc123"},
-				BackURL: "/",
-			},
-			"/partials/ticket/st_abc123",
-		},
-		{
-			"from list adds query param",
-			TicketData{
-				Ticket:  &ticket.Ticket{ID: "st_abc123"},
-				BackURL: "/list",
-			},
-			"/partials/ticket/st_abc123?from=list",
-		},
+		{"basic", "st_abc123", "/partials/ticket/st_abc123"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ticketPartialURL(tt.data)
+			got := ticketPartialURL(tt.id)
 			if got != tt.want {
-				t.Errorf("ticketPartialURL() = %q, want %q", got, tt.want)
+				t.Errorf("ticketPartialURL(%q) = %q, want %q", tt.id, got, tt.want)
 			}
 		})
 	}

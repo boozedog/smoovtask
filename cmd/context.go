@@ -24,7 +24,7 @@ func init() {
 }
 
 type contextOutput struct {
-	SessionID    string  `json:"session_id"`
+	RunID        string  `json:"run_id"`
 	Project      string  `json:"project"`
 	ActiveTicket *string `json:"active_ticket"`
 	CWD          string  `json:"cwd"`
@@ -41,24 +41,24 @@ func runContext(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	sessionID := identity.SessionID()
+	runID := identity.RunID()
 	proj := project.Detect(cfg, cwd)
 
 	out := contextOutput{
-		SessionID: sessionID,
-		Project:   proj,
-		CWD:       cwd,
+		RunID:   runID,
+		Project: proj,
+		CWD:     cwd,
 	}
 
-	// Find active ticket for this session
-	if sessionID != "" {
+	// Find active ticket for this run
+	if runID != "" {
 		ticketsDir, err := cfg.TicketsDir()
 		if err == nil {
 			store := ticket.NewStore(ticketsDir)
 			tickets, err := store.List(ticket.ListFilter{Project: proj})
 			if err == nil {
 				for _, tk := range tickets {
-					if tk.Assignee == sessionID &&
+					if tk.Assignee == runID &&
 						(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
 						out.ActiveTicket = &tk.ID
 						break

@@ -54,8 +54,8 @@ func runHold(_ *cobra.Command, args []string) error {
 	tk.Updated = now
 
 	actor := identity.Actor()
-	sessionID := identity.SessionID()
-	ticket.AppendSection(tk, "Blocked (Hold)", actor, sessionID, reason, nil, now)
+	runID := identity.RunID()
+	ticket.AppendSection(tk, "Blocked (Hold)", actor, runID, reason, nil, now)
 
 	if err := store.Save(tk); err != nil {
 		return fmt.Errorf("save ticket: %w", err)
@@ -73,7 +73,7 @@ func runHold(_ *cobra.Command, args []string) error {
 		Ticket:  tk.ID,
 		Project: tk.Project,
 		Actor:   actor,
-		Session: sessionID,
+		RunID:   runID,
 		Data: map[string]any{
 			"reason":       "hold",
 			"message":      reason,
