@@ -13,6 +13,7 @@ const (
 	StatusRework     Status = "REWORK"
 	StatusDone       Status = "DONE"
 	StatusBlocked    Status = "BLOCKED"
+	StatusCancelled  Status = "CANCELLED"
 )
 
 // ValidStatuses is the set of all valid status values.
@@ -24,6 +25,7 @@ var ValidStatuses = map[Status]bool{
 	StatusRework:     true,
 	StatusDone:       true,
 	StatusBlocked:    true,
+	StatusCancelled:  true,
 }
 
 // Priority represents a ticket priority (P0 = critical, P5 = backlog).

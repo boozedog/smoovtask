@@ -10,6 +10,7 @@ const (
 	TicketCreated  = "ticket.created"
 	TicketAssigned = "ticket.assigned"
 	TicketNote     = "ticket.note"
+	TicketHandoff  = "ticket.handoff"
 
 	StatusBacklog    = "status.backlog"
 	StatusOpen       = "status.open"
@@ -18,6 +19,7 @@ const (
 	StatusRework     = "status.rework"
 	StatusDone       = "status.done"
 	StatusBlocked    = "status.blocked"
+	StatusCancelled  = "status.cancelled"
 
 	HookPreTool       = "hook.pre-tool"
 	HookPostTool      = "hook.post-tool"
@@ -38,6 +40,7 @@ type Event struct {
 	Project string         `json:"project"`
 	Actor   string         `json:"actor"`
 	RunID   string         `json:"run_id"`
+	Source  string         `json:"source,omitempty"` // "claude" or "opencode"
 	Data    map[string]any `json:"data"`
 }
 

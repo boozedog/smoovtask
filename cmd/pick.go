@@ -8,6 +8,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/identity"
 	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
@@ -43,10 +44,6 @@ func runPick(_ *cobra.Command, args []string) error {
 	store := ticket.NewStore(ticketsDir)
 	runID := identity.RunID()
 	actor := identity.Actor()
-
-	if actor == "agent" && runID == "" {
-		return fmt.Errorf("run ID required — pass --run-id or set CLAUDE_SESSION_ID")
-	}
 
 	// Resolve ticket ID: --ticket flag takes precedence, then positional arg, then auto-detect
 	ticketID := pickTicket
@@ -142,13 +139,6 @@ func runPick(_ *cobra.Command, args []string) error {
 	fmt.Printf("- Verify scope — ask what is in and out of scope if uncertain\n")
 	fmt.Printf("- Resolve ambiguity — don't guess at intent, ask\n")
 	fmt.Printf("\nOnly begin implementation once you fully understand what is expected.\n")
-	fmt.Printf("\n--- Logging ---\n")
-	fmt.Printf("Log your work frequently with `st note`. Good things to log:\n")
-	fmt.Printf("- Key decisions and why you made them\n")
-	fmt.Printf("- Discussions with the user — especially clarifications, scope changes, or approvals\n")
-	fmt.Printf("- Design trade-offs considered and the chosen approach\n")
-	fmt.Printf("- Significant progress milestones or blockers encountered\n")
-	fmt.Printf("- Brief code snippets where they help explain a change or decision\n")
-	fmt.Printf("Notes become the ticket's audit trail — another agent should be able to understand what happened.\n")
+	fmt.Print(guidance.LoggingImplementation)
 	return nil
 }

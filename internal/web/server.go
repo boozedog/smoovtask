@@ -6,9 +6,11 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/web/handler"
 	"github.com/boozedog/smoovtask/internal/web/middleware"
 	"github.com/boozedog/smoovtask/internal/web/sse"
@@ -52,7 +54,9 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	defer func() { _ = watcher.Close() }()
 
 	// Set up handlers.
-	h := handler.New(ticketsDir, eventsDir, s.broker)
+	cwd, _ := os.Getwd()
+	proj := project.Detect(s.cfg, cwd)
+	h := handler.New(ticketsDir, eventsDir, s.broker, proj)
 
 	mux := http.NewServeMux()
 
@@ -65,9 +69,14 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 	// Pages.
 	mux.HandleFunc("GET /{$}", h.Board)
+	mux.HandleFunc("GET /new", h.NewTicket)
+	mux.HandleFunc("POST /new", h.CreateTicket)
 	mux.HandleFunc("GET /list", h.List)
 	mux.HandleFunc("GET /ticket/{id}", h.Ticket)
+	mux.HandleFunc("GET /ticket/{id}/edit", h.EditTicket)
+	mux.HandleFunc("POST /ticket/{id}/edit", h.UpdateTicket)
 	mux.HandleFunc("GET /activity", h.Activity)
+	mux.HandleFunc("GET /critical-path", h.CriticalPath)
 
 	// SSE endpoint.
 	mux.HandleFunc("GET /events", h.Events)
@@ -79,6 +88,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
+	mux.HandleFunc("GET /partials/critical-path", h.PartialCriticalPath)
 
 	s.srv = &http.Server{
 		Addr: fmt.Sprintf(":%d", s.port),

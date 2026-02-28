@@ -24,6 +24,10 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusInProgress, ticket.StatusBlocked, true},
 		{ticket.StatusBlocked, ticket.StatusOpen, true}, // snap back
 
+		// Handoff transitions — IN-PROGRESS and REWORK can move to OPEN
+		{ticket.StatusInProgress, ticket.StatusOpen, true},
+		{ticket.StatusRework, ticket.StatusOpen, true},
+
 		// Backlog transitions — any status can move to backlog
 		{ticket.StatusOpen, ticket.StatusBacklog, true},
 		{ticket.StatusInProgress, ticket.StatusBacklog, true},
@@ -31,12 +35,22 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusRework, ticket.StatusBacklog, true},
 		{ticket.StatusDone, ticket.StatusBacklog, true},
 
+		// Cancel transitions — most active states can be cancelled
+		{ticket.StatusBacklog, ticket.StatusCancelled, true},
+		{ticket.StatusOpen, ticket.StatusCancelled, true},
+		{ticket.StatusInProgress, ticket.StatusCancelled, true},
+		{ticket.StatusReview, ticket.StatusCancelled, true},
+		{ticket.StatusRework, ticket.StatusCancelled, true},
+		{ticket.StatusCancelled, ticket.StatusBacklog, true},
+
 		// Invalid transitions
 		{ticket.StatusBacklog, ticket.StatusDone, false},
 		{ticket.StatusOpen, ticket.StatusReview, false},
 		{ticket.StatusOpen, ticket.StatusDone, false},
 		{ticket.StatusRework, ticket.StatusDone, false},
 		{ticket.StatusDone, ticket.StatusOpen, false},
+		{ticket.StatusDone, ticket.StatusCancelled, false},
+		{ticket.StatusCancelled, ticket.StatusOpen, false},
 	}
 
 	for _, tt := range tests {
@@ -76,8 +90,11 @@ func TestStatusFromAlias(t *testing.T) {
 		{"done", ticket.StatusDone},
 		{"complete", ticket.StatusDone},
 		{"reject", ticket.StatusRework},
+		{"cancel", ticket.StatusCancelled},
+		{"cancelled", ticket.StatusCancelled},
 		{"OPEN", ticket.StatusOpen},
 		{"IN-PROGRESS", ticket.StatusInProgress},
+		{"CANCELLED", ticket.StatusCancelled},
 	}
 
 	for _, tt := range tests {

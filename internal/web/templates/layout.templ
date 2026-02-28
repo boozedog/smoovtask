@@ -14,10 +14,10 @@ templ Layout(title string, currentPath string) {
 			<script src="/static/htmx-sse.min.js"></script>
 			<style>
 				@font-face { font-family: 'Inter'; src: url('/static/Inter.woff2') format('woff2'); font-weight: 400 700; font-style: normal; font-display: swap; }
-				@font-face { font-family: 'Maple Mono'; src: url('/static/MapleMono-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-				@font-face { font-family: 'Maple Mono'; src: url('/static/MapleMono-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+				@font-face { font-family: 'Maple Mono NF'; src: url('/static/MapleMonoNL-NF-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+				@font-face { font-family: 'Maple Mono NF'; src: url('/static/MapleMonoNL-NF-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 				body { font-family: 'Inter', sans-serif; }
-				code, pre, kbd, samp, .uk-text-mono { font-family: 'Maple Mono', monospace; }
+				code, pre, kbd, samp, .uk-text-mono { font-family: 'Maple Mono NF', monospace; }
 				.st-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; height: 100%; }
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
@@ -40,6 +40,7 @@ templ Layout(title string, currentPath string) {
 				.st-status-rework { border-color: #ef4444; }
 				.st-status-blocked { border-color: #dc2626; }
 				.st-status-done { border-color: #22c55e; }
+				.st-status-cancelled { border-color: #9ca3af; }
 				.st-column-count { opacity: 0.5; font-weight: normal; }
 				.st-event-row { padding: 0.5rem 0; border-bottom: 1px solid hsl(var(--border)); font-size: 0.85rem; }
 				.st-event-type { font-weight: 600; }
@@ -63,16 +64,18 @@ templ Layout(title string, currentPath string) {
 				.st-ticket-body :not(pre) > code { font-size: 0.85em; background: hsl(var(--card)); padding: 0.15em 0.4em; border-radius: 0.25rem; }
 				.st-ticket-body pre code { font-size: 0.85em; background: none; padding: 0; }
 				.st-ticket-body ul, .st-ticket-body ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
-				.st-ticket-detail { max-width: 66%; margin: 0 auto; }
+				.st-ticket-detail { margin: 0 auto; }
 				.st-ticket-header { margin-bottom: 0; }
 				.st-ticket-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; }
 				.st-meta-sep { width: 1px; height: 1rem; background: hsl(var(--border)); }
 				.st-nav-active { color: hsl(var(--primary)) !important; border-bottom: 2px solid hsl(var(--primary)); }
-				.uk-navbar { display: flex; align-items: center; }
-				.uk-navbar-left { display: flex; align-items: center; }
+				.uk-navbar { display: flex; align-items: center; justify-content: space-between; }
+				.uk-navbar-left { display: flex; align-items: center; min-width: 0; }
+				.uk-navbar-right { display: flex; align-items: center; }
 				.uk-navbar-nav { display: flex; list-style: none; margin: 0; padding: 0; }
-				.uk-navbar-nav > li > a { display: block; padding: 0.75rem 1rem; text-decoration: none; color: inherit; font-size: 0.9rem; }
+				.uk-navbar-nav > li > a { display: block; padding: 0.75rem 1rem; text-decoration: none; color: inherit; }
 				.uk-navbar-nav > li > a:hover { color: hsl(var(--primary)); }
+				.uk-navbar-nav > li > a { font-size: 0.9rem; }
 				.st-column-collapsed .st-card:nth-child(n+7) { display: none; }
 				.st-toggle-done { display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem; background: transparent; border: 1px dashed hsl(var(--border)); border-radius: 0.375rem; color: hsl(var(--foreground)); opacity: 0.6; cursor: pointer; font-size: 0.8rem; }
 				.st-toggle-done:hover { opacity: 1; }
@@ -91,7 +94,7 @@ templ Layout(title string, currentPath string) {
 				<div class="uk-navbar-left">
 					<a class="uk-navbar-item uk-logo font-bold flex items-center gap-2" href="/" style="font-size: 1.3rem;">
 						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full" style="object-fit: cover; object-position: center;"/>
-						<span style="font-family: 'Maple Mono', monospace;">smoovtask</span>
+						<span style="font-family: 'Maple Mono NF', monospace;">smoovtask</span>
 					</a>
 					<ul class="uk-navbar-nav gap-0 ml-4">
 						<li>
@@ -122,6 +125,19 @@ templ Layout(title string, currentPath string) {
 						</li>
 						<li>
 							<a
+								hx-get="/partials/critical-path"
+								hx-target="#content"
+								hx-push-url="/critical-path"
+								href="/critical-path"
+								if currentPath == "/critical-path" {
+									class="st-nav-active"
+								}
+							>
+								Critical Path
+							</a>
+						</li>
+						<li>
+							<a
 								hx-get="/partials/activity"
 								hx-target="#content"
 								hx-push-url="/activity"
@@ -135,6 +151,9 @@ templ Layout(title string, currentPath string) {
 						</li>
 					</ul>
 				</div>
+				<div class="uk-navbar-right">
+					<a class="uk-button uk-button-primary uk-button-small" href="/new">New Ticket</a>
+				</div>
 			</nav>
 			<main class="uk-container uk-container-expand p-6 flex-1 overflow-y-auto min-h-0">
 				<div id="content">
@@ -143,6 +162,36 @@ templ Layout(title string, currentPath string) {
 			</main>
 			<script>
 				document.addEventListener('click', function(e) {
+					var copyTarget = e.target.closest('[data-copy-ticket-id]');
+					if (copyTarget) {
+						e.preventDefault();
+						e.stopPropagation();
+						var ticketID = copyTarget.getAttribute('data-copy-ticket-id');
+						if (!ticketID) return;
+						function copiedNotice() {
+							if (window.UIkit && UIkit.notification) {
+								UIkit.notification({message: 'Copied ' + ticketID, status: 'primary', pos: 'bottom-right', timeout: 1200});
+							}
+						}
+						if (navigator.clipboard && navigator.clipboard.writeText) {
+							navigator.clipboard.writeText(ticketID).then(copiedNotice);
+							return;
+						}
+						var area = document.createElement('textarea');
+						area.value = ticketID;
+						area.style.position = 'fixed';
+						area.style.opacity = '0';
+						document.body.appendChild(area);
+						area.focus();
+						area.select();
+						try {
+							document.execCommand('copy');
+							copiedNotice();
+						} finally {
+							document.body.removeChild(area);
+						}
+						return;
+					}
 					var row = e.target.closest('tr[data-href]');
 					if (row && !e.target.closest('a')) {
 						var partial = row.dataset.partial;
@@ -201,7 +250,7 @@ templ Layout(title string, currentPath string) {
 							a.classList.remove('st-nav-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/list': 'List', '/activity': 'Activity'};
+					var titleMap = {'/': 'Board', '/list': 'List', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');
@@ -219,7 +268,7 @@ templ Layout(title string, currentPath string) {
 						return;
 					}
 					var path = window.location.pathname;
-					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/activity': '/partials/activity'};
+					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
 					var partial = partialMap[path];
 					if (!partial && path.startsWith('/ticket/')) {
 						partial = '/partials' + path;

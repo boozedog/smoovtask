@@ -129,6 +129,17 @@ func (e *testEnv) addNoteEvent(t *testing.T, ticketID string) {
 func (e *testEnv) runCmd(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 
+	effectiveArgs := args
+	if shouldDefaultToHuman(args) {
+		effectiveArgs = append([]string{"--human"}, args...)
+	}
+
+	return e.runCmdRaw(t, effectiveArgs...)
+}
+
+func (e *testEnv) runCmdRaw(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+
 	// Capture stdout by redirecting os.Stdout to a pipe
 	origStdout := os.Stdout
 	r, w, err := os.Pipe()
@@ -156,9 +167,28 @@ func (e *testEnv) runCmd(t *testing.T, args ...string) (string, error) {
 	return string(out), execErr
 }
 
+func shouldDefaultToHuman(args []string) bool {
+	for _, arg := range args {
+		if arg == "--human" || arg == "--run-id" {
+			return false
+		}
+		if strings.HasPrefix(arg, "--run-id=") {
+			return false
+		}
+	}
+
+	if len(args) > 0 && args[0] == "hook" {
+		return false
+	}
+
+	return true
+}
+
 // resetFlags resets package-level flag variables to their defaults
 // so tests don't leak state between runs.
 func resetFlags() {
+	runIDFlag = ""
+	humanFlag = false
 	statusTicket = ""
 	noteTicket = ""
 	listProject = ""
@@ -172,6 +202,7 @@ func resetFlags() {
 	newTitle = ""
 	pickTicket = ""
 	reviewTicket = ""
+	handoffTicket = ""
 }
 
 func TestOverride_HappyPath(t *testing.T) {
@@ -258,9 +289,8 @@ func TestOverride_TicketNotFound(t *testing.T) {
 func TestContext_NoSession(t *testing.T) {
 	env := newTestEnv(t)
 	_ = env
-	t.Setenv("CLAUDE_SESSION_ID", "")
 
-	out, err := env.runCmd(t, "context")
+	out, err := env.runCmd(t, "--human", "context")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -274,7 +304,6 @@ func TestContext_NoSession(t *testing.T) {
 
 func TestContext_WithActiveTicket(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-123")
 
 	tk := env.createTicket(t, "active ticket", ticket.StatusInProgress)
 	tk.Assignee = "test-session-123"
@@ -282,7 +311,7 @@ func TestContext_WithActiveTicket(t *testing.T) {
 		t.Fatalf("save ticket: %v", err)
 	}
 
-	out, err := env.runCmd(t, "context")
+	out, err := env.runCmd(t, "--run-id", "test-session-123", "context")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/templates"
 )
@@ -38,8 +39,8 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 
 	// Sort tickets within each column.
 	for status, tks := range groups {
-		if status == ticket.StatusDone {
-			// Done: reverse chronological by Updated (most recently completed first).
+		if status == ticket.StatusDone || status == ticket.StatusCancelled {
+			// Done/Cancelled: reverse chronological by Updated.
 			sort.Slice(tks, func(i, j int) bool {
 				return tks[i].Updated.After(tks[j].Updated)
 			})
@@ -62,5 +63,26 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 		})
 	}
 
-	return templates.BoardData{Columns: columns}, nil
+	runSources := make(map[string]string)
+	for _, tk := range tickets {
+		if tk.Assignee == "" {
+			continue
+		}
+		if _, ok := runSources[tk.Assignee]; ok {
+			continue
+		}
+		runSources[tk.Assignee] = h.detectRunSource(tk.Assignee)
+	}
+
+	return templates.BoardData{Columns: columns, RunSources: runSources}, nil
+}
+
+func (h *Handler) detectRunSource(runID string) string {
+	events := recentEvents(h.eventsDir, event.Query{RunID: runID}, 100)
+	for _, ev := range events {
+		if ev.Source != "" {
+			return ev.Source
+		}
+	}
+	return ""
 }

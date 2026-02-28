@@ -1,29 +1,31 @@
 package identity
 
-import "os"
-
 // runIDOverride is set via SetRunID when --run-id flag is provided.
 var runIDOverride string
+
+// humanOverride is set via SetHuman when --human flag is provided.
+var humanOverride bool
 
 // SetRunID sets an explicit run ID override (from --run-id flag).
 func SetRunID(id string) {
 	runIDOverride = id
 }
 
+// SetHuman marks the current invocation as human-driven.
+func SetHuman(human bool) {
+	humanOverride = human
+}
+
 // RunID returns the current run ID.
-// Priority: explicit override > CLAUDE_SESSION_ID env var.
 func RunID() string {
-	if runIDOverride != "" {
-		return runIDOverride
-	}
-	return os.Getenv("CLAUDE_SESSION_ID")
+	return runIDOverride
 }
 
 // Actor returns the actor identifier for the current context.
-// Returns "agent" if a run ID is set or CLAUDECODE=1; otherwise "human".
+// Default is "agent"; --human forces "human".
 func Actor() string {
-	if RunID() != "" || os.Getenv("CLAUDECODE") == "1" {
-		return "agent"
+	if humanOverride {
+		return "human"
 	}
-	return "human"
+	return "agent"
 }

@@ -10,11 +10,10 @@ import (
 
 func TestPick_ByExplicitID(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-pick")
 
 	tk := env.createTicket(t, "pick me", ticket.StatusOpen)
 
-	out, err := env.runCmd(t, "pick", tk.ID)
+	out, err := env.runCmd(t, "--run-id", "test-session-pick", "pick", tk.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,11 +52,10 @@ func TestPick_ByExplicitID(t *testing.T) {
 
 func TestPick_ByTicketFlag(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-flag")
 
 	tk := env.createTicket(t, "flag pick me", ticket.StatusOpen)
 
-	out, err := env.runCmd(t, "pick", "--ticket", tk.ID)
+	out, err := env.runCmd(t, "--run-id", "test-session-flag", "pick", "--ticket", tk.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -80,13 +78,12 @@ func TestPick_ByTicketFlag(t *testing.T) {
 
 func TestPick_TicketFlagPrecedence(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-precedence")
 
 	tkFlag := env.createTicket(t, "flag target", ticket.StatusOpen)
 	tkPos := env.createTicket(t, "positional target", ticket.StatusOpen)
 
 	// --ticket flag should take precedence over positional arg
-	out, err := env.runCmd(t, "pick", "--ticket", tkFlag.ID, tkPos.ID)
+	out, err := env.runCmd(t, "--run-id", "test-session-precedence", "pick", "--ticket", tkFlag.ID, tkPos.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -115,11 +112,10 @@ func TestPick_TicketFlagPrecedence(t *testing.T) {
 
 func TestPick_AutoSelect(t *testing.T) {
 	env := newTestEnvResolved(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-auto")
 
 	tk := env.createTicket(t, "auto pick me", ticket.StatusOpen)
 
-	out, err := env.runCmd(t, "pick")
+	out, err := env.runCmd(t, "--run-id", "test-session-auto", "pick")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -139,11 +135,10 @@ func TestPick_AutoSelect(t *testing.T) {
 
 func TestPick_FromRework(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-rework")
 
 	tk := env.createTicket(t, "rework ticket", ticket.StatusRework)
 
-	out, err := env.runCmd(t, "pick", tk.ID)
+	out, err := env.runCmd(t, "--run-id", "test-session-rework", "pick", tk.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -163,11 +158,10 @@ func TestPick_FromRework(t *testing.T) {
 
 func TestPick_AlreadyInProgress(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session")
 
 	tk := env.createTicket(t, "already started", ticket.StatusInProgress)
 
-	_, err := env.runCmd(t, "pick", tk.ID)
+	_, err := env.runCmd(t, "--run-id", "test-session", "pick", tk.ID)
 	if err == nil {
 		t.Fatal("expected error for already IN-PROGRESS ticket")
 	}
@@ -175,23 +169,20 @@ func TestPick_AlreadyInProgress(t *testing.T) {
 
 func TestPick_NoOpenTickets(t *testing.T) {
 	env := newTestEnvResolved(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session")
 
 	// No tickets at all
-	_, err := env.runCmd(t, "pick")
+	_, err := env.runCmd(t, "--run-id", "test-session", "pick")
 	if err == nil {
 		t.Fatal("expected error for no open tickets")
 	}
 }
 
-func TestPick_NoSessionFallsBackToActor(t *testing.T) {
+func TestPick_HumanAssignsHumanActor(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "")
-	t.Setenv("CLAUDECODE", "")
 
 	tk := env.createTicket(t, "no session pick", ticket.StatusOpen)
 
-	_, err := env.runCmd(t, "pick", tk.ID)
+	_, err := env.runCmd(t, "--human", "pick", tk.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -200,8 +191,20 @@ func TestPick_NoSessionFallsBackToActor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get ticket: %v", err)
 	}
-	// With no session ID and no CLAUDECODE, actor is "human"
 	if updated.Assignee != "human" {
 		t.Errorf("assignee = %q, want %q", updated.Assignee, "human")
+	}
+}
+
+func TestPick_AgentRequiresRunID(t *testing.T) {
+	env := newTestEnv(t)
+	tk := env.createTicket(t, "missing run-id", ticket.StatusOpen)
+
+	_, err := env.runCmdRaw(t, "pick", tk.ID)
+	if err == nil {
+		t.Fatal("expected error when agent command omits --run-id")
+	}
+	if !strings.Contains(err.Error(), "run ID required") {
+		t.Errorf("error = %q, want run ID required", err.Error())
 	}
 }

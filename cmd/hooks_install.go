@@ -16,12 +16,15 @@ var hooksCmd = &cobra.Command{
 
 var hooksInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install smoovtask hooks into Claude Code settings",
-	Long:  `Installs smoovtask hook commands into ~/.claude/settings.json. Existing hooks and settings are preserved.`,
+	Short: "Install smoovtask hooks into agent settings",
+	Long:  `Installs smoovtask hook commands into agent settings (Claude Code or opencode). Existing hooks and settings are preserved.`,
 	RunE:  runHooksInstall,
 }
 
+var agents []string
+
 func init() {
+	hooksInstallCmd.Flags().StringSliceVar(&agents, "agents", []string{"claude"}, "Agents to install hooks for: claude, opencode, both")
 	hooksCmd.AddCommand(hooksInstallCmd)
 	rootCmd.AddCommand(hooksCmd)
 }
@@ -38,6 +41,97 @@ type hookGroup struct {
 	Matcher string      `json:"matcher,omitempty"`
 	Hooks   []hookEntry `json:"hooks"`
 }
+
+// opencodePluginCode is the TypeScript code for the opencode plugin.
+const opencodePluginCode = `import { spawnSync } from 'child_process';
+import { writeFileSync } from 'fs';
+
+function log(msg) {
+  writeFileSync('/tmp/opencode-plugin.log', new Date().toISOString() + ': ' + msg + '\\n', { flag: 'a' });
+}
+
+function runHookSync(eventJson) {
+  const result = spawnSync('st', ['hook', 'opencode-event'], {
+    input: eventJson,
+    env: { ...process.env, OPENCODE_HOOK: '1' },
+    timeout: 5000,
+  });
+  if (result.stderr && result.stderr.length > 0) {
+    log('stderr: ' + result.stderr.toString());
+  }
+  if (result.status !== 0) {
+    log('Hook failed code ' + result.status);
+    return null;
+  }
+  const trimmed = (result.stdout || '').toString().trim();
+  if (!trimmed) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch (e) {
+    log('Parse error: ' + e);
+    return null;
+  }
+}
+
+// Cache session-start context so we don't shell out on every LLM turn.
+let cachedContext = null;
+
+export default async ({ project, client, $, directory, worktree }) => {
+  return {
+    "experimental.chat.system.transform": async (input, output) => {
+      if (!cachedContext) {
+        log('Running session-start hook for system prompt injection');
+        const event = { type: 'session.created', properties: { info: { id: input.sessionID || 'unknown', directory: directory } } };
+        const result = runHookSync(JSON.stringify(event));
+        if (result && result.additionalContext) {
+          cachedContext = result.additionalContext;
+          log('Cached context: ' + cachedContext.substring(0, 200));
+        }
+      }
+      if (cachedContext) {
+        output.system.push('<smoovtask>\\n' + cachedContext + '\\n</smoovtask>');
+      }
+    },
+    event: async ({ event }) => {
+      // Only process events that st cares about (not message updates etc.)
+      const handled = ['session.created', 'tool.execute.before', 'tool.execute.after',
+        'session.idle', 'permission.asked', 'session.deleted'];
+      if (!handled.includes(event.type)) return;
+
+      log('Event: ' + event.type);
+      const eventJson = JSON.stringify(event);
+      const result = runHookSync(eventJson);
+      if (!result) return;
+      log('Result: ' + JSON.stringify(result).substring(0, 500));
+
+      // Refresh cached context on session.created
+      if (event.type === 'session.created' && result.additionalContext) {
+        cachedContext = result.additionalContext;
+        log('Updated cached context from session.created');
+      }
+
+      // Handle pre-tool additionalContext by injecting into the session
+      if (result.additionalContext && event.type === 'tool.execute.before') {
+        const props = event.properties || {};
+        const sessionId = props.sessionID;
+        if (sessionId) {
+          try {
+            await client.session.prompt({
+              path: { id: sessionId },
+              body: {
+                noReply: true,
+                parts: [{ type: 'text', text: result.additionalContext, synthetic: true }]
+              }
+            });
+            log('Injected pre-tool context into session ' + sessionId);
+          } catch (e) {
+            log('Prompt inject error: ' + e);
+          }
+        }
+      }
+    }
+  };
+};`
 
 // smoovtaskHooks returns the hook config that st needs installed.
 func smoovtaskHooks() map[string][]hookGroup {
@@ -99,6 +193,33 @@ func smoovtaskHooks() map[string][]hookGroup {
 }
 
 func runHooksInstall(_ *cobra.Command, _ []string) error {
+	expandedAgents := expandAgents(agents)
+
+	for _, agent := range expandedAgents {
+		switch agent {
+		case "claude":
+			if err := installClaudeHooks(); err != nil {
+				return fmt.Errorf("install claude hooks: %w", err)
+			}
+		case "opencode":
+			if err := installOpencodePlugin(); err != nil {
+				return fmt.Errorf("install opencode plugin: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func expandAgents(agents []string) []string {
+	for _, a := range agents {
+		if a == "both" {
+			return []string{"claude", "opencode"}
+		}
+	}
+	return agents
+}
+
+func installClaudeHooks() error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("get home dir: %w", err)
@@ -162,19 +283,19 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 
 	// Print summary
 	if len(installed) > 0 {
-		fmt.Printf("Installed %d hook(s):\n", len(installed))
+		fmt.Printf("Installed %d Claude hook(s):\n", len(installed))
 		for _, name := range installed {
 			fmt.Printf("  + %s\n", name)
 		}
 	}
 	if len(skipped) > 0 {
-		fmt.Printf("Already installed (%d hook(s)):\n", len(skipped))
+		fmt.Printf("Already installed (%d Claude hook(s)):\n", len(skipped))
 		for _, name := range skipped {
 			fmt.Printf("  = %s\n", name)
 		}
 	}
 	if len(installed) == 0 {
-		fmt.Println("All smoovtask hooks already installed.")
+		fmt.Println("All smoovtask Claude hooks already installed.")
 	}
 
 	fmt.Printf("\nSettings: %s\n", settingsPath)
@@ -209,6 +330,29 @@ func hasSmoovtaskHook(hooks map[string]any, eventName string) bool {
 		}
 	}
 	return false
+}
+
+// installOpencodePlugin installs the smoovtask plugin for opencode.
+// Plugins in ~/.config/opencode/plugins/ are auto-loaded at startup,
+// so we just write the .ts file — no config entry needed.
+func installOpencodePlugin() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home dir: %w", err)
+	}
+
+	pluginsDir := filepath.Join(home, ".config", "opencode", "plugins")
+	if err := os.MkdirAll(pluginsDir, 0o755); err != nil {
+		return fmt.Errorf("create plugins dir: %w", err)
+	}
+
+	pluginFile := filepath.Join(pluginsDir, "smoovtask-hooks.ts")
+	if err := os.WriteFile(pluginFile, []byte(opencodePluginCode), 0o644); err != nil {
+		return fmt.Errorf("write plugin file: %w", err)
+	}
+
+	fmt.Printf("Installed opencode plugin: %s\n", pluginFile)
+	return nil
 }
 
 // marshalHookGroup converts a hookGroup to a map[string]any for JSON merging.

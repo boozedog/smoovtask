@@ -1,75 +1,59 @@
 package identity
 
-import (
-	"os"
-	"testing"
-)
+import "testing"
 
 func TestRunID(t *testing.T) {
-	orig := os.Getenv("CLAUDE_SESSION_ID")
-	defer os.Setenv("CLAUDE_SESSION_ID", orig)
-	defer func() { runIDOverride = "" }()
+	defer func() {
+		runIDOverride = ""
+		humanOverride = false
+	}()
 
-	os.Setenv("CLAUDE_SESSION_ID", "test-session-123")
-	if got := RunID(); got != "test-session-123" {
-		t.Errorf("RunID() = %q, want %q", got, "test-session-123")
-	}
-
-	os.Setenv("CLAUDE_SESSION_ID", "")
 	if got := RunID(); got != "" {
 		t.Errorf("RunID() = %q, want empty", got)
 	}
+
+	SetRunID("test-session-123")
+	if got := RunID(); got != "test-session-123" {
+		t.Errorf("RunID() = %q, want %q", got, "test-session-123")
+	}
 }
 
-func TestRunIDOverride(t *testing.T) {
-	orig := os.Getenv("CLAUDE_SESSION_ID")
-	defer os.Setenv("CLAUDE_SESSION_ID", orig)
-	defer func() { runIDOverride = "" }()
+func TestSetHuman(t *testing.T) {
+	defer func() {
+		runIDOverride = ""
+		humanOverride = false
+	}()
 
-	os.Setenv("CLAUDE_SESSION_ID", "env-session")
-	SetRunID("override-session")
-	if got := RunID(); got != "override-session" {
-		t.Errorf("RunID() = %q, want %q", got, "override-session")
+	if got := Actor(); got != "agent" {
+		t.Errorf("Actor() default = %q, want %q", got, "agent")
 	}
 
-	// Clear override, falls back to env
-	SetRunID("")
-	if got := RunID(); got != "env-session" {
-		t.Errorf("RunID() = %q, want %q", got, "env-session")
+	SetHuman(true)
+	if got := Actor(); got != "human" {
+		t.Errorf("Actor() with human override = %q, want %q", got, "human")
 	}
 }
 
 func TestActor(t *testing.T) {
-	origSession := os.Getenv("CLAUDE_SESSION_ID")
-	origClaude := os.Getenv("CLAUDECODE")
-	defer os.Setenv("CLAUDE_SESSION_ID", origSession)
-	defer os.Setenv("CLAUDECODE", origClaude)
-	defer func() { runIDOverride = "" }()
+	defer func() {
+		runIDOverride = ""
+		humanOverride = false
+	}()
 
-	// Run ID set → agent
-	os.Setenv("CLAUDE_SESSION_ID", "sess-123")
-	os.Setenv("CLAUDECODE", "")
+	// Default is agent.
 	if got := Actor(); got != "agent" {
-		t.Errorf("Actor() with run ID = %q, want %q", got, "agent")
+		t.Errorf("Actor() default = %q, want %q", got, "agent")
 	}
 
-	// CLAUDECODE=1 without run ID → agent
-	os.Setenv("CLAUDE_SESSION_ID", "")
-	os.Setenv("CLAUDECODE", "1")
-	if got := Actor(); got != "agent" {
-		t.Errorf("Actor() with CLAUDECODE=1 = %q, want %q", got, "agent")
-	}
-
-	// Neither → human
-	os.Setenv("CLAUDE_SESSION_ID", "")
-	os.Setenv("CLAUDECODE", "")
-	if got := Actor(); got != "human" {
-		t.Errorf("Actor() = %q, want %q", got, "human")
-	}
-
-	// Override → agent
+	// Run ID still maps to agent.
 	SetRunID("flag-session")
 	if got := Actor(); got != "agent" {
-		t.Errorf("Actor() with override = %q, want %q", got, "agent")
+		t.Errorf("Actor() with run-id = %q, want %q", got, "agent")
+	}
+
+	// Human override wins.
+	SetHuman(true)
+	if got := Actor(); got != "human" {
+		t.Errorf("Actor() with human override = %q, want %q", got, "human")
 	}
 }

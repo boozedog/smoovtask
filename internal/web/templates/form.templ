@@ -1,0 +1,132 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
+
+type TicketFormValues struct {
+	Title       string
+	Project     string
+	Status      string
+	Priority    string
+	DependsOn   string
+	Tags        string
+	Description string
+}
+
+type TicketFormData struct {
+	Mode     string
+	TicketID string
+	Values   TicketFormValues
+	Error    string
+}
+
+func formTitle(mode string) string {
+	if mode == "edit" {
+		return "Edit Ticket"
+	}
+	return "New Ticket"
+}
+
+func formAction(d TicketFormData) string {
+	if d.Mode == "edit" {
+		return fmt.Sprintf("/ticket/%s/edit", d.TicketID)
+	}
+	return "/new"
+}
+
+templ TicketFormPage(data TicketFormData) {
+	@Layout(formTitle(data.Mode), "/new") {
+		@TicketFormContent(data)
+	}
+}
+
+templ TicketFormContent(data TicketFormData) {
+	<div class="max-w-3xl mx-auto">
+		<h1 class="uk-heading-divider">{ formTitle(data.Mode) }</h1>
+		if data.Error != "" {
+			<div class="uk-alert-danger uk-margin" data-uk-alert>
+				{ data.Error }
+			</div>
+		}
+		<form class="uk-form-stacked uk-grid-small" data-uk-grid method="post" action={ formAction(data) }>
+			<div class="uk-width-1-1">
+				<label class="uk-form-label" for="title">Title</label>
+				<div class="uk-form-controls">
+					<input id="title" name="title" class="uk-input" value={ data.Values.Title } required/>
+				</div>
+			</div>
+
+			<div class="uk-width-1-2@s">
+				<label class="uk-form-label" for="project">Project</label>
+				<div class="uk-form-controls">
+					<input id="project" name="project" class="uk-input" value={ data.Values.Project } required/>
+				</div>
+			</div>
+
+			<div class="uk-width-1-4@s">
+				<label class="uk-form-label" for="status">Status</label>
+				<div class="uk-form-controls">
+					<select id="status" name="status" class="uk-select">
+						<option value="BACKLOG" if data.Values.Status == string(ticket.StatusBacklog) { selected }>BACKLOG</option>
+						<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
+						<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
+						<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
+						<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
+						<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
+						<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>
+						<option value="CANCELLED" if data.Values.Status == string(ticket.StatusCancelled) { selected }>CANCELLED</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="uk-width-1-4@s">
+				<label class="uk-form-label" for="priority">Priority</label>
+				<div class="uk-form-controls">
+					<select id="priority" name="priority" class="uk-select">
+						<option value="P0" if data.Values.Priority == "P0" { selected }>P0</option>
+						<option value="P1" if data.Values.Priority == "P1" { selected }>P1</option>
+						<option value="P2" if data.Values.Priority == "P2" { selected }>P2</option>
+						<option value="P3" if data.Values.Priority == "P3" { selected }>P3</option>
+						<option value="P4" if data.Values.Priority == "P4" { selected }>P4</option>
+						<option value="P5" if data.Values.Priority == "P5" { selected }>P5</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="uk-width-1-2@s">
+				<label class="uk-form-label" for="depends-on">Depends On (comma-separated IDs)</label>
+				<div class="uk-form-controls">
+					<input id="depends-on" name="depends_on" class="uk-input" value={ data.Values.DependsOn }/>
+				</div>
+			</div>
+
+			<div class="uk-width-1-2@s">
+				<label class="uk-form-label" for="tags">Tags (comma-separated)</label>
+				<div class="uk-form-controls">
+					<input id="tags" name="tags" class="uk-input" value={ data.Values.Tags }/>
+				</div>
+			</div>
+
+			<div class="uk-width-1-1">
+				<label class="uk-form-label" for="description">Description / Body</label>
+				<div class="uk-form-controls">
+					<textarea id="description" name="description" class="uk-textarea" rows="12">{ data.Values.Description }</textarea>
+				</div>
+			</div>
+
+			<div class="uk-width-1-1 uk-flex uk-flex-between uk-margin-top">
+				<a href="/" class="uk-button uk-button-default">Cancel</a>
+				<button type="submit" class="uk-button uk-button-primary">
+					if data.Mode == "edit" {
+						Save Changes
+					} else {
+						Create Ticket
+					}
+				</button>
+			</div>
+		</form>
+	</div>
+}

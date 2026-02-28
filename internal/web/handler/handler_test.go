@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,7 +70,7 @@ func testSetup(t *testing.T) (*handler.Handler, string, string) {
 	}
 
 	broker := sse.NewBroker()
-	h := handler.New(ticketsDir, eventsDir, broker)
+	h := handler.New(ticketsDir, eventsDir, broker, "testproj")
 	return h, ticketsDir, eventsDir
 }
 
@@ -647,6 +648,227 @@ func TestActivityExplicitHookFilter(t *testing.T) {
 	}
 	if strings.Contains(body, "ticket.created") {
 		t.Error("expected ticket events to be hidden when filtering for hooks")
+	}
+}
+
+func TestNewTicketPage(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/new", nil)
+	w := httptest.NewRecorder()
+
+	h.NewTicket(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "New Ticket") {
+		t.Fatal("expected new ticket page content")
+	}
+}
+
+func TestCreateTicket(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	form := url.Values{}
+	form.Set("title", "Created in web")
+	form.Set("project", "testproj")
+	form.Set("status", "OPEN")
+	form.Set("priority", "P2")
+	form.Set("description", "web form ticket")
+
+	req := httptest.NewRequest(http.MethodPost, "/new", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	h.CreateTicket(w, req)
+
+	if w.Result().StatusCode != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d", w.Result().StatusCode)
+	}
+	if !strings.HasPrefix(w.Header().Get("Location"), "/ticket/st_") {
+		t.Fatalf("expected redirect to /ticket/st_*, got %q", w.Header().Get("Location"))
+	}
+}
+
+func TestCriticalPathPage(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	dep := &ticket.Ticket{
+		ID:       "st_cpdep",
+		Title:    "Dep",
+		Project:  "testproj",
+		Status:   ticket.StatusOpen,
+		Priority: ticket.PriorityP3,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(dep); err != nil {
+		t.Fatal(err)
+	}
+
+	root := &ticket.Ticket{
+		ID:        "st_cproot",
+		Title:     "Root",
+		Project:   "testproj",
+		Status:    ticket.StatusOpen,
+		Priority:  ticket.PriorityP3,
+		DependsOn: []string{"st_cpdep"},
+		Created:   time.Now().UTC(),
+		Updated:   time.Now().UTC(),
+	}
+	if err := store.Create(root); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/critical-path", nil)
+	w := httptest.NewRecorder()
+
+	h.CriticalPath(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Critical Path") {
+		t.Fatal("expected critical path page content")
+	}
+	if !strings.Contains(body, "st_cproot") {
+		t.Fatal("expected path to include root ticket")
+	}
+}
+
+func TestCriticalPathHorizontalView(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	dep := &ticket.Ticket{
+		ID:       "st_cphdep",
+		Title:    "Dep",
+		Project:  "testproj",
+		Status:   ticket.StatusOpen,
+		Priority: ticket.PriorityP3,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(dep); err != nil {
+		t.Fatal(err)
+	}
+
+	root := &ticket.Ticket{
+		ID:        "st_cphroot",
+		Title:     "Root",
+		Project:   "testproj",
+		Status:    ticket.StatusOpen,
+		Priority:  ticket.PriorityP3,
+		DependsOn: []string{"st_cphdep"},
+		Created:   time.Now().UTC(),
+		Updated:   time.Now().UTC(),
+	}
+	if err := store.Create(root); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/critical-path?view=horizontal", nil)
+	w := httptest.NewRecorder()
+
+	h.CriticalPath(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Horizontal") {
+		t.Fatal("expected horizontal toggle")
+	}
+	if !strings.Contains(body, "→") {
+		t.Fatal("expected horizontal arrow")
+	}
+}
+
+func TestCriticalPathScopeDefaultsToAllAndSupportsCurrent(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	allDep := &ticket.Ticket{
+		ID:       "st_alldep",
+		Title:    "All dep",
+		Project:  "otherproj",
+		Status:   ticket.StatusOpen,
+		Priority: ticket.PriorityP3,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(allDep); err != nil {
+		t.Fatal(err)
+	}
+	allRoot := &ticket.Ticket{
+		ID:        "st_allroot",
+		Title:     "All root",
+		Project:   "otherproj",
+		Status:    ticket.StatusOpen,
+		Priority:  ticket.PriorityP3,
+		DependsOn: []string{"st_alldep"},
+		Created:   time.Now().UTC(),
+		Updated:   time.Now().UTC(),
+	}
+	if err := store.Create(allRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	curDep := &ticket.Ticket{
+		ID:       "st_curdep",
+		Title:    "Current dep",
+		Project:  "testproj",
+		Status:   ticket.StatusOpen,
+		Priority: ticket.PriorityP3,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(curDep); err != nil {
+		t.Fatal(err)
+	}
+	curRoot := &ticket.Ticket{
+		ID:        "st_curroot",
+		Title:     "Current root",
+		Project:   "testproj",
+		Status:    ticket.StatusOpen,
+		Priority:  ticket.PriorityP3,
+		DependsOn: []string{"st_curdep"},
+		Created:   time.Now().UTC(),
+		Updated:   time.Now().UTC(),
+	}
+	if err := store.Create(curRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	allReq := httptest.NewRequest(http.MethodGet, "/critical-path", nil)
+	allW := httptest.NewRecorder()
+	h.CriticalPath(allW, allReq)
+
+	if allW.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", allW.Result().StatusCode)
+	}
+	allBody := allW.Body.String()
+	if !strings.Contains(allBody, "st_allroot") {
+		t.Fatal("expected default scope to include other project path")
+	}
+
+	curReq := httptest.NewRequest(http.MethodGet, "/critical-path?scope=current", nil)
+	curW := httptest.NewRecorder()
+	h.CriticalPath(curW, curReq)
+
+	if curW.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", curW.Result().StatusCode)
+	}
+	curBody := curW.Body.String()
+	if strings.Contains(curBody, "st_allroot") {
+		t.Fatal("expected current scope to exclude other project path")
+	}
+	if !strings.Contains(curBody, "st_curroot") {
+		t.Fatal("expected current scope to include current project path")
 	}
 }
 

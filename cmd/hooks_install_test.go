@@ -107,8 +107,8 @@ func TestHooksInstall_Idempotent(t *testing.T) {
 		t.Fatalf("second install: %v", err)
 	}
 
-	if !strings.Contains(out, "All smoovtask hooks already installed") {
-		t.Errorf("output = %q, want substring %q", out, "All smoovtask hooks already installed")
+	if !strings.Contains(out, "All smoovtask Claude hooks already installed") {
+		t.Errorf("output = %q, want substring %q", out, "All smoovtask Claude hooks already installed")
 	}
 
 	// Verify settings file hasn't duplicated hooks
