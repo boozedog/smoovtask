@@ -74,7 +74,7 @@ templ TicketHeader(data TicketData) {
 			<span>{ data.Ticket.Project }</span>
 			if data.Ticket.Assignee != "" {
 				<span class="st-meta-sep"></span>
-				<span title={ data.Ticket.Assignee } style="font-family: 'Maple Mono', monospace; font-size: 0.8rem;">{ shortAssignee(data.Ticket.Assignee) }</span>
+				<span title={ data.Ticket.Assignee } class="inline-block rounded-full font-semibold" style={ "padding: 0.1rem 0.4rem; font-family: 'Maple Mono', monospace; font-size: 0.8rem; background: " + assigneePillColor(data.Ticket.Assignee) + "; color: #000;" }>{ shortAssignee(data.Ticket.Assignee) }</span>
 			}
 			<span class="st-meta-sep"></span>
 			<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") } style="opacity: 0.6;">{ relativeTime(data.Ticket.Created) }</time>

@@ -138,6 +138,23 @@ func runStatus(_ *cobra.Command, args []string) error {
 
 	fmt.Printf("%s: %s → %s\n", tk.ID, oldStatus, targetStatus)
 
+	// Prompt agent to report improvements when submitting for review
+	if targetStatus == ticket.StatusReview {
+		fmt.Println()
+		fmt.Println("--- Before You Finish ---")
+		fmt.Println("While working on this ticket, did you notice any additional improvements")
+		fmt.Println("that could be made to the codebase? Examples:")
+		fmt.Println("- Code that could be refactored or simplified")
+		fmt.Println("- Missing tests or error handling")
+		fmt.Println("- Performance concerns or tech debt")
+		fmt.Println("- Documentation gaps")
+		fmt.Println()
+		fmt.Printf("If so, create tickets for them now:\n")
+		fmt.Printf("  st new \"<improvement title>\" -p P3 -d \"<description>\" --run-id %s\n", runID)
+		fmt.Println()
+		fmt.Println("If nothing stood out, you're done — no action needed.")
+	}
+
 	// Auto-unblock dependents when a ticket moves to DONE
 	if targetStatus == ticket.StatusDone {
 		unblocked, unblockedErr := ticket.AutoUnblock(store, tk.ID)

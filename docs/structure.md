@@ -7,5 +7,5 @@
 - `internal/event/` — JSONL event log: append (flock), daily rotation, query/filter
 - `internal/workflow/` — State machine, transition rules, validation
 - `internal/project/` — Project detection from PWD
-- `internal/identity/` — Session ID from `CLAUDE_SESSION_ID` env
+- `internal/identity/` — Invocation identity (`--run-id` for agents, `--human` for manual use)
 - `internal/hook/` — Hook command handlers (session-start, pre/post-tool, subagent, stop)

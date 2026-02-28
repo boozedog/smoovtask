@@ -218,7 +218,7 @@ smoovtask/
 │   ├── event/                  JSONL event log: append (flock), daily rotation, query
 │   ├── workflow/               State machine, transition rules, review eligibility
 │   ├── project/                Project detection from PWD
-│   ├── identity/               Session ID from CLAUDE_SESSION_ID env
+│   ├── identity/               Invocation identity (`--run-id` / `--human`)
 │   └── hook/                   Hook command handlers (10 event types)
 ├── DESIGN.md                   Full design document
 ├── NEXT_STEPS.md               Roadmap and future phases

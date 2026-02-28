@@ -10,7 +10,6 @@ import (
 
 func TestStatus_ValidTransition(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
 
 	// Create an IN-PROGRESS ticket assigned to our session
 	tk := env.createTicket(t, "status test", ticket.StatusInProgress)
@@ -22,7 +21,7 @@ func TestStatus_ValidTransition(t *testing.T) {
 	// Add a note (required before review)
 	env.addNoteEvent(t, tk.ID)
 
-	out, err := env.runCmd(t, "status", "review")
+	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "review")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -58,7 +57,6 @@ func TestStatus_ValidTransition(t *testing.T) {
 
 func TestStatus_InvalidTransition(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
 
 	// OPEN ticket cannot go directly to REVIEW
 	tk := env.createTicket(t, "bad transition", ticket.StatusOpen)
@@ -67,7 +65,7 @@ func TestStatus_InvalidTransition(t *testing.T) {
 		t.Fatalf("save ticket: %v", err)
 	}
 
-	_, err := env.runCmd(t, "status", "--ticket", tk.ID, "review")
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tk.ID, "review")
 	if err == nil {
 		t.Fatal("expected error for invalid transition OPEN → REVIEW")
 	}
@@ -75,7 +73,6 @@ func TestStatus_InvalidTransition(t *testing.T) {
 
 func TestStatus_RequiresNoteBeforeReview(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
 
 	tk := env.createTicket(t, "note required test", ticket.StatusInProgress)
 	tk.Assignee = "test-session-status"
@@ -84,7 +81,7 @@ func TestStatus_RequiresNoteBeforeReview(t *testing.T) {
 	}
 
 	// Try to move to review without a note — should fail
-	_, err := env.runCmd(t, "status", "--ticket", tk.ID, "review")
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tk.ID, "review")
 	if err == nil {
 		t.Fatal("expected error when no note exists before review")
 	}
@@ -95,7 +92,6 @@ func TestStatus_RequiresNoteBeforeReview(t *testing.T) {
 
 func TestStatus_WithTicketFlag(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
 
 	tk := env.createTicket(t, "ticket flag test", ticket.StatusInProgress)
 	tk.Assignee = "test-session-status"
@@ -105,7 +101,7 @@ func TestStatus_WithTicketFlag(t *testing.T) {
 
 	env.addNoteEvent(t, tk.ID)
 
-	out, err := env.runCmd(t, "status", "--ticket", tk.ID, "review")
+	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tk.ID, "review")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -117,7 +113,6 @@ func TestStatus_WithTicketFlag(t *testing.T) {
 
 func TestStatus_AutoUnblock(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
 
 	// Create ticket B (will be a dependency)
 	tkB := env.createTicket(t, "dependency B", ticket.StatusInProgress)
@@ -139,13 +134,13 @@ func TestStatus_AutoUnblock(t *testing.T) {
 	// Add a note (required before review)
 	env.addNoteEvent(t, tkB.ID)
 	// First go to REVIEW
-	_, err := env.runCmd(t, "status", "--ticket", tkB.ID, "review")
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "review")
 	if err != nil {
 		t.Fatalf("review transition: %v", err)
 	}
 
 	// Then go to DONE
-	out, err := env.runCmd(t, "status", "--ticket", tkB.ID, "done")
+	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "done")
 	if err != nil {
 		t.Fatalf("done transition: %v", err)
 	}
@@ -169,11 +164,10 @@ func TestStatus_AutoUnblock(t *testing.T) {
 
 func TestStatus_NoActiveTicket(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-status")
 	_ = env
 
 	// No tickets at all — resolver should fail
-	_, err := env.runCmd(t, "status", "review")
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "review")
 	if err == nil {
 		t.Fatal("expected error when no active ticket")
 	}

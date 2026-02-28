@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -46,7 +47,7 @@ func HandleSubagentStart(input *Input) (Output, error) {
 				"2. `st note --ticket %s --run-id <your-run-id> \"<findings>\"` — document your review findings\n"+
 				"3. `st status --ticket %s --run-id <your-run-id> done` (approve) or `st status --ticket %s --run-id <your-run-id> rework` (reject)\n\n"+
 				"ALWAYS pass --ticket and --run-id to st commands. Do NOT approve or reject without documenting findings via `st note` first.\n\n"+
-				"LOG FREQUENTLY: Use `st note` throughout your work — not just at the end. Log key decisions, discussions with the user (clarifications, scope changes, approvals), and anything surprising. Include brief code snippets where they help explain a change. Notes are the ticket's audit trail.",
+				guidance.CompactReview,
 			tk.ID, tk.Title, tk.Project, tk.Priority, tk.ID, tk.ID, tk.ID, tk.ID,
 		)
 	default:
@@ -57,12 +58,10 @@ func HandleSubagentStart(input *Input) (Output, error) {
 				"2. `st note --ticket %s --run-id <your-run-id> \"message\"` — document progress as you work\n"+
 				"3. `st status --ticket %s --run-id <your-run-id> review` — submit when done\n\n"+
 				"ALWAYS pass --ticket and --run-id to st commands. Do NOT start editing code without running `st pick` first.\n\n"+
-				"LOG FREQUENTLY: Use `st note` throughout your work — not just at the end. Log key decisions, discussions with the user (clarifications, scope changes, approvals), and anything surprising. Include brief code snippets where they help explain a change. Notes are the ticket's audit trail.",
+				guidance.CompactImplementation,
 			tk.ID, tk.Title, tk.Project, tk.Priority, tk.ID, tk.ID, tk.ID,
 		)
 	}
 
-	context := workflow
-
-	return Output{AdditionalContext: context}, nil
+	return Output{AdditionalContext: workflow + quickRef}, nil
 }

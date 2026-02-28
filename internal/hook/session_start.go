@@ -9,6 +9,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
@@ -84,11 +85,19 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		fmt.Fprintf(&b, "4. `st status --ticket <id> --run-id %s review`\n\n", runID)
 		b.WriteString("ALWAYS use --ticket --run-id.\n\n")
 		b.WriteString("`st note` OFTEN: decisions, approvals, surprises.\n")
+		b.WriteString(quickRef)
 		summary = b.String()
 	}
 	o := &Output{AdditionalContext: summary}
 	return o, nil
 }
+
+const quickRef = "\nOther commands (always pass --run-id <your-run-id>):\n" +
+	"  st new \"title\" [-p P0..P5] [-d \"desc\"]       — create a ticket\n" +
+	"  st list [--project X] [--status open|review]  — filter tickets\n" +
+	"  st show <id>                                  — full ticket detail\n" +
+	"  st context                                    — current session info\n" +
+	"All commands support --help for full usage.\n"
 
 // priorityWeight returns the scoring weight for a ticket priority.
 // P0=60, P1=50, P2=40, P3=30, P4=20, P5=10.
@@ -179,15 +188,17 @@ func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*tic
 		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"message\"` — document progress as you work\n")
 		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> review` — submit when done\n")
 		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT start editing code without picking a ticket first.\n")
-		b.WriteString("\nLOG FREQUENTLY: Use `st note` throughout your work — not just at the end. Log key decisions, discussions with the user (clarifications, scope changes, approvals), and anything surprising. Include brief code snippets where they help explain a change. Notes are the ticket's audit trail.\n")
+		fmt.Fprintf(&b, "\n%s\n", guidance.CompactImplementation)
 	} else {
 		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
 		b.WriteString("1. `st review --ticket st_xxxxxx --run-id <your-run-id>` — claim a ticket for review\n")
 		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"<findings>\"` — document your review findings\n")
 		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> done` (approve) or `st status --ticket st_xxxxxx --run-id <your-run-id> rework` (reject)\n")
 		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT approve or reject without documenting findings via `st note` first.\n")
-		b.WriteString("\nLOG FREQUENTLY: Use `st note` throughout your work — not just at the end. Log key decisions, discussions with the user (clarifications, scope changes, approvals), and anything surprising. Include brief code snippets where they help explain a change. Notes are the ticket's audit trail.\n")
+		fmt.Fprintf(&b, "\n%s\n", guidance.CompactReview)
 	}
+
+	b.WriteString(quickRef)
 
 	return b.String()
 }

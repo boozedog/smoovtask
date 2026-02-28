@@ -10,7 +10,6 @@ import (
 
 func TestNote_OnCurrentTicket(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-note")
 
 	tk := env.createTicket(t, "note target", ticket.StatusInProgress)
 	tk.Assignee = "test-session-note"
@@ -18,7 +17,7 @@ func TestNote_OnCurrentTicket(t *testing.T) {
 		t.Fatalf("save ticket: %v", err)
 	}
 
-	out, err := env.runCmd(t, "note", "this is a note")
+	out, err := env.runCmd(t, "--run-id", "test-session-note", "note", "this is a note")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -55,11 +54,10 @@ func TestNote_OnCurrentTicket(t *testing.T) {
 
 func TestNote_WithTicketFlag(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-note")
 
 	tk := env.createTicket(t, "flagged note target", ticket.StatusOpen)
 
-	out, err := env.runCmd(t, "note", "--ticket", tk.ID, "flagged note")
+	out, err := env.runCmd(t, "--run-id", "test-session-note", "note", "--ticket", tk.ID, "flagged note")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -79,11 +77,10 @@ func TestNote_WithTicketFlag(t *testing.T) {
 
 func TestNote_NoActiveTicketAndNoFlag(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-note")
 	_ = env
 
 	// No tickets assigned to this session
-	_, err := env.runCmd(t, "note", "orphan note")
+	_, err := env.runCmd(t, "--run-id", "test-session-note", "note", "orphan note")
 	if err == nil {
 		t.Fatal("expected error when no active ticket and no --ticket flag")
 	}
@@ -91,11 +88,10 @@ func TestNote_NoActiveTicketAndNoFlag(t *testing.T) {
 
 func TestNote_WithPositionalTicketID(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-note")
 
 	tk := env.createTicket(t, "positional note target", ticket.StatusOpen)
 
-	out, err := env.runCmd(t, "note", tk.ID, "positional note message")
+	out, err := env.runCmd(t, "--run-id", "test-session-note", "note", tk.ID, "positional note message")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -115,13 +111,12 @@ func TestNote_WithPositionalTicketID(t *testing.T) {
 
 func TestNote_PositionalTicketID_FlagTakesPrecedence(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-note")
 
 	tkFlag := env.createTicket(t, "flag target", ticket.StatusOpen)
 	tkPos := env.createTicket(t, "positional target", ticket.StatusOpen)
 
 	// --ticket flag should take precedence over positional arg
-	out, err := env.runCmd(t, "note", "--ticket", tkFlag.ID, tkPos.ID, "flag wins message")
+	out, err := env.runCmd(t, "--run-id", "test-session-note", "note", "--ticket", tkFlag.ID, tkPos.ID, "flag wins message")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -141,7 +136,6 @@ func TestNote_PositionalTicketID_FlagTakesPrecedence(t *testing.T) {
 
 func TestNote_SingleArgTicketIDErrors(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "test-session-note")
 
 	tk := env.createTicket(t, "target", ticket.StatusInProgress)
 	tk.Assignee = "test-session-note"
@@ -150,7 +144,7 @@ func TestNote_SingleArgTicketIDErrors(t *testing.T) {
 	}
 
 	// Single arg that looks like a ticket ID should error helpfully
-	_, err := env.runCmd(t, "note", tk.ID)
+	_, err := env.runCmd(t, "--run-id", "test-session-note", "note", tk.ID)
 	if err == nil {
 		t.Fatal("expected error when single arg looks like a ticket ID")
 	}
@@ -159,14 +153,13 @@ func TestNote_SingleArgTicketIDErrors(t *testing.T) {
 	}
 }
 
-func TestNote_NoSession(t *testing.T) {
+func TestNote_NoRunID(t *testing.T) {
 	env := newTestEnv(t)
-	t.Setenv("CLAUDE_SESSION_ID", "")
 	_ = env
 
-	// No session and no --ticket flag
+	// No --run-id and no --human
 	_, err := env.runCmd(t, "note", "no session note")
 	if err == nil {
-		t.Fatal("expected error when no session and no --ticket flag")
+		t.Fatal("expected error when no --run-id is provided")
 	}
 }
