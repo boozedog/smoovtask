@@ -116,8 +116,8 @@ func TestPartialBoard(t *testing.T) {
 	if !strings.Contains(body, "st-board") {
 		t.Error("expected partial to contain board CSS class")
 	}
-	if !strings.Contains(body, "sse:refresh") {
-		t.Error("expected partial to contain SSE self-refresh trigger")
+	if !strings.Contains(body, "sse:refresh-work") {
+		t.Error("expected partial to contain SSE work-refresh trigger")
 	}
 	// Partial should NOT include the full layout.
 	if strings.Contains(body, "<!DOCTYPE html>") {
@@ -269,8 +269,8 @@ func TestPartialActivity(t *testing.T) {
 	if !strings.Contains(body, event.TicketCreated) {
 		t.Error("expected partial activity to contain ticket.created event")
 	}
-	if !strings.Contains(body, "sse:refresh") {
-		t.Error("expected partial to contain SSE self-refresh trigger")
+	if !strings.Contains(body, "sse:refresh-activity") {
+		t.Error("expected partial to contain SSE activity-refresh trigger")
 	}
 	// Partial should NOT include the full layout.
 	if strings.Contains(body, "<!DOCTYPE html>") {
@@ -899,13 +899,59 @@ func TestWatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The watcher debounces and broadcasts a single "refresh" event.
+	// Ticket/status events trigger work refresh (and activity refresh).
 	select {
 	case received := <-ch:
-		if received.Event != "refresh" {
-			t.Errorf("expected refresh event, got %s", received.Event)
+		if received.Event != "refresh-work" {
+			t.Errorf("expected refresh-work event, got %s", received.Event)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("timeout waiting for watcher to broadcast event")
+	}
+}
+
+func TestWatcherHookEventBroadcastsActivityOnly(t *testing.T) {
+	eventsDir := t.TempDir()
+	broker := sse.NewBroker()
+
+	watcher, err := sse.NewWatcher(eventsDir, broker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = watcher.Close() }()
+
+	ch := broker.Subscribe()
+	defer broker.Unsubscribe(ch)
+
+	// Write a hook event. This should refresh activity only.
+	ev := event.Event{
+		TS:      time.Now().UTC(),
+		Event:   event.HookPreTool,
+		Ticket:  "st_test02",
+		Project: "testproj",
+		Actor:   "agent",
+	}
+	data, _ := json.Marshal(ev)
+	jsonlPath := filepath.Join(eventsDir, time.Now().Format("2006-01-02")+".jsonl")
+	if err := os.WriteFile(jsonlPath, append(data, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case received := <-ch:
+		if received.Event != "refresh-activity" {
+			t.Fatalf("expected refresh-activity event, got %s", received.Event)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for watcher to broadcast activity event")
+	}
+
+	select {
+	case received := <-ch:
+		if received.Event == "refresh-work" {
+			t.Fatalf("did not expect refresh-work event for hook-only write")
+		}
+	case <-time.After(200 * time.Millisecond):
+		// no extra work refresh is expected
 	}
 }

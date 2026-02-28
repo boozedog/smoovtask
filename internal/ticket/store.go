@@ -93,6 +93,15 @@ func (s *Store) Save(t *Ticket) error {
 
 // List returns all tickets, optionally filtered.
 func (s *Store) List(filter ListFilter) ([]*Ticket, error) {
+	return s.listWithParser(filter, Parse)
+}
+
+// ListMeta returns ticket frontmatter data only (Body is empty).
+func (s *Store) ListMeta(filter ListFilter) ([]*Ticket, error) {
+	return s.listWithParser(filter, ParseFrontmatter)
+}
+
+func (s *Store) listWithParser(filter ListFilter, parser func([]byte) (*Ticket, error)) ([]*Ticket, error) {
 	entries, err := os.ReadDir(s.ticketsDir)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -112,7 +121,7 @@ func (s *Store) List(filter ListFilter) ([]*Ticket, error) {
 			continue
 		}
 
-		t, err := Parse(data)
+		t, err := parser(data)
 		if err != nil {
 			continue
 		}

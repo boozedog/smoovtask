@@ -96,6 +96,87 @@ func runHook(_ *cobra.Command, args []string) error {
 			return nil
 		}
 
+	case "pi-event":
+		eventData, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("read event data: %w", err)
+		}
+
+		var event map[string]any
+		if err := json.Unmarshal(eventData, &event); err != nil {
+			return nil
+		}
+
+		input := &hook.Input{Source: "pi"}
+		if sessionID, ok := event["session_id"].(string); ok {
+			input.SessionID = sessionID
+		}
+		if cwd, ok := event["cwd"].(string); ok {
+			input.CWD = cwd
+		}
+		if toolName, ok := event["tool_name"].(string); ok {
+			input.ToolName = toolName
+		}
+		if taskPrompt, ok := event["task_prompt"].(string); ok {
+			input.TaskPrompt = taskPrompt
+		}
+
+		eventType, _ := event["type"].(string)
+		switch eventType {
+		case "session_start":
+			out, err := hook.HandleSessionStart(input)
+			if err != nil {
+				return err
+			}
+			return hook.WriteOutput(*out)
+		case "tool_call":
+			out, err := hook.HandlePreTool(input)
+			if err != nil {
+				return err
+			}
+			if out.AdditionalContext != "" {
+				return hook.WriteOutput(out)
+			}
+			return nil
+		case "tool_result", "tool_execution_end":
+			return hook.HandlePostTool(input)
+		case "permission_request":
+			out, err := hook.HandlePermissionRequest(input)
+			if err != nil {
+				return err
+			}
+			if out.Decision != nil {
+				return hook.WriteOutput(out)
+			}
+			return nil
+		case "agent_end", "task_completed":
+			return hook.HandleTaskCompleted(input)
+		case "teammate_idle", "turn_end":
+			return hook.HandleTeammateIdle(input)
+		case "subagent_start":
+			out, err := hook.HandleSubagentStart(input)
+			if err != nil {
+				return err
+			}
+			if out.AdditionalContext != "" {
+				return hook.WriteOutput(out)
+			}
+			return nil
+		case "subagent_stop":
+			return hook.HandleSubagentStop(input)
+		case "session_shutdown":
+			if err := hook.HandleStop(input); err != nil {
+				return err
+			}
+			return hook.HandleSessionEnd(input)
+		case "stop":
+			return hook.HandleStop(input)
+		case "session_end":
+			return hook.HandleSessionEnd(input)
+		default:
+			return nil
+		}
+
 	case "session-start":
 		input, err := hook.ReadInput()
 		if err != nil {

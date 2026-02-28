@@ -1,6 +1,7 @@
 package project
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -46,5 +47,68 @@ func TestDetectEmpty(t *testing.T) {
 	got := Detect(cfg, "/some/path")
 	if got != "" {
 		t.Errorf("Detect with no projects = %q, want empty", got)
+	}
+}
+
+func TestDetect_GitFallback(t *testing.T) {
+	// Create a temp git repo with an origin remote.
+	dir := t.TempDir()
+	for _, args := range [][]string{
+		{"init"},
+		{"remote", "add", "origin", "https://github.com/example/myproject.git"},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+
+	cfg := &config.Config{
+		Projects: map[string]config.ProjectConfig{
+			"myproject": {
+				Path: "/some/other/path",
+				Repo: "https://github.com/example/myproject.git",
+			},
+		},
+	}
+
+	got := Detect(cfg, dir)
+	if got != "myproject" {
+		t.Errorf("Detect(git fallback) = %q, want %q", got, "myproject")
+	}
+}
+
+func TestDetect_PathPreferredOverGit(t *testing.T) {
+	// When path matches, git should not be needed.
+	cfg := &config.Config{
+		Projects: map[string]config.ProjectConfig{
+			"myproject": {
+				Path: "/home/user/myproject",
+				Repo: "https://github.com/example/myproject.git",
+			},
+		},
+	}
+
+	got := Detect(cfg, "/home/user/myproject")
+	if got != "myproject" {
+		t.Errorf("Detect(path match) = %q, want %q", got, "myproject")
+	}
+}
+
+func TestDetect_NonGitNoPathMatch(t *testing.T) {
+	dir := t.TempDir()
+
+	cfg := &config.Config{
+		Projects: map[string]config.ProjectConfig{
+			"myproject": {
+				Path: "/some/other/path",
+				Repo: "https://github.com/example/myproject.git",
+			},
+		},
+	}
+
+	got := Detect(cfg, dir)
+	if got != "" {
+		t.Errorf("Detect(non-git, no path match) = %q, want empty", got)
 	}
 }

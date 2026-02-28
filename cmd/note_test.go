@@ -163,3 +163,71 @@ func TestNote_NoRunID(t *testing.T) {
 		t.Fatal("expected error when no --run-id is provided")
 	}
 }
+
+func TestUnescapeNote(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "plain text unchanged",
+			in:   "hello world",
+			want: "hello world",
+		},
+		{
+			name: "basic newline",
+			in:   `line1\nline2`,
+			want: "line1\nline2",
+		},
+		{
+			name: "multiple newlines",
+			in:   `a\nb\nc`,
+			want: "a\nb\nc",
+		},
+		{
+			name: "inline code preserved",
+			in:   `before\n` + "`" + `code\nhere` + "`" + `\nafter`,
+			want: "before\n`code\\nhere`\nafter",
+		},
+		{
+			name: "fenced code block preserved",
+			in:   "before\\n```\\nfenced\\n```\\nafter",
+			want: "before\n```\\nfenced\\n```\nafter",
+		},
+		{
+			name: "no false positive on backslash other",
+			in:   `hello\tworld`,
+			want: `hello\tworld`,
+		},
+		{
+			name: "empty string",
+			in:   "",
+			want: "",
+		},
+		{
+			name: "trailing backslash n",
+			in:   `end\n`,
+			want: "end\n",
+		},
+		{
+			name: "unclosed inline code",
+			in:   "before\\n`code\\nstuff",
+			want: "before\n`code\\nstuff",
+		},
+		{
+			name: "unclosed fenced block",
+			in:   "before\\n```code\\nstuff",
+			want: "before\n```code\\nstuff",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := unescapeNote(tt.in)
+			if got != tt.want {
+				t.Errorf("unescapeNote(%q)\n got %q\nwant %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}

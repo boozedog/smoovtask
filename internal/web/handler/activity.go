@@ -91,7 +91,7 @@ func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, er
 	}
 
 	// Collect unique project names.
-	allTickets, _ := h.store.List(ticket.ListFilter{})
+	allTickets, _ := h.store.ListMeta(ticket.ListFilter{})
 	projects := uniqueProjects(allTickets)
 
 	return templates.ActivityData{

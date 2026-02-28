@@ -69,7 +69,7 @@ func TestBuildBoardSummaryOpen(t *testing.T) {
 
 	summary := buildBoardSummary("api-server", "sess-abc123", open, nil)
 
-	if !strings.Contains(summary, "smoovtask — api-server — 2 OPEN tickets ready") {
+	if !strings.Contains(summary, "smoovtask — api-server — 2 tickets ready") {
 		t.Errorf("missing header, got:\n%s", summary)
 	}
 	if !strings.Contains(summary, "Run: sess-abc123") {
@@ -78,17 +78,17 @@ func TestBuildBoardSummaryOpen(t *testing.T) {
 	if !strings.Contains(summary, "st_a7Kx2m") {
 		t.Error("missing ticket ID st_a7Kx2m")
 	}
-	if !strings.Contains(summary, "REQUIRED workflow") {
-		t.Error("missing required workflow instruction")
-	}
 	if !strings.Contains(summary, "st pick") {
 		t.Error("missing pick instruction")
 	}
 	if !strings.Contains(summary, "st note") {
 		t.Error("missing note instruction")
 	}
-	if !strings.Contains(summary, "st status --ticket") {
+	if !strings.Contains(summary, "st status review") {
 		t.Error("missing status review instruction")
+	}
+	if !strings.Contains(summary, "Follow the user's instructions") {
+		t.Error("missing user-primacy note")
 	}
 }
 
@@ -99,35 +99,23 @@ func TestBuildBoardSummaryReview(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", nil, review)
 
-	if !strings.Contains(summary, "REVIEW") {
-		t.Error("should show REVIEW when review tickets exist")
-	}
-	if !strings.Contains(summary, "REQUIRED workflow") {
-		t.Error("missing REQUIRED workflow heading")
+	if !strings.Contains(summary, "Review:") {
+		t.Error("should show Review section when review tickets exist")
 	}
 	if !strings.Contains(summary, "st review") {
-		t.Error("missing step 1: st review instruction")
+		t.Error("missing st review in workflow")
 	}
 	if !strings.Contains(summary, "st note") {
-		t.Error("missing step 2: st note instruction")
+		t.Error("missing st note in workflow")
 	}
-	if !strings.Contains(summary, "st status --ticket st_xxxxxx --run-id <your-run-id> done") {
-		t.Error("missing step 3: st status done instruction")
+	if !strings.Contains(summary, "st status done") {
+		t.Error("missing st status done in workflow")
 	}
-	if !strings.Contains(summary, "st status --ticket st_xxxxxx --run-id <your-run-id> rework") {
-		t.Error("missing step 3: st status rework instruction")
+	if !strings.Contains(summary, "st status rework") {
+		t.Error("missing st status rework in workflow")
 	}
-	if !strings.Contains(summary, "Do NOT approve or reject") {
-		t.Error("missing warning about documenting findings first")
-	}
-	if !strings.Contains(summary, "st note --ticket") {
-		t.Error("missing --ticket flag on st note in review workflow")
-	}
-	if !strings.Contains(summary, "st status --ticket") {
-		t.Error("missing --ticket flag on st status in review workflow")
-	}
-	if !strings.Contains(summary, "ALWAYS pass --ticket and --run-id") {
-		t.Error("missing ALWAYS pass --ticket and --run-id warning in review workflow")
+	if !strings.Contains(summary, "Follow the user's instructions") {
+		t.Error("missing user-primacy note")
 	}
 }
 
@@ -148,12 +136,17 @@ func TestBuildBoardSummaryReviewPreferred(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", open, review)
 
-	// Review P2 (45) beats Open P3 (30), so show REVIEW
-	if !strings.Contains(summary, "REVIEW") {
-		t.Error("review tickets should be preferred when highest score is REVIEW")
+	// Review P2 (45) beats Open P3 (30), so review section should appear first
+	reviewIdx := strings.Index(summary, "Review:")
+	openIdx := strings.Index(summary, "Open:")
+	if reviewIdx == -1 {
+		t.Fatal("missing Review section")
 	}
-	if strings.Contains(summary, "st_open01") {
-		t.Error("open tickets should not appear when review batch is selected")
+	if openIdx == -1 {
+		t.Fatal("missing Open section — both batches should be shown")
+	}
+	if reviewIdx > openIdx {
+		t.Error("Review section should appear before Open section when review scores higher")
 	}
 }
 
@@ -189,11 +182,14 @@ func TestBuildBoardSummaryReviewBeatsSamePriority(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", open, review)
 
-	if !strings.Contains(summary, "REVIEW") {
-		t.Error("REVIEW should win at same priority due to +5 boost")
+	// Review should come first due to +5 boost
+	reviewIdx := strings.Index(summary, "Review:")
+	openIdx := strings.Index(summary, "Open:")
+	if reviewIdx == -1 || openIdx == -1 {
+		t.Fatalf("both sections should be present, got:\n%s", summary)
 	}
-	if strings.Contains(summary, "st_open01") {
-		t.Error("should not show OPEN tickets when REVIEW wins")
+	if reviewIdx > openIdx {
+		t.Error("Review should appear first at same priority due to +5 boost")
 	}
 }
 
@@ -209,23 +205,27 @@ func TestBuildBoardSummaryHigherOpenBeatsLowerReview(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", open, review)
 
-	if !strings.Contains(summary, "OPEN") {
-		t.Error("higher-priority OPEN should beat lower-priority REVIEW")
+	// Open section should come first since P2 OPEN (40) > P3 REVIEW (35)
+	openIdx := strings.Index(summary, "Open:")
+	reviewIdx := strings.Index(summary, "Review:")
+	if openIdx == -1 || reviewIdx == -1 {
+		t.Fatalf("both sections should be present, got:\n%s", summary)
 	}
-	if strings.Contains(summary, "st_rev01") {
-		t.Error("should not show REVIEW tickets when OPEN wins")
+	if openIdx > reviewIdx {
+		t.Error("Open section should appear before Review when open scores higher")
 	}
-	// Both open tickets should be present
+	// All tickets from both batches should be present
 	if !strings.Contains(summary, "st_open01") || !strings.Contains(summary, "st_open02") {
-		t.Error("all OPEN tickets should be shown when OPEN batch wins")
+		t.Error("all open tickets should be shown")
+	}
+	if !strings.Contains(summary, "st_rev01") {
+		t.Error("review tickets should also be shown")
 	}
 }
 
 func TestBuildBoardSummaryReviewBeatsNextPriorityDown(t *testing.T) {
 	// P3 REVIEW (35) beats P3 OPEN (30) — the +5 boost means REVIEW
 	// beats the same priority level.
-	// P2 REVIEW (45) also beats P3 OPEN (30).
-	// But does P3 REVIEW (35) beat P3 OPEN (30)? Yes: 35 > 30.
 	open := []*ticket.Ticket{
 		{ID: "st_open01", Title: "Open P3", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 		{ID: "st_open02", Title: "Open P4", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
@@ -237,18 +237,24 @@ func TestBuildBoardSummaryReviewBeatsNextPriorityDown(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", open, review)
 
-	if !strings.Contains(summary, "REVIEW") {
-		t.Error("P3 REVIEW (35) should beat P3 OPEN (30)")
+	// Review should come first, and header should show total count
+	reviewIdx := strings.Index(summary, "Review:")
+	openIdx := strings.Index(summary, "Open:")
+	if reviewIdx == -1 || openIdx == -1 {
+		t.Fatalf("both sections should be present, got:\n%s", summary)
 	}
-	if !strings.Contains(summary, "2 REVIEW tickets") {
-		t.Errorf("should show 2 REVIEW tickets, got:\n%s", summary)
+	if reviewIdx > openIdx {
+		t.Error("Review should appear first when P3 REVIEW (35) beats P3 OPEN (30)")
+	}
+	if !strings.Contains(summary, "4 tickets ready") {
+		t.Errorf("header should show total ticket count (4), got:\n%s", summary)
 	}
 }
 
 func TestBuildBoardSummaryDesignExample1(t *testing.T) {
 	// From DESIGN.md example:
 	// OPEN: P2, P3, P4  |  REVIEW: P3, P3
-	// Highest = P2 OPEN (40) → show all OPEN, sorted: P2, P3, P4
+	// Highest = P2 OPEN (40) → Open section first, sorted: P2, P3, P4
 	open := []*ticket.Ticket{
 		{ID: "st_p3open", Title: "P3 Open", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 		{ID: "st_p2open", Title: "P2 Open", Priority: ticket.PriorityP2, Status: ticket.StatusOpen},
@@ -261,11 +267,18 @@ func TestBuildBoardSummaryDesignExample1(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", open, review)
 
-	if !strings.Contains(summary, "3 OPEN tickets") {
-		t.Errorf("expected 3 OPEN tickets, got:\n%s", summary)
+	if !strings.Contains(summary, "5 tickets ready") {
+		t.Errorf("expected total 5 tickets, got:\n%s", summary)
 	}
 
-	// Verify sort order: P2 before P3 before P4
+	// Open should come first
+	openIdx := strings.Index(summary, "Open:")
+	reviewIdx := strings.Index(summary, "Review:")
+	if openIdx > reviewIdx {
+		t.Error("Open section should appear before Review when open scores higher")
+	}
+
+	// Verify sort order within open section: P2 before P3 before P4
 	p2Idx := strings.Index(summary, "st_p2open")
 	p3Idx := strings.Index(summary, "st_p3open")
 	p4Idx := strings.Index(summary, "st_p4open")
@@ -277,7 +290,7 @@ func TestBuildBoardSummaryDesignExample1(t *testing.T) {
 func TestBuildBoardSummaryDesignExample2(t *testing.T) {
 	// From DESIGN.md example:
 	// OPEN: P3, P4  |  REVIEW: P2, P3
-	// Highest = P2 REVIEW (45) → show all REVIEW, sorted: P2, P3
+	// Highest = P2 REVIEW (45) → Review section first, sorted: P2, P3
 	open := []*ticket.Ticket{
 		{ID: "st_p3open", Title: "P3 Open", Priority: ticket.PriorityP3, Status: ticket.StatusOpen},
 		{ID: "st_p4open", Title: "P4 Open", Priority: ticket.PriorityP4, Status: ticket.StatusOpen},
@@ -289,11 +302,18 @@ func TestBuildBoardSummaryDesignExample2(t *testing.T) {
 
 	summary := buildBoardSummary("proj", "", open, review)
 
-	if !strings.Contains(summary, "2 REVIEW tickets") {
-		t.Errorf("expected 2 REVIEW tickets, got:\n%s", summary)
+	if !strings.Contains(summary, "4 tickets ready") {
+		t.Errorf("expected total 4 tickets, got:\n%s", summary)
 	}
 
-	// Verify sort order: P2 before P3
+	// Review should come first
+	reviewIdx := strings.Index(summary, "Review:")
+	openIdx := strings.Index(summary, "Open:")
+	if reviewIdx > openIdx {
+		t.Error("Review section should appear before Open when review scores higher")
+	}
+
+	// Verify sort order within review section: P2 before P3
 	p2Idx := strings.Index(summary, "st_p2rev")
 	p3Idx := strings.Index(summary, "st_p3rev")
 	if p2Idx > p3Idx {

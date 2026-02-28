@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +31,12 @@ func runInit(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	name := filepath.Base(cwd)
+	// Use git repo name if available, otherwise fall back to directory name.
+	remoteURL := project.GitRemoteURL(cwd)
+	name := project.RepoName(remoteURL)
+	if name == "" {
+		name = filepath.Base(cwd)
+	}
 
 	if existing, ok := cfg.Projects[name]; ok {
 		if existing.Path == cwd {
@@ -39,7 +45,11 @@ func runInit(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	cfg.Projects[name] = config.ProjectConfig{Path: cwd}
+	projCfg := config.ProjectConfig{Path: cwd}
+	if remoteURL != "" {
+		projCfg.Repo = remoteURL
+	}
+	cfg.Projects[name] = projCfg
 
 	if err := cfg.EnsureDirs(); err != nil {
 		return fmt.Errorf("create directories: %w", err)
@@ -49,6 +59,10 @@ func runInit(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("save config: %w", err)
 	}
 
-	fmt.Printf("Registered project %q at %s\n", name, cwd)
+	if remoteURL != "" {
+		fmt.Printf("Registered project %q at %s (git: %s)\n", name, cwd, remoteURL)
+	} else {
+		fmt.Printf("Registered project %q at %s\n", name, cwd)
+	}
 	return nil
 }

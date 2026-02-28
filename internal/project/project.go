@@ -9,6 +9,8 @@ import (
 
 // Detect determines the project name from the given directory path
 // by matching against registered projects in the config.
+// First tries path-based matching (longest prefix wins), then falls
+// back to git remote URL comparison if no path match is found.
 // Returns empty string if no match is found.
 func Detect(cfg *config.Config, dir string) string {
 	dir = filepath.Clean(dir)
@@ -26,5 +28,21 @@ func Detect(cfg *config.Config, dir string) string {
 		}
 	}
 
-	return bestName
+	if bestName != "" {
+		return bestName
+	}
+
+	// Fall back to git remote URL comparison.
+	remoteURL := GitRemoteURL(dir)
+	if remoteURL == "" {
+		return ""
+	}
+
+	for name, proj := range cfg.Projects {
+		if proj.Repo != "" && proj.Repo == remoteURL {
+			return name
+		}
+	}
+
+	return ""
 }

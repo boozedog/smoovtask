@@ -130,7 +130,7 @@ func ActivityPartial(data ActivityData) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/partials/activity\" hx-trigger=\"sse:refresh\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\" hx-include=\"[name='project'],[name='event_type']\"><div class=\"mb-4 flex gap-3 items-center\"><select name=\"project\" class=\"uk-select uk-form-small\" style=\"max-width: 200px;\" hx-get=\"/partials/activity-content\" hx-target=\"#activity-content\" hx-swap=\"innerHTML\" hx-include=\"[name='event_type']\"><option value=\"\">All Projects</option> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/partials/activity\" hx-trigger=\"sse:refresh-activity\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\" hx-include=\"[name='project'],[name='event_type']\"><div class=\"mb-4 flex gap-3 items-center\"><select name=\"project\" class=\"uk-select uk-form-small\" style=\"max-width: 200px;\" hx-get=\"/partials/activity-content\" hx-target=\"#activity-content\" hx-swap=\"innerHTML\" hx-include=\"[name='event_type']\"><option value=\"\">All Projects</option> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

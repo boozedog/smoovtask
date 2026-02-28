@@ -37,7 +37,7 @@ templ BoardPage(data BoardData) {
 templ BoardPartial(data BoardData) {
 	<div
 		hx-get="/partials/board"
-		hx-trigger="sse:refresh"
+		hx-trigger="sse:refresh-work"
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"

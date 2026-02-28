@@ -17,14 +17,14 @@ var hooksCmd = &cobra.Command{
 var hooksInstallCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install smoovtask hooks into agent settings",
-	Long:  `Installs smoovtask hook commands into agent settings (Claude Code or opencode). Existing hooks and settings are preserved.`,
+	Long:  `Installs smoovtask hook commands into agent settings (Claude Code, opencode, or pi). Existing hooks and settings are preserved.`,
 	RunE:  runHooksInstall,
 }
 
 var agents []string
 
 func init() {
-	hooksInstallCmd.Flags().StringSliceVar(&agents, "agents", []string{"claude"}, "Agents to install hooks for: claude, opencode, both")
+	hooksInstallCmd.Flags().StringSliceVar(&agents, "agents", []string{"claude"}, "Agents to install hooks for: claude, opencode, pi, both")
 	hooksCmd.AddCommand(hooksInstallCmd)
 	rootCmd.AddCommand(hooksCmd)
 }
@@ -133,6 +133,134 @@ export default async ({ project, client, $, directory, worktree }) => {
   };
 };`
 
+// piExtensionCode is the TypeScript code for the pi extension bridge.
+const piExtensionCode = `import { spawnSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { basename } from 'node:path';
+
+function log(msg) {
+  writeFileSync('/tmp/pi-extension.log', new Date().toISOString() + ': ' + msg + '\n', { flag: 'a' });
+}
+
+function runHookSync(payload) {
+  const result = spawnSync('st', ['hook', 'pi-event'], {
+    input: JSON.stringify(payload),
+    env: { ...process.env, PI_HOOK: '1' },
+    timeout: 5000,
+  });
+
+  if (result.stderr && result.stderr.length > 0) {
+    log('stderr: ' + result.stderr.toString());
+  }
+  if (result.status !== 0) {
+    log('Hook failed code ' + result.status);
+    return null;
+  }
+
+  const trimmed = (result.stdout || '').toString().trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (e) {
+    log('Parse error: ' + e);
+    return null;
+  }
+}
+
+function getSessionID(ctx) {
+  const path = ctx?.sessionManager?.getSessionFile?.();
+  if (typeof path === 'string' && path.length > 0) {
+    const candidate = basename(path, '.jsonl');
+    const parts = candidate.split('_');
+    const suffix = parts[parts.length - 1];
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(suffix)) {
+      return suffix;
+    }
+    return candidate;
+  }
+  return 'pi-session';
+}
+
+export default function (pi) {
+  let cachedContext = null;
+
+  pi.on('session_start', async (_event, ctx) => {
+    const payload = {
+      type: 'session_start',
+      session_id: getSessionID(ctx),
+      cwd: ctx.cwd,
+    };
+    const result = runHookSync(payload);
+    if (result && result.additionalContext) {
+      cachedContext = result.additionalContext;
+    }
+  });
+
+  pi.on('before_agent_start', async (event, ctx) => {
+    if (!cachedContext) {
+      const payload = {
+        type: 'session_start',
+        session_id: getSessionID(ctx),
+        cwd: ctx.cwd,
+      };
+      const result = runHookSync(payload);
+      if (result && result.additionalContext) {
+        cachedContext = result.additionalContext;
+      }
+    }
+
+    if (!cachedContext) return;
+
+    return {
+      systemPrompt: event.systemPrompt + '\n\n<smoovtask>\n' + cachedContext + '\n</smoovtask>',
+    };
+  });
+
+  pi.on('tool_call', async (event, ctx) => {
+    const payload = {
+      type: 'tool_call',
+      session_id: getSessionID(ctx),
+      cwd: ctx.cwd,
+      tool_name: event.toolName,
+    };
+    const result = runHookSync(payload);
+    if (result && result.additionalContext) {
+      ctx.ui.notify(result.additionalContext, 'warning');
+    }
+    if (result && result.hookSpecificOutput && result.hookSpecificOutput.behavior === 'deny') {
+      return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' };
+    }
+  });
+
+  pi.on('tool_result', async (event, ctx) => {
+    runHookSync({
+      type: 'tool_result',
+      session_id: getSessionID(ctx),
+      cwd: ctx.cwd,
+      tool_name: event.toolName,
+    });
+  });
+
+  pi.on('agent_end', async (_event, ctx) => {
+    runHookSync({
+      type: 'agent_end',
+      session_id: getSessionID(ctx),
+      cwd: ctx.cwd,
+    });
+  });
+
+  pi.on('session_shutdown', async (_event, ctx) => {
+    runHookSync({
+      type: 'session_shutdown',
+      session_id: getSessionID(ctx),
+      cwd: ctx.cwd,
+    });
+  });
+}
+`
+
 // smoovtaskHooks returns the hook config that st needs installed.
 func smoovtaskHooks() map[string][]hookGroup {
 	return map[string][]hookGroup{
@@ -205,6 +333,10 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 			if err := installOpencodePlugin(); err != nil {
 				return fmt.Errorf("install opencode plugin: %w", err)
 			}
+		case "pi":
+			if err := installPiExtension(); err != nil {
+				return fmt.Errorf("install pi extension: %w", err)
+			}
 		}
 	}
 	return nil
@@ -213,7 +345,7 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 func expandAgents(agents []string) []string {
 	for _, a := range agents {
 		if a == "both" {
-			return []string{"claude", "opencode"}
+			return []string{"claude", "opencode", "pi"}
 		}
 	}
 	return agents
@@ -352,6 +484,28 @@ func installOpencodePlugin() error {
 	}
 
 	fmt.Printf("Installed opencode plugin: %s\n", pluginFile)
+	return nil
+}
+
+// installPiExtension installs the smoovtask extension for pi.
+// Extensions in ~/.pi/agent/extensions/ are auto-discovered by pi.
+func installPiExtension() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home dir: %w", err)
+	}
+
+	extensionsDir := filepath.Join(home, ".pi", "agent", "extensions")
+	if err := os.MkdirAll(extensionsDir, 0o755); err != nil {
+		return fmt.Errorf("create extensions dir: %w", err)
+	}
+
+	extensionFile := filepath.Join(extensionsDir, "smoovtask-hooks.ts")
+	if err := os.WriteFile(extensionFile, []byte(piExtensionCode), 0o644); err != nil {
+		return fmt.Errorf("write extension file: %w", err)
+	}
+
+	fmt.Printf("Installed pi extension: %s\n", extensionFile)
 	return nil
 }
 

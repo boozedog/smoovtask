@@ -161,11 +161,13 @@ templ Layout(title string, currentPath string) {
 				</div>
 			</main>
 			<script>
+				if (!window._stClickHandlerBound) {
+				window._stClickHandlerBound = true;
 				document.addEventListener('click', function(e) {
 					var copyTarget = e.target.closest('[data-copy-ticket-id]');
 					if (copyTarget) {
 						e.preventDefault();
-						e.stopPropagation();
+						e.stopImmediatePropagation();
 						var ticketID = copyTarget.getAttribute('data-copy-ticket-id');
 						if (!ticketID) return;
 						function copiedNotice() {
@@ -200,6 +202,7 @@ templ Layout(title string, currentPath string) {
 						}
 					}
 				});
+				}
 			</script>
 			<script>
 				function toggleDone(btn) {

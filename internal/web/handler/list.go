@@ -61,7 +61,7 @@ func (h *Handler) buildListData(r *http.Request) (templates.ListData, error) {
 		Status:  ticket.Status(filterStatus),
 	}
 
-	tickets, err := h.store.List(filter)
+	tickets, err := h.store.ListMeta(filter)
 	if err != nil {
 		return templates.ListData{}, err
 	}
@@ -135,7 +135,7 @@ func (h *Handler) buildListData(r *http.Request) (templates.ListData, error) {
 	}
 
 	// Collect unique project names for the filter dropdown.
-	allTickets, _ := h.store.List(ticket.ListFilter{})
+	allTickets, _ := h.store.ListMeta(ticket.ListFilter{})
 	projects := uniqueProjects(allTickets)
 
 	return templates.ListData{

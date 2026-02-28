@@ -78,13 +78,13 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		runID := input.SessionID
 		b := strings.Builder{}
 		fmt.Fprintf(&b, "smoovtask — %s — no tickets\nRun: %s\n\n", proj, runID)
-		b.WriteString("REQUIRED: new → pick → note → review\n\n")
+		b.WriteString("Workflow: new → pick → note → review\n\n")
 		b.WriteString("1. `st new \"title\"`\n")
 		fmt.Fprintf(&b, "2. `st pick <id> --run-id %s`\n", runID)
 		fmt.Fprintf(&b, "3. `st note --ticket <id> --run-id %s \"log progress\"`\n", runID)
 		fmt.Fprintf(&b, "4. `st status --ticket <id> --run-id %s review`\n\n", runID)
-		b.WriteString("ALWAYS use --ticket --run-id.\n\n")
-		b.WriteString("`st note` OFTEN: decisions, approvals, surprises.\n")
+		b.WriteString("Always use --ticket and --run-id.\n\n")
+		b.WriteString("Use `st note` often: decisions, approvals, surprises.\n")
 		b.WriteString(quickRef)
 		summary = b.String()
 	}
@@ -131,74 +131,79 @@ func sortByPriority(tickets []*ticket.Ticket) {
 }
 
 // buildBoardSummary formats the board summary for session context injection.
-// It uses score-based batch selection: score all tickets, find the highest,
-// then present ALL tickets of that same status type sorted by priority.
+// It uses score-based batch selection to determine which batch to show first,
+// then appends a summary line for the other batch so the agent has full context.
 func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*ticket.Ticket) string {
 	if len(openTickets) == 0 && len(reviewTickets) == 0 {
 		return ""
 	}
 
-	// Find the max score across both lists to determine which batch to show.
+	// Find the max score across both lists to determine which batch to show first.
 	maxScore := -1
-	showReview := false
+	showReviewFirst := false
 
 	for _, tk := range openTickets {
 		if s := ticketScore(tk); s > maxScore {
 			maxScore = s
-			showReview = false
+			showReviewFirst = false
 		}
 	}
 	for _, tk := range reviewTickets {
 		if s := ticketScore(tk); s > maxScore {
 			maxScore = s
-			showReview = true
+			showReviewFirst = true
 		}
 	}
 
-	var tickets []*ticket.Ticket
-	var statusLabel string
+	// Build sorted copies of each batch.
+	open := make([]*ticket.Ticket, len(openTickets))
+	copy(open, openTickets)
+	sortByPriority(open)
 
-	if showReview {
-		tickets = make([]*ticket.Ticket, len(reviewTickets))
-		copy(tickets, reviewTickets)
-		statusLabel = "REVIEW"
-	} else {
-		tickets = make([]*ticket.Ticket, len(openTickets))
-		copy(tickets, openTickets)
-		statusLabel = "OPEN"
-	}
+	review := make([]*ticket.Ticket, len(reviewTickets))
+	copy(review, reviewTickets)
+	sortByPriority(review)
 
-	sortByPriority(tickets)
+	total := len(open) + len(review)
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "smoovtask — %s — %d %s tickets ready\n", proj, len(tickets), statusLabel)
+	fmt.Fprintf(&b, "smoovtask — %s — %d tickets ready", proj, total)
+	if len(open) > 0 && len(review) > 0 {
+		fmt.Fprintf(&b, " (%d open, %d review)", len(open), len(review))
+	}
+	b.WriteString("\n")
 	if sessionID != "" {
 		fmt.Fprintf(&b, "Run: %s\n", sessionID)
 	}
-	b.WriteString("\n")
 
-	for _, tk := range tickets {
-		fmt.Fprintf(&b, "  %-12s %-30s %s\n", tk.ID, tk.Title, tk.Priority)
-	}
-
-	b.WriteString("\n")
-	if statusLabel == "OPEN" {
-		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
-		b.WriteString("1. `st pick st_xxxxxx --run-id <your-run-id>` — claim a ticket before starting any work\n")
-		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"message\"` — document progress as you work\n")
-		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> review` — submit when done\n")
-		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT start editing code without picking a ticket first.\n")
-		fmt.Fprintf(&b, "\n%s\n", guidance.CompactImplementation)
+	// Show the primary batch first, then the secondary batch.
+	if showReviewFirst {
+		writeTicketBatch(&b, "Review", review)
+		writeTicketBatch(&b, "Open", open)
 	} else {
-		b.WriteString("REQUIRED workflow — you MUST follow these steps:\n")
-		b.WriteString("1. `st review --ticket st_xxxxxx --run-id <your-run-id>` — claim a ticket for review\n")
-		b.WriteString("2. `st note --ticket st_xxxxxx --run-id <your-run-id> \"<findings>\"` — document your review findings\n")
-		b.WriteString("3. `st status --ticket st_xxxxxx --run-id <your-run-id> done` (approve) or `st status --ticket st_xxxxxx --run-id <your-run-id> rework` (reject)\n")
-		b.WriteString("\nALWAYS pass --ticket and --run-id to st commands. Your run ID is shown above. Do NOT approve or reject without documenting findings via `st note` first.\n")
-		fmt.Fprintf(&b, "\n%s\n", guidance.CompactReview)
+		writeTicketBatch(&b, "Open", open)
+		writeTicketBatch(&b, "Review", review)
 	}
+
+	b.WriteString("Follow the user's instructions. Default workflow when no specific direction is given:\n")
+	b.WriteString("  Open tickets:   `st pick` → `st note` → `st status review`\n")
+	b.WriteString("  Review tickets: `st review` → `st note` → `st status done` / `st status rework`\n")
+	b.WriteString("Always pass --ticket and --run-id to st commands. Pick a ticket before editing code.\n")
+	fmt.Fprintf(&b, "\n%s\n", guidance.CompactImplementation)
 
 	b.WriteString(quickRef)
 
 	return b.String()
+}
+
+// writeTicketBatch writes a labeled section of tickets to the builder.
+// Does nothing if the slice is empty.
+func writeTicketBatch(b *strings.Builder, label string, tickets []*ticket.Ticket) {
+	if len(tickets) == 0 {
+		return
+	}
+	fmt.Fprintf(b, "\n%s:\n", label)
+	for _, tk := range tickets {
+		fmt.Fprintf(b, "  %-12s %-30s %s\n", tk.ID, tk.Title, tk.Priority)
+	}
 }

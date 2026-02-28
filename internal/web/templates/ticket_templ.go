@@ -132,7 +132,7 @@ func TicketPartial(data TicketData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-trigger=\"sse:refresh\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" hx-trigger=\"sse:refresh-work\" hx-target=\"this\" hx-swap=\"outerHTML\" hx-disinherit=\"hx-swap\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -195,7 +195,7 @@ func TicketHeader(data TicketData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"uk-button uk-button-default uk-button-small\">Edit</a></div><div class=\"st-ticket-meta\"><code data-copy-ticket-id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"uk-button uk-button-default uk-button-small\">Edit</a></div><div class=\"st-ticket-meta\"><span data-copy-ticket-id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -208,20 +208,20 @@ func TicketHeader(data TicketData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" title=\"Click to copy ticket ID\" style=\"font-size: 0.8rem;\" class=\"cursor-pointer\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" title=\"Click to copy ticket ID\" class=\"st-badge\" style=\"border: 1px solid; background: transparent; font-size: 0.8rem; cursor: pointer; user-select: none;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.Ticket.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/ticket.templ`, Line: 73, Col: 146}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/ticket.templ`, Line: 73, Col: 220}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</code>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " <span style=\"font-family: 'Maple Mono NF', monospace; opacity: 0.5;\">\U000f018f</span></span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -551,7 +551,7 @@ func TicketModalPartial(data TicketData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" hx-trigger=\"sse:refresh\" hx-target=\"#ticket-modal-body\" hx-swap=\"innerHTML\" hx-disinherit=\"hx-swap\"><div class=\"st-ticket-detail max-w-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" hx-trigger=\"sse:refresh-work\" hx-target=\"#ticket-modal-body\" hx-swap=\"innerHTML\" hx-disinherit=\"hx-swap\"><div class=\"st-ticket-detail max-w-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

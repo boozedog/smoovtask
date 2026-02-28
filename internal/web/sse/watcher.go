@@ -1,7 +1,11 @@
 package sse
 
 import (
+	"bufio"
+	"encoding/json"
+	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -49,6 +53,7 @@ func (w *Watcher) loop() {
 	timer := time.NewTimer(debounce)
 	timer.Stop()
 	dirty := make(map[string]struct{})
+	offsets := make(map[string]int64)
 
 	for {
 		select {
@@ -66,9 +71,14 @@ func (w *Watcher) loop() {
 				dirty[ev.Name] = struct{}{}
 			}
 		case <-timer.C:
+			workChanged, activityChanged := classifyDirtyFiles(dirty, offsets)
 			clear(dirty)
-			// Send a single refresh signal regardless of how many events arrived.
-			w.broker.Broadcast(event.Event{Event: "refresh"})
+			if workChanged {
+				w.broker.Broadcast(event.Event{Event: "refresh-work"})
+			}
+			if activityChanged {
+				w.broker.Broadcast(event.Event{Event: "refresh-activity"})
+			}
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
 				return
@@ -76,4 +86,62 @@ func (w *Watcher) loop() {
 			slog.Error("fsnotify error", "err", err)
 		}
 	}
+}
+
+func classifyDirtyFiles(dirty map[string]struct{}, offsets map[string]int64) (workChanged, activityChanged bool) {
+	for path := range dirty {
+		currentOffset := offsets[path]
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+		if fileInfo.Size() < currentOffset {
+			currentOffset = 0
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			continue
+		}
+
+		if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
+			_ = f.Close()
+			continue
+		}
+
+		reader := bufio.NewReader(f)
+		for {
+			line, err := reader.ReadBytes('\n')
+			if len(line) > 0 && line[len(line)-1] == '\n' {
+				currentOffset += int64(len(line))
+				line = line[:len(line)-1]
+				if len(line) == 0 {
+					if err == io.EOF {
+						break
+					}
+					continue
+				}
+
+				var ev event.Event
+				if json.Unmarshal(line, &ev) == nil {
+					activityChanged = true
+					if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
+						workChanged = true
+					}
+				}
+			}
+
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				break
+			}
+		}
+
+		offsets[path] = currentOffset
+		_ = f.Close()
+	}
+
+	return workChanged, activityChanged
 }

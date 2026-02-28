@@ -163,6 +163,70 @@ func TestStoreList(t *testing.T) {
 	}
 }
 
+func TestStoreListMeta(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+
+	now := time.Now().UTC()
+	first := &Ticket{
+		Title:     "Meta A",
+		Project:   "proj-a",
+		Status:    StatusOpen,
+		Priority:  PriorityP3,
+		DependsOn: []string{},
+		Created:   now,
+		Updated:   now,
+		Tags:      []string{"x"},
+	}
+	AppendSection(first, "Created", "human", "", "Body A", nil, first.Created)
+	if err := store.Create(first); err != nil {
+		t.Fatalf("Create(first) error: %v", err)
+	}
+
+	second := &Ticket{
+		Title:     "Meta B",
+		Project:   "proj-b",
+		Status:    StatusInProgress,
+		Priority:  PriorityP1,
+		DependsOn: []string{first.ID},
+		Created:   now.Add(time.Minute),
+		Updated:   now.Add(time.Minute),
+		Tags:      []string{"y"},
+	}
+	AppendSection(second, "Created", "human", "", "Body B", nil, second.Created)
+	if err := store.Create(second); err != nil {
+		t.Fatalf("Create(second) error: %v", err)
+	}
+
+	meta, err := store.ListMeta(ListFilter{})
+	if err != nil {
+		t.Fatalf("ListMeta() error: %v", err)
+	}
+	if len(meta) != 2 {
+		t.Fatalf("ListMeta() returned %d tickets, want 2", len(meta))
+	}
+
+	for _, tk := range meta {
+		if tk.Body != "" {
+			t.Errorf("ListMeta() Body = %q, want empty", tk.Body)
+		}
+	}
+
+	inProg, err := store.ListMeta(ListFilter{Status: StatusInProgress})
+	if err != nil {
+		t.Fatalf("ListMeta(IN-PROGRESS) error: %v", err)
+	}
+	if len(inProg) != 1 {
+		t.Fatalf("ListMeta(IN-PROGRESS) returned %d tickets, want 1", len(inProg))
+	}
+	if inProg[0].Project != "proj-b" {
+		t.Errorf("project = %q, want %q", inProg[0].Project, "proj-b")
+	}
+	if len(inProg[0].DependsOn) != 1 || inProg[0].DependsOn[0] != first.ID {
+		t.Errorf("depends-on = %v, want [%s]", inProg[0].DependsOn, first.ID)
+	}
+}
+
 func TestStoreListEmptyDir(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
 

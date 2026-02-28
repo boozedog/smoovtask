@@ -59,23 +59,27 @@ func TestHandleSubagentStartOpenTicket(t *testing.T) {
 	if !strings.Contains(ctx, "st_open01") {
 		t.Error("missing ticket ID in context")
 	}
-	if !strings.Contains(ctx, "st pick st_open01") {
-		t.Error("missing st pick instruction for OPEN ticket")
+	if !strings.Contains(ctx, "Implement feature") {
+		t.Error("missing ticket title in context")
 	}
-	if !strings.Contains(ctx, "st note") {
-		t.Error("missing st note instruction")
+	if !strings.Contains(ctx, "test-project") {
+		t.Error("missing project in context")
 	}
-	if !strings.Contains(ctx, "st status --ticket st_open01 --run-id") {
-		t.Error("missing st status --ticket instruction")
+	if !strings.Contains(ctx, "P2") {
+		t.Error("missing priority in context")
+	}
+	if !strings.Contains(ctx, "open") {
+		t.Error("missing status in context")
 	}
 	if !strings.Contains(ctx, "st note --ticket st_open01") {
 		t.Error("missing st note --ticket instruction")
 	}
-	if !strings.Contains(ctx, "ALWAYS pass --ticket and --run-id") {
-		t.Error("missing ALWAYS pass --ticket and --run-id warning")
+	// Should NOT contain workflow directives
+	if strings.Contains(ctx, "REQUIRED") {
+		t.Error("subagent context should not contain REQUIRED directives")
 	}
-	if strings.Contains(ctx, "st review") {
-		t.Error("OPEN ticket should not get reviewer workflow")
+	if strings.Contains(ctx, "MUST") {
+		t.Error("subagent context should not contain MUST directives")
 	}
 }
 
@@ -110,35 +114,21 @@ func TestHandleSubagentStartReviewTicket(t *testing.T) {
 	if !strings.Contains(ctx, "st_revi01") {
 		t.Error("missing ticket ID in context")
 	}
+	if !strings.Contains(ctx, "Review this PR") {
+		t.Error("missing ticket title in context")
+	}
 	if !strings.Contains(ctx, "REVIEW") {
-		t.Error("missing REVIEW label in context")
+		t.Error("missing status in context")
 	}
-	if !strings.Contains(ctx, "st review --ticket st_revi01") {
-		t.Error("missing st review --ticket instruction for REVIEW ticket")
-	}
-	if !strings.Contains(ctx, "st note") {
-		t.Error("missing st note instruction")
-	}
-	if !strings.Contains(ctx, "st status --ticket st_revi01 --run-id") {
-		t.Error("missing st status --ticket instruction")
-	}
-	if !strings.Contains(ctx, "done") {
-		t.Error("missing done instruction")
-	}
-	if !strings.Contains(ctx, "rework") {
-		t.Error("missing rework instruction")
-	}
-	if !strings.Contains(ctx, "st note --ticket st_revi01 --run-id") {
+	if !strings.Contains(ctx, "st note --ticket st_revi01") {
 		t.Error("missing st note --ticket instruction")
 	}
-	if !strings.Contains(ctx, "ALWAYS pass --ticket and --run-id") {
-		t.Error("missing ALWAYS pass --ticket and --run-id warning")
+	// Should NOT contain workflow directives
+	if strings.Contains(ctx, "REQUIRED") {
+		t.Error("subagent context should not contain REQUIRED directives")
 	}
-	if !strings.Contains(ctx, "Do NOT approve or reject") {
-		t.Error("missing warning about documenting findings first")
-	}
-	if strings.Contains(ctx, "st pick") {
-		t.Error("REVIEW ticket should not get implementer workflow with st pick")
+	if strings.Contains(ctx, "MUST") {
+		t.Error("subagent context should not contain MUST directives")
 	}
 }
 
