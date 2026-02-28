@@ -30,5 +30,6 @@ func HandleTaskCompleted(input *Input) error {
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
+		Source:  input.Source,
 	})
 }

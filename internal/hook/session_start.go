@@ -17,20 +17,20 @@ import (
 // It prints the board summary directly to stdout (plain text),
 // which Claude Code automatically injects into the agent's context
 // for SessionStart hooks.
-func HandleSessionStart(input *Input) error {
+func HandleSessionStart(input *Input) (*Output, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return &Output{}, fmt.Errorf("load config: %w", err)
 	}
 
 	proj := project.Detect(cfg, input.CWD)
 	if proj == "" {
-		return nil
+		return &Output{}, nil
 	}
 
 	ticketsDir, err := cfg.TicketsDir()
 	if err != nil {
-		return fmt.Errorf("get tickets dir: %w", err)
+		return nil, fmt.Errorf("get tickets dir: %w", err)
 	}
 
 	store := ticket.NewStore(ticketsDir)
@@ -41,7 +41,7 @@ func HandleSessionStart(input *Input) error {
 		Status:  ticket.StatusOpen,
 	})
 	if err != nil {
-		return fmt.Errorf("list tickets: %w", err)
+		return nil, fmt.Errorf("list tickets: %w", err)
 	}
 
 	// Get review tickets for this project
@@ -50,13 +50,13 @@ func HandleSessionStart(input *Input) error {
 		Status:  ticket.StatusReview,
 	})
 	if err != nil {
-		return fmt.Errorf("list review tickets: %w", err)
+		return nil, fmt.Errorf("list review tickets: %w", err)
 	}
 
 	// Log session-start event
 	eventsDir, err := cfg.EventsDir()
 	if err != nil {
-		return fmt.Errorf("get events dir: %w", err)
+		return nil, fmt.Errorf("get events dir: %w", err)
 	}
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
@@ -65,6 +65,7 @@ func HandleSessionStart(input *Input) error {
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
+		Source:  input.Source,
 		Data: map[string]any{
 			"open_count":   len(openTickets),
 			"review_count": len(reviewTickets),
@@ -72,13 +73,21 @@ func HandleSessionStart(input *Input) error {
 	})
 
 	summary := buildBoardSummary(proj, input.SessionID, openTickets, reviewTickets)
-	if summary != "" {
-		fmt.Print(summary)
-	} else {
-		fmt.Printf("smoovtask — %s — no open tickets\n\nIf no ticket exists for your task, create one first with `st new \"title\"`.\n", proj)
+	if summary == "" {
+		runID := input.SessionID
+		b := strings.Builder{}
+		fmt.Fprintf(&b, "smoovtask — %s — no tickets\nRun: %s\n\n", proj, runID)
+		b.WriteString("REQUIRED: new → pick → note → review\n\n")
+		b.WriteString("1. `st new \"title\"`\n")
+		fmt.Fprintf(&b, "2. `st pick <id> --run-id %s`\n", runID)
+		fmt.Fprintf(&b, "3. `st note --ticket <id> --run-id %s \"log progress\"`\n", runID)
+		fmt.Fprintf(&b, "4. `st status --ticket <id> --run-id %s review`\n\n", runID)
+		b.WriteString("ALWAYS use --ticket --run-id.\n\n")
+		b.WriteString("`st note` OFTEN: decisions, approvals, surprises.\n")
+		summary = b.String()
 	}
-
-	return nil
+	o := &Output{AdditionalContext: summary}
+	return o, nil
 }
 
 // priorityWeight returns the scoring weight for a ticket priority.

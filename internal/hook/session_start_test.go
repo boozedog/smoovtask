@@ -33,7 +33,7 @@ func TestHandleSessionStartLogsEvent(t *testing.T) {
 		CWD:       projectPath,
 	}
 
-	err := HandleSessionStart(input)
+	_, err := HandleSessionStart(input)
 	if err != nil {
 		t.Fatalf("HandleSessionStart() error: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestHandleSessionStartNoProject(t *testing.T) {
 		CWD:       "/some/unknown/path",
 	}
 
-	err := HandleSessionStart(input)
+	_, err := HandleSessionStart(input)
 	if err != nil {
 		t.Fatalf("HandleSessionStart() error: %v", err)
 	}

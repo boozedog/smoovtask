@@ -31,6 +31,7 @@ func HandlePermissionRequest(input *Input) (Output, error) {
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
+		Source:  input.Source,
 	})
 
 	return Output{}, nil
