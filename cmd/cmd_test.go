@@ -202,6 +202,7 @@ func resetFlags() {
 	newTitle = ""
 	pickTicket = ""
 	reviewTicket = ""
+	handoffTicket = ""
 }
 
 func TestOverride_HappyPath(t *testing.T) {

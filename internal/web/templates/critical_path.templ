@@ -1,0 +1,166 @@
+package templates
+
+import "github.com/boozedog/smoovtask/internal/ticket"
+
+type CriticalPathData struct {
+	Project    string
+	Scope      string
+	View       string
+	Paths      []ticket.CriticalPath
+	ByID       map[string]*ticket.Ticket
+	RunSources map[string]string
+}
+
+func criticalPathPartialURL(view, scope string) string {
+	if view == "horizontal" && scope == "current" {
+		return "/partials/critical-path?view=horizontal&scope=current"
+	}
+	if view == "horizontal" {
+		return "/partials/critical-path?view=horizontal"
+	}
+	if scope == "current" {
+		return "/partials/critical-path?scope=current"
+	}
+	return "/partials/critical-path"
+}
+
+func criticalPathPageURL(view, scope string) string {
+	if view == "horizontal" && scope == "current" {
+		return "/critical-path?view=horizontal&scope=current"
+	}
+	if view == "horizontal" {
+		return "/critical-path?view=horizontal"
+	}
+	if scope == "current" {
+		return "/critical-path?scope=current"
+	}
+	return "/critical-path"
+}
+
+func arrowForView(view string) string {
+	if view == "horizontal" {
+		return "→"
+	}
+	return "↓"
+}
+
+func chainClasses(view string) string {
+	if view == "horizontal" {
+		return "flex items-start gap-3 overflow-x-auto pb-2"
+	}
+	return "flex flex-col gap-2"
+}
+
+func dependencyFlow(ids []string) []string {
+	flow := make([]string, 0, len(ids))
+	for i := len(ids) - 1; i >= 0; i-- {
+		flow = append(flow, ids[i])
+	}
+	return flow
+}
+
+templ CriticalPathPage(data CriticalPathData) {
+	@Layout("Critical Path", "/critical-path") {
+		@CriticalPathPartial(data)
+	}
+}
+
+templ CriticalPathPartial(data CriticalPathData) {
+	<div
+		hx-get={ criticalPathPartialURL(data.View, data.Scope) }
+		hx-trigger="sse:refresh"
+		hx-target="this"
+		hx-swap="outerHTML"
+		hx-disinherit="hx-swap"
+	>
+		@CriticalPathContent(data)
+	</div>
+}
+
+templ CriticalPathContent(data CriticalPathData) {
+	<div class="max-w-5xl mx-auto">
+		<div class="uk-button-group uk-margin-small-top uk-margin-right">
+			<a
+				hx-get={ criticalPathPartialURL(data.View, "all") }
+				hx-target="#content"
+				hx-swap="innerHTML"
+				hx-push-url={ criticalPathPageURL(data.View, "all") }
+				href={ templ.SafeURL(criticalPathPageURL(data.View, "all")) }
+				if data.Scope == "all" {
+					class="uk-button uk-button-small uk-button-primary"
+				} else {
+					class="uk-button uk-button-small uk-button-default"
+				}
+			>
+				All Projects
+			</a>
+			<a
+				hx-get={ criticalPathPartialURL(data.View, "current") }
+				hx-target="#content"
+				hx-swap="innerHTML"
+				hx-push-url={ criticalPathPageURL(data.View, "current") }
+				href={ templ.SafeURL(criticalPathPageURL(data.View, "current")) }
+				if data.Scope == "current" {
+					class="uk-button uk-button-small uk-button-primary"
+				} else {
+					class="uk-button uk-button-small uk-button-default"
+				}
+			>
+				Current Project
+			</a>
+		</div>
+		<div class="uk-button-group uk-margin-small-top uk-margin">
+			<a
+				hx-get={ criticalPathPartialURL("vertical", data.Scope) }
+				hx-target="#content"
+				hx-swap="innerHTML"
+				hx-push-url={ criticalPathPageURL("vertical", data.Scope) }
+				href={ templ.SafeURL(criticalPathPageURL("vertical", data.Scope)) }
+				if data.View == "vertical" {
+					class="uk-button uk-button-small uk-button-primary"
+				} else {
+					class="uk-button uk-button-small uk-button-default"
+				}
+			>
+				Vertical
+			</a>
+			<a
+				hx-get={ criticalPathPartialURL("horizontal", data.Scope) }
+				hx-target="#content"
+				hx-swap="innerHTML"
+				hx-push-url={ criticalPathPageURL("horizontal", data.Scope) }
+				href={ templ.SafeURL(criticalPathPageURL("horizontal", data.Scope)) }
+				if data.View == "horizontal" {
+					class="uk-button uk-button-small uk-button-primary"
+				} else {
+					class="uk-button uk-button-small uk-button-default"
+				}
+			>
+				Horizontal
+			</a>
+		</div>
+
+		if len(data.Paths) == 0 {
+			<div class="uk-alert-primary uk-margin" data-uk-alert>
+				No dependency chains found.
+			</div>
+		} else {
+			for _, path := range data.Paths {
+				<div class="uk-card uk-card-default uk-card-body uk-margin">
+					<div class={ chainClasses(data.View) + " uk-margin-top" }>
+						for i, id := range dependencyFlow(path.IDs) {
+							if data.ByID[id] != nil {
+								<div style="min-width: 16rem;">
+									@TicketCard(data.ByID[id], data.RunSources[data.ByID[id].Assignee])
+								</div>
+							}
+							if i < len(path.IDs)-1 {
+								<div class="flex items-center justify-center opacity-50" style="font-size: 1.5rem; min-width: 2rem;">{ arrowForView(data.View) }</div>
+							}
+						}
+					</div>
+				</div>
+			}
+		}
+	</div>
+}

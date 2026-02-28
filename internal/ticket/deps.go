@@ -2,7 +2,7 @@ package ticket
 
 import "time"
 
-// CheckDependencies checks if all dependencies of a ticket are resolved (DONE).
+// CheckDependencies checks if all dependencies of a ticket are resolved (DONE or CANCELLED).
 // Returns the list of unresolved dependency IDs.
 func CheckDependencies(store *Store, tk *Ticket) ([]string, error) {
 	var unresolved []string
@@ -13,7 +13,7 @@ func CheckDependencies(store *Store, tk *Ticket) ([]string, error) {
 			unresolved = append(unresolved, depID)
 			continue
 		}
-		if dep.Status != StatusDone {
+		if dep.Status != StatusDone && dep.Status != StatusCancelled {
 			unresolved = append(unresolved, depID)
 		}
 	}

@@ -60,9 +60,9 @@ func runList(_ *cobra.Command, _ []string) error {
 		filter.Status = ""
 	}
 
-	// Default: hide DONE unless --all or --status is explicit
+	// Default: hide DONE and CANCELLED unless --all or --status is explicit
 	if !listAll && listStatus == "" {
-		filter.Excludes = []ticket.Status{ticket.StatusDone}
+		filter.Excludes = []ticket.Status{ticket.StatusDone, ticket.StatusCancelled}
 	}
 
 	store := ticket.NewStore(ticketsDir)
@@ -117,8 +117,10 @@ func listStatusWeight(s ticket.Status) int {
 		return 5
 	case ticket.StatusDone:
 		return 6
-	default:
+	case ticket.StatusCancelled:
 		return 7
+	default:
+		return 8
 	}
 }
 

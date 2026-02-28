@@ -7,7 +7,8 @@ import (
 )
 
 type BoardData struct {
-	Columns []BoardColumn
+	Columns    []BoardColumn
+	RunSources map[string]string
 }
 
 type BoardColumn struct {
@@ -24,7 +25,7 @@ func columnClasses(col BoardColumn) string {
 }
 
 func isDoneCollapsible(col BoardColumn) bool {
-	return col.Status == ticket.StatusDone && len(col.Tickets) > 5
+	return (col.Status == ticket.StatusDone || col.Status == ticket.StatusCancelled) && len(col.Tickets) > 5
 }
 
 templ BoardPage(data BoardData) {
@@ -55,7 +56,7 @@ templ BoardContent(data BoardData) {
 						<span class="st-column-count">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
 					</div>
 					for _, tk := range col.Tickets {
-						@TicketCard(tk)
+						@TicketCard(tk, data.RunSources[tk.Assignee])
 					}
 					if len(col.Tickets) == 0 {
 						<div class="p-3 opacity-40 text-center" style="font-size: 0.8rem;">

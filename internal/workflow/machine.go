@@ -9,13 +9,14 @@ import (
 
 // transitions defines the valid status transitions.
 var transitions = map[ticket.Status][]ticket.Status{
-	ticket.StatusBacklog:    {ticket.StatusOpen, ticket.StatusBlocked},
-	ticket.StatusOpen:       {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog},
-	ticket.StatusInProgress: {ticket.StatusReview, ticket.StatusBlocked, ticket.StatusBacklog},
-	ticket.StatusReview:     {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog},
-	ticket.StatusRework:     {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog},
+	ticket.StatusBacklog:    {ticket.StatusOpen, ticket.StatusBlocked, ticket.StatusCancelled},
+	ticket.StatusOpen:       {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
+	ticket.StatusInProgress: {ticket.StatusReview, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
+	ticket.StatusReview:     {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
+	ticket.StatusRework:     {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
 	ticket.StatusBlocked:    {}, // unblocks to prior status, handled separately
 	ticket.StatusDone:       {ticket.StatusBacklog},
+	ticket.StatusCancelled:  {ticket.StatusBacklog},
 }
 
 // CanTransition returns true if the transition from → to is valid.
@@ -64,6 +65,8 @@ func StatusFromAlias(s string) (ticket.Status, error) {
 		"reject":      ticket.StatusRework,
 		"blocked":     ticket.StatusBlocked,
 		"block":       ticket.StatusBlocked,
+		"cancelled":   ticket.StatusCancelled,
+		"cancel":      ticket.StatusCancelled,
 	}
 
 	if status, ok := aliases[s]; ok {
@@ -76,5 +79,5 @@ func StatusFromAlias(s string) (ticket.Status, error) {
 		return status, nil
 	}
 
-	return "", fmt.Errorf("unknown status %q — use one of: backlog, open, in-progress, review, done, rework, blocked", s)
+	return "", fmt.Errorf("unknown status %q — use one of: backlog, open, in-progress, review, done, rework, blocked, cancelled", s)
 }

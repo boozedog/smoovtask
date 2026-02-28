@@ -57,6 +57,28 @@ func showAssignee(tk *ticket.Ticket) bool {
 		(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusReview)
 }
 
+func sourceLabel(source string) string {
+	switch source {
+	case "claude":
+		return "Claude"
+	case "opencode":
+		return "OpenCode"
+	default:
+		return "Unknown"
+	}
+}
+
+func sourceGlyph(source string) string {
+	switch source {
+	case "claude":
+		return "🦀"
+	case "opencode":
+		return "▣"
+	default:
+		return "\uf059"
+	}
+}
+
 templ PriorityBadge(p ticket.Priority) {
 	<span class={ priorityClass(p) }>{ string(p) }</span>
 }
@@ -67,19 +89,31 @@ templ StatusBadge(s ticket.Status) {
 	</span>
 }
 
-templ TicketCard(tk *ticket.Ticket) {
+templ SourceBadge(source string) {
+	if source != "" {
+		<span class="inline-flex items-center gap-1 opacity-70" title={ sourceLabel(source) } style="font-size: 0.75rem;">
+			<span style="font-family: 'Maple Mono NF', monospace;">{ sourceGlyph(source) }</span>
+			<span>{ sourceLabel(source) }</span>
+		</span>
+	}
+}
+
+templ TicketCard(tk *ticket.Ticket, source string) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="st-card">
 		<div class="st-card-title">{ tk.Title }</div>
 		<div class="st-card-meta">
 			@PriorityBadge(tk.Priority)
-			<span>{ tk.ID }</span>
+			<span data-copy-ticket-id={ tk.ID } title="Click to copy ticket ID" class="cursor-pointer">{ tk.ID }</span>
 			if tk.Project != "" {
 				<span>{ tk.Project }</span>
 			}
 		</div>
-		if showAssignee(tk) {
-			<div class="mt-1 text-right">
-				<span title={ tk.Assignee } class="inline-block rounded-full font-semibold" style={ "padding: 0.1rem 0.4rem; font-family: 'Maple Mono', monospace; font-size: 0.65rem; background: " + assigneePillColor(tk.Assignee) + "; color: #000;" }>{ shortAssignee(tk.Assignee) }</span>
+		if source != "" || showAssignee(tk) {
+			<div class="mt-1 flex items-center justify-between gap-2">
+				@SourceBadge(source)
+				if showAssignee(tk) {
+					<span title={ tk.Assignee } class="inline-block rounded-full font-semibold" style={ "padding: 0.1rem 0.4rem; font-family: 'Maple Mono NF', monospace; font-size: 0.65rem; background: " + assigneePillColor(tk.Assignee) + "; color: #000;" }>{ shortAssignee(tk.Assignee) }</span>
+				}
 			</div>
 		}
 	</a>

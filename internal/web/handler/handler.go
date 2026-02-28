@@ -11,14 +11,16 @@ type Handler struct {
 	store     *ticket.Store
 	eventsDir string
 	broker    *sse.Broker
+	project   string
 }
 
 // New creates a new Handler.
-func New(ticketsDir, eventsDir string, broker *sse.Broker) *Handler {
+func New(ticketsDir, eventsDir string, broker *sse.Broker, project string) *Handler {
 	return &Handler{
 		store:     ticket.NewStore(ticketsDir),
 		eventsDir: eventsDir,
 		broker:    broker,
+		project:   project,
 	}
 }
 
@@ -51,6 +53,8 @@ func statusWeight(s ticket.Status) int {
 		return 1
 	case ticket.StatusDone:
 		return 2
+	case ticket.StatusCancelled:
+		return 3
 	default:
 		return 1
 	}

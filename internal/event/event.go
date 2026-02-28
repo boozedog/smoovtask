@@ -10,6 +10,7 @@ const (
 	TicketCreated  = "ticket.created"
 	TicketAssigned = "ticket.assigned"
 	TicketNote     = "ticket.note"
+	TicketHandoff  = "ticket.handoff"
 
 	StatusBacklog    = "status.backlog"
 	StatusOpen       = "status.open"
@@ -18,6 +19,7 @@ const (
 	StatusRework     = "status.rework"
 	StatusDone       = "status.done"
 	StatusBlocked    = "status.blocked"
+	StatusCancelled  = "status.cancelled"
 
 	HookPreTool       = "hook.pre-tool"
 	HookPostTool      = "hook.post-tool"
