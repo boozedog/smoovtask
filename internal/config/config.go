@@ -23,6 +23,7 @@ type SettingsConfig struct {
 // ProjectConfig holds per-project settings.
 type ProjectConfig struct {
 	Path string `toml:"path"`
+	Repo string `toml:"repo,omitempty"`
 }
 
 // DefaultDir returns the default config directory (~/.smoovtask).

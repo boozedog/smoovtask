@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -61,6 +62,8 @@ func runNote(_ *cobra.Command, args []string) error {
 		return err
 	}
 
+	message = unescapeNote(message)
+
 	now := time.Now().UTC()
 	ticket.AppendSection(tk, "Note", actor, runID, message, nil, now)
 
@@ -86,4 +89,54 @@ func runNote(_ *cobra.Command, args []string) error {
 
 	fmt.Printf("Note added to %s\n", tk.ID)
 	return nil
+}
+
+// unescapeNote converts literal \n sequences to real newlines in note text,
+// but preserves them inside inline code (`...`) and fenced code blocks (```...```).
+func unescapeNote(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+
+	i := 0
+	for i < len(s) {
+		// Fenced code block: ```
+		if i+2 < len(s) && s[i] == '`' && s[i+1] == '`' && s[i+2] == '`' {
+			end := strings.Index(s[i+3:], "```")
+			if end >= 0 {
+				end += i + 3 + 3 // past closing ```
+				b.WriteString(s[i:end])
+				i = end
+				continue
+			}
+			// Unclosed fenced block — write rest verbatim
+			b.WriteString(s[i:])
+			return b.String()
+		}
+
+		// Inline code: `
+		if s[i] == '`' {
+			end := strings.IndexByte(s[i+1:], '`')
+			if end >= 0 {
+				end += i + 1 + 1 // past closing `
+				b.WriteString(s[i:end])
+				i = end
+				continue
+			}
+			// Unclosed inline code — write rest verbatim
+			b.WriteString(s[i:])
+			return b.String()
+		}
+
+		// Literal \n outside code
+		if i+1 < len(s) && s[i] == '\\' && s[i+1] == 'n' {
+			b.WriteByte('\n')
+			i += 2
+			continue
+		}
+
+		b.WriteByte(s[i])
+		i++
+	}
+
+	return b.String()
 }

@@ -29,7 +29,7 @@ templ ListPage(data ListData) {
 templ ListPartial(data ListData) {
 	<div
 		hx-get="/partials/list"
-		hx-trigger="sse:refresh"
+		hx-trigger="sse:refresh-work"
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"
@@ -153,7 +153,7 @@ templ ListContent(data ListData) {
 			<tbody>
 				for _, tk := range data.Tickets {
 					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s", tk.ID) }>
-						<td><code data-copy-ticket-id={ tk.ID } title="Click to copy ticket ID" class="cursor-pointer">{ tk.ID }</code></td>
+						<td><span>{ tk.ID }</span></td>
 						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
 						<td>
 							@StatusBadge(tk.Status)

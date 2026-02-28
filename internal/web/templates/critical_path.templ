@@ -68,7 +68,7 @@ templ CriticalPathPage(data CriticalPathData) {
 templ CriticalPathPartial(data CriticalPathData) {
 	<div
 		hx-get={ criticalPathPartialURL(data.View, data.Scope) }
-		hx-trigger="sse:refresh"
+		hx-trigger="sse:refresh-work"
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"

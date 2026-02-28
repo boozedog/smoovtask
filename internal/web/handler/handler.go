@@ -76,3 +76,38 @@ func recentEvents(eventsDir string, q event.Query, limit int) []event.Event {
 	}
 	return events
 }
+
+func (h *Handler) resolveRunSources(runIDs []string) map[string]string {
+	wanted := make(map[string]struct{}, len(runIDs))
+	for _, runID := range runIDs {
+		if runID == "" {
+			continue
+		}
+		wanted[runID] = struct{}{}
+	}
+	if len(wanted) == 0 {
+		return map[string]string{}
+	}
+
+	const recentLimit = 500
+	events := recentEvents(h.eventsDir, event.Query{}, recentLimit)
+	runSources := make(map[string]string, len(wanted))
+
+	for _, ev := range events {
+		if ev.RunID == "" || ev.Source == "" {
+			continue
+		}
+		if _, ok := wanted[ev.RunID]; !ok {
+			continue
+		}
+		if _, ok := runSources[ev.RunID]; ok {
+			continue
+		}
+		runSources[ev.RunID] = ev.Source
+		if len(runSources) == len(wanted) {
+			break
+		}
+	}
+
+	return runSources
+}

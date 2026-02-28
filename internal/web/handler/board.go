@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 	"sort"
+	"time"
 
-	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/templates"
 )
@@ -30,12 +30,24 @@ func (h *Handler) PartialBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) buildBoardData() (templates.BoardData, error) {
-	tickets, err := h.store.List(ticket.ListFilter{})
+	tickets, err := h.store.ListMeta(ticket.ListFilter{})
 	if err != nil {
 		return templates.BoardData{}, err
 	}
 
 	groups := groupByStatus(tickets)
+
+	// Done column: only show tickets completed in the past 24 hours.
+	cutoff := time.Now().Add(-24 * time.Hour)
+	if done, ok := groups[ticket.StatusDone]; ok {
+		recent := done[:0]
+		for _, tk := range done {
+			if tk.Updated.After(cutoff) {
+				recent = append(recent, tk)
+			}
+		}
+		groups[ticket.StatusDone] = recent
+	}
 
 	// Sort tickets within each column.
 	for status, tks := range groups {
@@ -63,26 +75,19 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 		})
 	}
 
-	runSources := make(map[string]string)
+	runIDSet := make(map[string]struct{})
 	for _, tk := range tickets {
 		if tk.Assignee == "" {
 			continue
 		}
-		if _, ok := runSources[tk.Assignee]; ok {
-			continue
-		}
-		runSources[tk.Assignee] = h.detectRunSource(tk.Assignee)
+		runIDSet[tk.Assignee] = struct{}{}
 	}
+
+	runIDs := make([]string, 0, len(runIDSet))
+	for runID := range runIDSet {
+		runIDs = append(runIDs, runID)
+	}
+	runSources := h.resolveRunSources(runIDs)
 
 	return templates.BoardData{Columns: columns, RunSources: runSources}, nil
-}
-
-func (h *Handler) detectRunSource(runID string) string {
-	events := recentEvents(h.eventsDir, event.Query{RunID: runID}, 100)
-	for _, ev := range events {
-		if ev.Source != "" {
-			return ev.Source
-		}
-	}
-	return ""
 }

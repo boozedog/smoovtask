@@ -224,3 +224,52 @@ func TestHooksInstall_PreservesExistingHooks(t *testing.T) {
 		t.Errorf("first hook command = %v, want %q", firstHook["command"], "my-custom-hook")
 	}
 }
+
+func TestHooksInstall_PIExtension(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+
+	env := newTestEnv(t)
+	_ = env
+
+	out, err := env.runCmd(t, "hooks", "install", "--agents", "pi")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Installed pi extension") {
+		t.Errorf("output = %q, want substring %q", out, "Installed pi extension")
+	}
+
+	extensionPath := filepath.Join(tmpHome, ".pi", "agent", "extensions", "smoovtask-hooks.ts")
+	data, err := os.ReadFile(extensionPath)
+	if err != nil {
+		t.Fatalf("read extension: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "st', ['hook', 'pi-event']") {
+		t.Errorf("extension content missing pi hook bridge")
+	}
+	if !strings.Contains(content, "basename(path, '.jsonl')") {
+		t.Errorf("extension content missing session id normalization")
+	}
+	if !strings.Contains(content, "uuidPattern.test(suffix)") {
+		t.Errorf("extension content missing uuid suffix extraction")
+	}
+}
+
+func TestExpandAgents_BothIncludesPI(t *testing.T) {
+	got := expandAgents([]string{"both"})
+	want := []string{"claude", "opencode", "pi"}
+
+	if len(got) != len(want) {
+		t.Fatalf("len(got) = %d, want %d", len(got), len(want))
+	}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}

@@ -40,7 +40,7 @@ type Event struct {
 	Project string         `json:"project"`
 	Actor   string         `json:"actor"`
 	RunID   string         `json:"run_id"`
-	Source  string         `json:"source,omitempty"` // "claude" or "opencode"
+	Source  string         `json:"source,omitempty"` // "claude", "opencode", or "pi"
 	Data    map[string]any `json:"data"`
 }
 

@@ -23,13 +23,31 @@ func Parse(data []byte) (*Ticket, error) {
 		return nil, err
 	}
 
+	t, err := parseFrontmatter(frontmatter)
+	if err != nil {
+		return nil, err
+	}
+	t.Body = body
+
+	return t, nil
+}
+
+// ParseFrontmatter parses only the YAML frontmatter section into a Ticket.
+// Body is intentionally left empty.
+func ParseFrontmatter(data []byte) (*Ticket, error) {
+	content := string(data)
+	frontmatter, _, err := splitFrontmatter(content)
+	if err != nil {
+		return nil, err
+	}
+	return parseFrontmatter(frontmatter)
+}
+
+func parseFrontmatter(frontmatter string) (*Ticket, error) {
 	var t Ticket
 	if err := yaml.Unmarshal([]byte(frontmatter), &t); err != nil {
 		return nil, fmt.Errorf("parse frontmatter: %w", err)
 	}
-
-	t.Body = body
-
 	return &t, nil
 }
 

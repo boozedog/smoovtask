@@ -1,6 +1,6 @@
 # smoovtask
 
-AI agent workflow and ticketing system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Command: `st`
+AI agent workflow and ticketing system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), OpenCode, and PI. Command: `st`
 
 An opinionated workflow/ticketing system that sits around Claude Code agents, enforcing process and capturing everything in an Obsidian vault. Multiple Claude sessions can work the board simultaneously — picking up tickets, doing work, and submitting for review.
 
@@ -14,20 +14,21 @@ go install github.com/boozedog/smoovtask/cmd/st@latest
 cd ~/projects/my-app
 st init
 
-# 3. Install Claude Code hooks
-st hooks install
+# 3. Install agent hooks/extensions
+st hooks install --agents both
+# or: st hooks install --agents pi
 
 # 4. Create a ticket
 st new "Add rate limiting to API" --priority P2
 
-# 5. Start a Claude Code session — st injects the board automatically
+# 5. Start an agent session — st injects the board automatically
 # Claude sees open tickets and picks one up:
 #   st pick st_a7Kx2m
 #   st note "Implemented token bucket middleware"
 #   st status review
 ```
 
-That's it. Claude Code sessions now see the ticket board on startup, and all agent activity is logged.
+That's it. Agent sessions now see the ticket board on startup, and all activity is logged.
 
 ## Workflow
 
@@ -140,23 +141,32 @@ st close <ticket-id>                       Mark done (human shortcut, bypasses w
 ### Hooks
 
 ```
-st hooks install                           Install all hooks into ~/.claude/settings.json
+st hooks install [--agents ...]            Install Claude hooks and optional OpenCode/PI bridges
 st hook <event-type>                       Handle a Claude Code hook event (10 handlers)
+```
+
+For OpenCode/PI integration, use:
+
+```bash
+st hooks install --agents opencode
+st hooks install --agents pi
 ```
 
 Hook event types: `session-start`, `pre-tool`, `post-tool`, `subagent-start`, `subagent-stop`, `task-completed`, `teammate-idle`, `permission-request`, `stop`, `session-end`
 
-## Claude Code Integration
+## Agent Integrations
 
-smoovtask integrates with Claude Code through [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) — shell commands that run in response to agent lifecycle events.
+smoovtask integrates with Claude Code through [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks), and with OpenCode/PI through installed TypeScript plugins/extensions that forward lifecycle events to `st hook`.
 
-### Installing Hooks
+### Installing Hooks/Extensions
 
 ```bash
 st hooks install
+# optional: st hooks install --agents opencode
+# optional: st hooks install --agents pi
 ```
 
-This adds smoovtask hooks to `~/.claude/settings.json`, preserving any existing hooks and settings.
+This adds smoovtask hooks to `~/.claude/settings.json`, and installs OpenCode/PI bridge files when requested, preserving existing settings.
 
 ### What Each Hook Does
 

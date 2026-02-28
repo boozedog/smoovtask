@@ -5,14 +5,15 @@ import (
 	"regexp"
 
 	"github.com/boozedog/smoovtask/internal/config"
-	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 var ticketIDPattern = regexp.MustCompile(`st_[a-zA-Z0-9]{6}`)
 
 // HandleSubagentStart processes the SubagentStart hook.
-// It parses the task prompt for a ticket ID and injects ticket context.
+// It parses the task prompt for a ticket ID and injects ticket metadata.
+// Workflow directives are intentionally omitted — the parent agent's task
+// prompt is the subagent's primary directive.
 func HandleSubagentStart(input *Input) (Output, error) {
 	// Try to extract a ticket ID from the task prompt
 	ticketID := ticketIDPattern.FindString(input.TaskPrompt)
@@ -37,31 +38,11 @@ func HandleSubagentStart(input *Input) (Output, error) {
 		return Output{}, nil
 	}
 
-	var workflow string
-	switch tk.Status {
-	case ticket.StatusReview:
-		workflow = fmt.Sprintf(
-			"smoovtask ticket assigned for REVIEW: %s — %s (project: %s, priority: %s)\n\n"+
-				"REQUIRED workflow — you MUST follow these steps:\n"+
-				"1. `st review --ticket %s --run-id <your-run-id>` — claim the ticket for review\n"+
-				"2. `st note --ticket %s --run-id <your-run-id> \"<findings>\"` — document your review findings\n"+
-				"3. `st status --ticket %s --run-id <your-run-id> done` (approve) or `st status --ticket %s --run-id <your-run-id> rework` (reject)\n\n"+
-				"ALWAYS pass --ticket and --run-id to st commands. Do NOT approve or reject without documenting findings via `st note` first.\n\n"+
-				guidance.CompactReview,
-			tk.ID, tk.Title, tk.Project, tk.Priority, tk.ID, tk.ID, tk.ID, tk.ID,
-		)
-	default:
-		workflow = fmt.Sprintf(
-			"smoovtask ticket assigned: %s — %s (project: %s, priority: %s)\n\n"+
-				"REQUIRED workflow — you MUST follow these steps:\n"+
-				"1. `st pick %s --run-id <your-run-id>` — claim the ticket before starting ANY work\n"+
-				"2. `st note --ticket %s --run-id <your-run-id> \"message\"` — document progress as you work\n"+
-				"3. `st status --ticket %s --run-id <your-run-id> review` — submit when done\n\n"+
-				"ALWAYS pass --ticket and --run-id to st commands. Do NOT start editing code without running `st pick` first.\n\n"+
-				guidance.CompactImplementation,
-			tk.ID, tk.Title, tk.Project, tk.Priority, tk.ID, tk.ID, tk.ID,
-		)
-	}
+	ctx := fmt.Sprintf(
+		"smoovtask ticket context: %s — %s (project: %s, priority: %s, status: %s)\n"+
+			"Log progress with `st note --ticket %s --run-id <your-run-id> \"message\"`",
+		tk.ID, tk.Title, tk.Project, tk.Priority, tk.Status, tk.ID,
+	)
 
-	return Output{AdditionalContext: workflow + quickRef}, nil
+	return Output{AdditionalContext: ctx}, nil
 }

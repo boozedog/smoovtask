@@ -36,7 +36,7 @@ func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPath
 		filter.Project = h.project
 	}
 
-	all, err := h.store.List(filter)
+	all, err := h.store.ListMeta(filter)
 	if err != nil {
 		return templates.CriticalPathData{}, err
 	}
@@ -54,15 +54,19 @@ func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPath
 		}
 	}
 	byID := make(map[string]*ticket.Ticket)
-	runSources := make(map[string]string)
+	runIDSet := make(map[string]struct{})
 	for _, tk := range all {
 		byID[tk.ID] = tk
 		if tk.Assignee != "" {
-			if _, ok := runSources[tk.Assignee]; !ok {
-				runSources[tk.Assignee] = h.detectRunSource(tk.Assignee)
-			}
+			runIDSet[tk.Assignee] = struct{}{}
 		}
 	}
+
+	runIDs := make([]string, 0, len(runIDSet))
+	for runID := range runIDSet {
+		runIDs = append(runIDs, runID)
+	}
+	runSources := h.resolveRunSources(runIDs)
 
 	return templates.CriticalPathData{
 		Project:    h.project,

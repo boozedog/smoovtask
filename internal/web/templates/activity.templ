@@ -63,7 +63,7 @@ templ ActivityPage(data ActivityData) {
 templ ActivityPartial(data ActivityData) {
 	<div
 		hx-get="/partials/activity"
-		hx-trigger="sse:refresh"
+		hx-trigger="sse:refresh-activity"
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"

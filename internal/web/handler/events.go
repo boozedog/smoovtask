@@ -47,11 +47,15 @@ func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
+			eventName := ev.Event
+			if eventName == "" {
+				eventName = "refresh-activity"
+			}
 			data, err := json.Marshal(ev)
 			if err != nil {
 				continue
 			}
-			if _, err := fmt.Fprintf(w, "event: refresh\ndata: %s\n\n", data); err != nil {
+			if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventName, data); err != nil {
 				return
 			}
 			if err := rc.Flush(); err != nil {
