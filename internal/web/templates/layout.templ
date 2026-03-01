@@ -97,6 +97,11 @@ templ Layout(title string, currentPath string) {
 				.st-session-dot.st-session-dot-hot.st-session-dot-flash { animation: st-dot-flash 0.4s ease-out forwards; }
 				.st-session-dot.st-session-dot-warm { background: #eab308; box-shadow: none; animation: none; }
 				.st-session-dot.st-session-dot-cold { background: #ef4444; box-shadow: none; animation: none; }
+				.st-alert-icon { display: none; align-items: center; justify-content: center; flex-shrink: 0; cursor: default; }
+				@keyframes st-alert-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+				.st-alert-icon.st-alert-active { display: inline-flex; animation: st-alert-pulse 2s ease-in-out infinite; }
+				.st-audio-toggle { background: transparent; border: 1px solid hsl(var(--border)); border-radius: 0.375rem; padding: 0.25rem 0.5rem; cursor: pointer; color: hsl(var(--foreground)); opacity: 0.7; transition: opacity 0.15s; display: inline-flex; align-items: center; }
+				.st-audio-toggle:hover { opacity: 1; }
 				@media (max-width: 640px) {
 					.st-event-row { gap: 0.35rem; }
 				}
@@ -168,7 +173,17 @@ templ Layout(title string, currentPath string) {
 						</li>
 					</ul>
 				</div>
-				<div class="flex items-center">
+				<div class="flex items-center gap-2">
+					<button
+						id="st-audio-toggle"
+						class="st-audio-toggle"
+						type="button"
+						title="Toggle hook audio alerts"
+						onclick="stToggleAudioMute()"
+					>
+						<svg id="st-audio-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+						<svg id="st-audio-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+					</button>
 					<a class="uk-btn uk-btn-primary uk-btn-sm" href="/new" hx-get="/partials/form/new" hx-target="#ticket-modal-body" hx-push-url="false">New Ticket</a>
 				</div>
 			</nav>
@@ -186,6 +201,60 @@ templ Layout(title string, currentPath string) {
 			</div>
 			<script>
 				// Global function definitions (safe to re-declare on script re-evaluation).
+
+				// --- Audio alert system ---
+				var _stSoundMap = {
+					'hook.permission-request': { cat: 'deny', files: ['deny-1.wav', 'deny-2.wav'] },
+					'hook.session-start':      { cat: 'start', files: ['start-1.wav'] },
+					'hook.stop':               { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.session-end':        { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.task-completed':     { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.pre-tool':           { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
+					'hook.post-tool':          { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] }
+				};
+				var _stLastSoundByCategory = {};
+				var _stAudioUnlocked = false;
+
+				function stIsAudioMuted() {
+					return localStorage.getItem('st-audio-muted') === '1';
+				}
+				function stToggleAudioMute() {
+					var muted = !stIsAudioMuted();
+					localStorage.setItem('st-audio-muted', muted ? '1' : '0');
+					stSyncMuteIcon();
+					// Unlock audio on first interaction
+					if (!muted && !_stAudioUnlocked) _stAudioUnlocked = true;
+				}
+				function stSyncMuteIcon() {
+					var muted = stIsAudioMuted();
+					var iconOn = document.getElementById('st-audio-icon-on');
+					var iconOff = document.getElementById('st-audio-icon-off');
+					if (iconOn) iconOn.style.display = muted ? 'none' : '';
+					if (iconOff) iconOff.style.display = muted ? '' : 'none';
+				}
+				function stPlayHookSound(hookName) {
+					if (stIsAudioMuted()) return;
+					var entry = _stSoundMap[hookName];
+					if (!entry) return;
+					var now = Date.now();
+					if (_stLastSoundByCategory[entry.cat] && now - _stLastSoundByCategory[entry.cat] < 400) return;
+					_stLastSoundByCategory[entry.cat] = now;
+					var file = entry.files[Math.floor(Math.random() * entry.files.length)];
+					try {
+						var audio = new Audio('/static/sounds/' + file);
+						audio.volume = 0.4;
+						audio.play().catch(function() {});
+					} catch (_) {}
+				}
+
+				// --- Alert icon toggle ---
+				function stUpdateAlertIcons(runID, hookName) {
+					var active = hookName === 'hook.permission-request';
+					document.querySelectorAll('.st-alert-icon[data-run-id="' + runID + '"]').forEach(function(el) {
+						el.classList.toggle('st-alert-active', active);
+					});
+				}
+
 				function toggleDone(btn) {
 					var col = btn.closest('.st-column');
 					col.classList.toggle('st-column-collapsed');
@@ -217,6 +286,10 @@ templ Layout(title string, currentPath string) {
 					}
 					updateDotActivityStates(runID);
 					updateAssigneePillTooltips(runID);
+					if (hookName) {
+						stUpdateAlertIcons(runID, hookName);
+						stPlayHookSound(hookName);
+					}
 					// Trigger a one-shot flash on each event.
 					document.querySelectorAll('.st-session-dot[data-run-id="' + runID + '"]').forEach(function(dot) {
 						dot.classList.remove('st-session-dot-flash');
@@ -376,12 +449,18 @@ templ Layout(title string, currentPath string) {
 					}
 				});
 
+				// Unlock audio on first user interaction (browser autoplay policy).
+				document.addEventListener('click', function() {
+					if (!_stAudioUnlocked) _stAudioUnlocked = true;
+				}, { once: true });
+
 				// Initial scroll indicator setup.
 				document.addEventListener('DOMContentLoaded', function() {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
 					syncAgentActivityStreams();
+					stSyncMuteIcon();
 					setInterval(function() {
 						updateDotActivityStates();
 					}, 5000);

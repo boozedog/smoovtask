@@ -273,3 +273,18 @@ func TestExpandAgents_BothIncludesPI(t *testing.T) {
 		}
 	}
 }
+
+func TestHookBridgesDoNotWrapContextTwice(t *testing.T) {
+	if strings.Contains(opencodePluginCode, "<smoovtask>") {
+		t.Fatal("opencode plugin should not add wrapper tags; hook context is already wrapped")
+	}
+	if strings.Contains(piExtensionCode, "<smoovtask>") {
+		t.Fatal("pi extension should not add wrapper tags; hook context is already wrapped")
+	}
+	if !strings.Contains(opencodePluginCode, "output.system.push(cachedContext)") {
+		t.Fatal("opencode plugin should push cachedContext directly")
+	}
+	if !strings.Contains(piExtensionCode, "event.systemPrompt + '\\n\\n' + cachedContext") {
+		t.Fatal("pi extension should append cachedContext directly")
+	}
+}

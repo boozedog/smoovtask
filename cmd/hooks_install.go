@@ -88,9 +88,9 @@ export default async ({ client, directory }) => {
           log('Cached context: ' + cachedContext.substring(0, 200));
         }
       }
-      if (cachedContext) {
-        output.system.push('<smoovtask>\\n' + cachedContext + '\\n</smoovtask>');
-      }
+		if (cachedContext) {
+		  output.system.push(cachedContext);
+		}
     },
     tool: {
       execute: {
@@ -141,10 +141,10 @@ export default async ({ client, directory }) => {
       runHookSync(JSON.stringify(event));
     },
     "experimental.session.compacting": async (input, output) => {
-      if (cachedContext) {
-        log('Injecting cached context into compaction');
-        output.system.push('<smoovtask>\\n' + cachedContext + '\\n</smoovtask>');
-      }
+		if (cachedContext) {
+		  log('Injecting cached context into compaction');
+		  output.system.push(cachedContext);
+		}
     },
     event: async ({ event }) => {
       const handled = ['session.created', 'session.idle', 'permission.asked', 'session.deleted'];
@@ -252,9 +252,9 @@ export default function (pi) {
 
     if (!cachedContext) return;
 
-    return {
-      systemPrompt: event.systemPrompt + '\n\n<smoovtask>\n' + cachedContext + '\n</smoovtask>',
-    };
+	return {
+	  systemPrompt: event.systemPrompt + '\n\n' + cachedContext,
+	};
   });
 
   pi.on('tool_call', async (event, ctx) => {

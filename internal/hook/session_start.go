@@ -84,7 +84,7 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	b.WriteString("Before moving a ticket to `review`, confirm with the user that implementation is actually done.\n\n")
 	b.WriteString(quickRef)
 
-	return &Output{AdditionalContext: b.String()}, nil
+	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil
 }
 
 const quickRef = "## Review Semantics\n" +

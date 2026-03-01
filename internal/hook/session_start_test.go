@@ -51,6 +51,9 @@ func TestHandleSessionStartLogsEvent(t *testing.T) {
 	if !strings.Contains(ctx, "Your run ID is `sess-start-test") {
 		t.Error("missing run ID in output")
 	}
+	if !strings.Contains(ctx, "<smoovtask>") || !strings.Contains(ctx, "</smoovtask>") {
+		t.Error("missing smoovtask context envelope")
+	}
 	if strings.Contains(ctx, "st_test01") {
 		t.Error("output should not contain ticket IDs")
 	}
@@ -90,6 +93,9 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	ctx := out.AdditionalContext
 	if !strings.Contains(ctx, "project called test-project") {
 		t.Error("missing project name in output")
+	}
+	if !strings.Contains(ctx, "<smoovtask>") || !strings.Contains(ctx, "</smoovtask>") {
+		t.Error("missing smoovtask context envelope")
 	}
 	if !strings.Contains(ctx, "Your run ID is `sess-minimal") {
 		t.Error("missing run ID in output")
