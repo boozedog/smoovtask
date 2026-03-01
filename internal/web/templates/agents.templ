@@ -1,0 +1,126 @@
+package templates
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/boozedog/smoovtask/internal/event"
+)
+
+type AgentInfo struct {
+	RunID       string
+	Source      string
+	Ticket      string
+	TicketTitle string
+	HeatState   string // "hot", "warm", "cold"
+	LastEventTS time.Time
+	Events      []event.Event
+}
+
+type AgentsData struct {
+	Agents []AgentInfo
+}
+
+type AgentCountData struct {
+	Count int
+}
+
+func heatDotClass(heat string) string {
+	switch heat {
+	case "hot":
+		return "st-session-dot st-session-dot-hot"
+	case "warm":
+		return "st-session-dot st-session-dot-warm"
+	default:
+		return "st-session-dot st-session-dot-cold"
+	}
+}
+
+templ AgentsPage(data AgentsData) {
+	@Layout("Agents", "/agents") {
+		@AgentsPartial(data)
+	}
+}
+
+templ AgentsPartial(data AgentsData) {
+	<div
+		hx-get="/partials/agents"
+		hx-trigger="sse:refresh-activity"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		@AgentsContent(data)
+	</div>
+}
+
+templ AgentsContent(data AgentsData) {
+	if len(data.Agents) == 0 {
+		<div class="p-8 text-center opacity-50">
+			No active agents.
+		</div>
+	} else {
+		<div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
+			for _, agent := range data.Agents {
+				@AgentCard(agent)
+			}
+		</div>
+	}
+}
+
+templ AgentCard(agent AgentInfo) {
+	<div class="uk-card uk-card-body flex flex-col gap-3">
+		<div class="flex items-center gap-2">
+			<span class={ heatDotClass(agent.HeatState) } data-run-id={ agent.RunID }></span>
+			<span class="uk-text-mono text-sm font-semibold">{ shortAssignee(agent.RunID) }</span>
+			if agent.Source != "" {
+				@SourceBadge(agent.Source)
+			}
+			<span class="ml-auto opacity-50 text-xs">{ relativeTime(agent.LastEventTS) }</span>
+		</div>
+		if agent.Ticket != "" {
+			<div class="flex items-center gap-2 text-sm">
+				<a
+					href={ templ.SafeURL("/ticket/" + agent.Ticket) }
+					hx-get={ "/partials/ticket/" + agent.Ticket }
+					hx-target="#ticket-modal-body"
+					class="hover:underline"
+				>
+					<span class="uk-text-mono opacity-60">{ agent.Ticket }</span>
+					if agent.TicketTitle != "" {
+						<span class="ml-1">{ agent.TicketTitle }</span>
+					}
+				</a>
+			</div>
+		}
+		if len(agent.Events) > 0 {
+			<div class="border-t border-[hsl(var(--border))] pt-2 mt-1">
+				<div class="text-xs opacity-50 mb-1">Recent activity</div>
+				for _, ev := range agent.Events {
+					<div class="flex gap-3 items-baseline text-xs py-0.5">
+						<span class="opacity-50 min-w-[60px]">{ ev.TS.Format("15:04:05") }</span>
+						<span class="font-medium">{ ev.Event }</span>
+						if eventContext(ev) != "" {
+							<span class="opacity-40 italic truncate">{ eventContext(ev) }</span>
+						}
+					</div>
+				}
+			</div>
+		}
+	</div>
+}
+
+templ AgentCountBadge(data AgentCountData) {
+	<span
+		id="agent-count-badge"
+		hx-get="/partials/agent-count"
+		hx-trigger="load, sse:refresh-activity"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		if data.Count > 0 {
+			<span class="uk-badge uk-badge-primary uk-rounded text-xs" title={ fmt.Sprintf("%d active agent(s)", data.Count) }>
+				{ fmt.Sprintf("%d", data.Count) }
+			</span>
+		}
+	</span>
+}

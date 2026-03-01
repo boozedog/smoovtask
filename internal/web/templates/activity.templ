@@ -117,31 +117,56 @@ templ ActivityContent(data ActivityData) {
 			No events found.
 		</div>
 	} else {
-		<div>
-			for _, ev := range data.Events {
-				<div class="st-event-row flex flex-wrap gap-4 items-baseline">
-					<span class="opacity-60 text-xs min-w-[140px]">
-						{ ev.TS.Format("2006-01-02 15:04:05") }
-					</span>
-					<span class="font-semibold min-w-[160px]">
-						{ ev.Event }
-					</span>
-					if ev.Ticket != "" {
-						<a href={ templ.SafeURL("/ticket/" + ev.Ticket) } hx-get={ "/partials/ticket/" + ev.Ticket } hx-target="#content" hx-push-url={ "/ticket/" + ev.Ticket } class="text-sm">
-							{ ev.Ticket }
-						</a>
+		<div class="uk-overflow-auto">
+			<table class="uk-table uk-table-sm uk-table-divider uk-table-hover uk-table-middle">
+				<thead>
+					<tr>
+						<th class="w-40">Time</th>
+						<th class="w-44">Event</th>
+						<th class="w-24">Ticket</th>
+						<th class="w-28">Agent</th>
+						<th>Context</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, ev := range data.Events {
+						<tr>
+							<td class="opacity-60 text-xs whitespace-nowrap">
+								{ ev.TS.Format("2006-01-02 15:04:05") }
+							</td>
+							<td class="font-semibold text-sm">
+								{ ev.Event }
+							</td>
+							<td class="text-sm">
+								if ev.Ticket != "" {
+									<a
+										href={ templ.SafeURL("/ticket/" + ev.Ticket) }
+										hx-get={ "/partials/ticket/" + ev.Ticket }
+										hx-target="#ticket-modal-body"
+									>
+										{ ev.Ticket }
+									</a>
+								}
+							</td>
+							<td class="text-sm">
+								if ev.RunID != "" {
+									<span class="inline-flex items-center gap-1 opacity-70">
+										if ev.Source != "" {
+											@SourceBadge(ev.Source)
+										}
+										<span class="uk-text-mono">{ shortAssignee(ev.RunID) }</span>
+									</span>
+								} else {
+									<span class="opacity-50">{ ev.Actor }</span>
+								}
+							</td>
+							<td class="text-sm opacity-50 italic">
+								{ eventContext(ev) }
+							</td>
+						</tr>
 					}
-					if ev.Project != "" {
-						<span class="opacity-60 text-sm">{ ev.Project }</span>
-					}
-					<span class="opacity-60 text-sm">{ ev.Actor }</span>
-					if eventContext(ev) != "" {
-						<span class="opacity-50 text-sm italic">
-							— { eventContext(ev) }
-						</span>
-					}
-				</div>
-			}
+				</tbody>
+			</table>
 		</div>
 	}
 }

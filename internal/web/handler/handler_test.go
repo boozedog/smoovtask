@@ -876,6 +876,128 @@ func TestCriticalPathScopeDefaultsToAllAndSupportsCurrent(t *testing.T) {
 	}
 }
 
+func TestAgents(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	// Add hook events for an active agent.
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-active-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+	ev2 := event.Event{
+		TS:      time.Now().UTC().Add(-10 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-active-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev2); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "run-acti") {
+		t.Error("expected agents page to contain shortened run ID")
+	}
+	if !strings.Contains(body, "In progress ticket") {
+		t.Error("expected agents page to contain ticket title")
+	}
+}
+
+func TestAgentsExcludesEndedSessions(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	// Session start.
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-60 * time.Second),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-ended-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+	// Session end.
+	ev2 := event.Event{
+		TS:      time.Now().UTC().Add(-10 * time.Second),
+		Event:   event.HookSessionEnd,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-ended-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev2); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	body := w.Body.String()
+	if strings.Contains(body, "run-ende") {
+		t.Error("expected ended agent to be excluded from agents page")
+	}
+}
+
+func TestPartialAgentCount(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	// Add an active agent.
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-15 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-count-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/agent-count", nil)
+	w := httptest.NewRecorder()
+	h.PartialAgentCount(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "agent-count-badge") {
+		t.Error("expected agent count badge element")
+	}
+	// Should contain "1" for one active agent.
+	if !strings.Contains(body, ">1<") {
+		t.Errorf("expected badge to show count 1, got: %s", body)
+	}
+}
+
 func TestWatcher(t *testing.T) {
 	eventsDir := t.TempDir()
 	broker := sse.NewBroker()

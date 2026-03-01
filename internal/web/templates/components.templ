@@ -46,7 +46,7 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 	if tk == nil {
 		return false
 	}
-	return tk.Status == ticket.StatusHumanReview || tk.Status == ticket.StatusRework
+	return tk.Status == ticket.StatusRework
 }
 
 func workflowBadgeClass(s ticket.Status) string {
@@ -59,9 +59,6 @@ func workflowBadgeClass(s ticket.Status) string {
 func workflowBadgeLabel(s ticket.Status) string {
 	if s == ticket.StatusRework {
 		return "REWORK"
-	}
-	if s == ticket.StatusHumanReview {
-		return "HUMAN-REVIEW"
 	}
 	return ""
 }
@@ -159,7 +156,10 @@ templ SourceBadge(source string) {
 
 templ TicketCard(tk *ticket.Ticket, source string) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-card uk-card-body st-ticket-card">
-		<div class="st-card-project uk-text-meta opacity-50 leading-none">{ tk.Project }</div>
+		if tk.Status == ticket.StatusHumanReview {
+			<span class="uk-badge uk-rounded uk-badge-secondary st-card-corner-badge">Human</span>
+		}
+		<div class="st-card-project uk-text-meta opacity-50">{ tk.Project }</div>
 		<div class="uk-card-title st-card-title">{ tk.Title }</div>
 		<div class="st-ticket-meta opacity-70 flex gap-2 items-center">
 			@PriorityBadge(tk.Priority)

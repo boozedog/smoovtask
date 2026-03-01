@@ -22,7 +22,8 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
 				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
-				.st-ticket-card { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; cursor: pointer; }
+				.st-ticket-card { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; cursor: pointer; position: relative; }
+				.st-card-corner-badge { position: absolute; top: 0.75rem; right: 0.75rem; z-index: 1; display: inline-flex; width: auto; align-self: flex-start; }
 				.st-ticket-card:hover { border-color: hsl(var(--primary)); }
 				.st-card-project { min-height: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 				.st-card-title { font-size: 1rem; line-height: 1.35; font-weight: 500; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: break-word; }
@@ -156,6 +157,29 @@ templ Layout(title string, currentPath string) {
 							>
 								Critical Path
 							</a>
+						</li>
+						<li
+							if currentPath == "/agents" {
+								class="uk-active"
+							}
+						>
+							<a
+								hx-get="/partials/agents"
+								hx-target="#content"
+								hx-push-url="/agents"
+								href="/agents"
+							>
+								Agents
+							</a>
+						</li>
+						<li class="uk-flex uk-flex-middle" style="margin-left: -0.5rem;">
+							<span
+								id="agent-count-badge"
+								hx-get="/partials/agent-count"
+								hx-trigger="load, sse:refresh-activity"
+								hx-target="this"
+								hx-swap="outerHTML"
+							></span>
 						</li>
 						<li
 							if currentPath == "/activity" {
@@ -502,7 +526,7 @@ templ Layout(title string, currentPath string) {
 							li.classList.remove('uk-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/list': 'List', '/activity': 'Activity', '/critical-path': 'Critical Path'};
+					var titleMap = {'/': 'Board', '/list': 'List', '/agents': 'Agents', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');
@@ -518,7 +542,7 @@ templ Layout(title string, currentPath string) {
 						UIkit.modal(modalEl).hide();
 					}
 					var path = window.location.pathname;
-					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
+					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/agents': '/partials/agents', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
 					var partial = partialMap[path];
 					if (!partial && path.startsWith('/ticket/')) {
 						partial = '/partials' + path;
