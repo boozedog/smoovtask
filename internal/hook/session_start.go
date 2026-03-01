@@ -2,6 +2,7 @@ package hook
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -79,16 +80,21 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	})
 
 	var b strings.Builder
+	role := normalizeRole(os.Getenv("ST_ROLE"))
 	fmt.Fprintf(&b, "You are working in a tracked smoovtask project called %s. ", proj)
 	fmt.Fprintf(&b, "Your run ID is `%s`; include `--run-id <run-id>` on every `st` command.\n", input.SessionID)
-	b.WriteString("Ask the user whether you are implementing or reviewing — do not guess.\n")
-	b.WriteString("Before moving a ticket to `review`, confirm with the user that implementation is actually done.\n\n")
-	b.WriteString(quickRef)
+	if role == "" {
+		b.WriteString("Ask the user whether you are implementing or reviewing — do not guess.\n")
+		b.WriteString("Before moving a ticket to `review`, confirm with the user that implementation is actually done.\n\n")
+	} else {
+		fmt.Fprintf(&b, "Session role: `%s`.\n\n", role)
+	}
+	b.WriteString(quickRefForRole(role))
 
 	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil
 }
 
-const quickRef = "## Review Semantics\n" +
+const quickRefGeneric = "## Review Semantics\n" +
 	"`st status review` moves work to `REVIEW` (agentic review queue), and `st status human-review` moves it to `HUMAN-REVIEW` (human sign-off queue).\n" +
 	"Use `st review` only for claiming agent-review tickets.\n\n" +
 	"## Implementing\n" +
@@ -96,6 +102,7 @@ const quickRef = "## Review Semantics\n" +
 	"- `st list --run-id <run-id>`              view candidate tickets\n" +
 	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
 	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
 	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
 	"## Reviewing\n" +
 	"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
@@ -104,7 +111,73 @@ const quickRef = "## Review Semantics\n" +
 	"- `st status done --run-id <run-id>`         mark done after human review\n" +
 	"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
 	"## Always\n" +
-	"- `st note \"message\" --run-id <run-id>`     log progress, decisions, and user interactions frequently\n" +
+	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Progress\n- Updated startup guidance\nEOF\n)\" --run-id <run-id>`\n" +
 	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
 	"- `st context --run-id <run-id>`            check current session context\n\n" +
 	"Run `st --help` for more.\n"
+
+const quickRefLeader = "## Leader\n" +
+	"- Launch implementers with `st work` (or `st work --cli opencode`)\n" +
+	"- Launch reviewers with `st review <ticket-id>`\n" +
+	"- Launch background workers with `st spawn <ticket-id> --run-id <run-id>`\n" +
+	"- Monitor work with `st list --run-id <run-id>` and inspect details via `st show <ticket-id>`\n" +
+	"- Track orchestration decisions using `st note " + "\"$(cat <<'EOF'\n## Coordination\n- Assigned workers\nEOF\n)\"" + " --run-id <run-id>`\n\n" +
+	"Run `st --help` for more.\n"
+
+const quickRefImplementer = "## Implementing\n" +
+	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
+	"- `st list --run-id <run-id>`              view candidate tickets\n" +
+	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
+	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
+	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
+	"## Always\n" +
+	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Progress\n- Updated startup guidance\nEOF\n)\" --run-id <run-id>`\n" +
+	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+	"- `st context --run-id <run-id>`            check current session context\n\n" +
+	"Run `st --help` for more.\n"
+
+const quickRefReviewer = "## Reviewing\n" +
+	"- Claim a ticket with `st review <ticket-id> --run-id <run-id>` (eligibility enforced)\n" +
+	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
+	"- `st status rework --run-id <run-id>`       send back for changes\n\n" +
+	"## Always\n" +
+	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Review Findings\n- Checked behavior against requirements\nEOF\n)\" --run-id <run-id>`\n" +
+	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+	"- `st context --run-id <run-id>`            check current session context\n\n" +
+	"Run `st --help` for more.\n"
+
+const quickRefWorker = "## Worker\n" +
+	"- Use heredoc notes: `st note \"$(cat <<'EOF'\n## Worker Progress\n- Implemented assigned changes\nEOF\n)\" --run-id <run-id>`\n" +
+	"- Update status with `st status <status> --run-id <run-id>`\n" +
+	"- Check context with `st context --run-id <run-id>`\n\n" +
+	"Run `st --help` for more.\n"
+
+func normalizeRole(role string) string {
+	role = strings.ToLower(strings.TrimSpace(role))
+	switch role {
+	case "leader", "implementer", "reviewer", "worker":
+		return role
+	case "work":
+		return "implementer"
+	case "review":
+		return "reviewer"
+	default:
+		return ""
+	}
+}
+
+func quickRefForRole(role string) string {
+	switch role {
+	case "leader":
+		return quickRefLeader
+	case "implementer":
+		return quickRefImplementer
+	case "reviewer":
+		return quickRefReviewer
+	case "worker":
+		return quickRefWorker
+	default:
+		return quickRefGeneric
+	}
+}

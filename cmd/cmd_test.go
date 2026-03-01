@@ -202,7 +202,13 @@ func resetFlags() {
 	newTitle = ""
 	pickTicket = ""
 	reviewTicket = ""
+	reviewCLI = ""
+	leaderCLI = ""
+	workCLI = ""
 	handoffTicket = ""
+	spawnTimeout = 45 * time.Minute
+	spawnBackend = "claude"
+	spawnDryRun = false
 }
 
 func TestOverride_HappyPath(t *testing.T) {

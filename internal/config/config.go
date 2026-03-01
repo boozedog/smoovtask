@@ -12,12 +12,18 @@ import (
 // Config holds the global smoovtask configuration.
 type Config struct {
 	Settings SettingsConfig           `toml:"settings"`
+	Agent    AgentConfig              `toml:"agent"`
 	Projects map[string]ProjectConfig `toml:"projects"`
 }
 
 // SettingsConfig holds global settings.
 type SettingsConfig struct {
 	VaultPath string `toml:"vault_path"`
+}
+
+// AgentConfig holds launcher settings for interactive agent sessions.
+type AgentConfig struct {
+	CLI string `toml:"cli"`
 }
 
 // ProjectConfig holds per-project settings.
@@ -172,5 +178,8 @@ func (c *Config) EnsureDirs() error {
 func (c *Config) applyDefaults() {
 	if c.Settings.VaultPath == "" {
 		c.Settings.VaultPath = "~/obsidian/smoovtask"
+	}
+	if c.Agent.CLI == "" {
+		c.Agent.CLI = "claude"
 	}
 }

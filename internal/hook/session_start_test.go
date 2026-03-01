@@ -106,8 +106,14 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	if !strings.Contains(ctx, "st show <ticket-id> --run-id <run-id>") {
 		t.Error("missing quick reference commands with run-id placeholder")
 	}
+	if !strings.Contains(ctx, "st handoff <ticket-id> --run-id <run-id>") {
+		t.Error("missing handoff command in implementing quick reference")
+	}
 	if !strings.Contains(ctx, "st --help") {
 		t.Error("missing help reference")
+	}
+	if !strings.Contains(ctx, "Use heredoc for all notes content") {
+		t.Error("missing heredoc note guidance")
 	}
 	if !strings.Contains(ctx, "do not guess") {
 		t.Error("missing instruction to ask user about role")
@@ -117,5 +123,59 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	}
 	if !strings.Contains(ctx, "st status human-review") {
 		t.Error("missing HUMAN-REVIEW handoff command")
+	}
+}
+
+func TestHandleSessionStartRoleAwareImplementer(t *testing.T) {
+	projectPath := t.TempDir()
+	setupTestEnv(t, projectPath)
+	t.Setenv("ST_ROLE", "implementer")
+
+	input := &Input{
+		SessionID: "sess-impl",
+		CWD:       projectPath,
+	}
+
+	out, err := HandleSessionStart(input)
+	if err != nil {
+		t.Fatalf("HandleSessionStart() error: %v", err)
+	}
+
+	ctx := out.AdditionalContext
+	if !strings.Contains(ctx, "Session role: `implementer`") {
+		t.Error("missing implementer role banner")
+	}
+	if strings.Contains(ctx, "do not guess") {
+		t.Error("implementer role should not include generic ask/guess prompt")
+	}
+	if !strings.Contains(ctx, "st pick <ticket-id> --run-id <run-id>") {
+		t.Error("missing implementer pick command")
+	}
+}
+
+func TestHandleSessionStartRoleAwareWorker(t *testing.T) {
+	projectPath := t.TempDir()
+	setupTestEnv(t, projectPath)
+	t.Setenv("ST_ROLE", "worker")
+
+	input := &Input{
+		SessionID: "sess-worker",
+		CWD:       projectPath,
+	}
+
+	out, err := HandleSessionStart(input)
+	if err != nil {
+		t.Fatalf("HandleSessionStart() error: %v", err)
+	}
+
+	ctx := out.AdditionalContext
+	if !strings.Contains(ctx, "Session role: `worker`") {
+		t.Error("missing worker role banner")
+	}
+	if !strings.Contains(ctx, "st status <status> --run-id <run-id>") {
+		t.Error("missing worker status command")
+	}
+	if strings.Contains(ctx, "st pick <ticket-id>") {
+		t.Error("worker context should not include implementer commands")
 	}
 }

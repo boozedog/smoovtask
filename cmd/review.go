@@ -16,19 +16,39 @@ import (
 
 var reviewCmd = &cobra.Command{
 	Use:   "review [ticket-id]",
-	Short: "Claim a ticket for agent review (eligibility check enforced)",
+	Short: "Start reviewer session or claim ticket review",
 	Args:  cobra.MaximumNArgs(1),
 	RunE:  runReview,
 }
 
-var reviewTicket string
+var (
+	reviewTicket string
+	reviewCLI    string
+)
 
 func init() {
 	reviewCmd.Flags().StringVar(&reviewTicket, "ticket", "", "ticket ID to review")
+	reviewCmd.Flags().StringVar(&reviewCLI, "cli", "", "CLI backend override (claude, opencode, pi) for launcher mode")
 	rootCmd.AddCommand(reviewCmd)
 }
 
 func runReview(_ *cobra.Command, args []string) error {
+	ticketID := reviewTicket
+	if ticketID == "" && len(args) == 1 {
+		ticketID = args[0]
+	}
+
+	if identity.RunID() == "" {
+		if ticketID == "" {
+			return fmt.Errorf("review launcher mode requires a ticket ID")
+		}
+		return launchSession(roleReviewer, ticketID, reviewCLI)
+	}
+
+	return claimReview(ticketID)
+}
+
+func claimReview(ticketID string) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -42,11 +62,6 @@ func runReview(_ *cobra.Command, args []string) error {
 	store := ticket.NewStore(ticketsDir)
 	runID := identity.RunID()
 	actor := identity.Actor()
-
-	ticketID := reviewTicket
-	if ticketID == "" && len(args) == 1 {
-		ticketID = args[0]
-	}
 
 	tk, err := resolveReviewTicket(store, ticketID)
 	if err != nil {
