@@ -6,26 +6,28 @@ import "time"
 type Status string
 
 const (
-	StatusBacklog    Status = "BACKLOG"
-	StatusOpen       Status = "OPEN"
-	StatusInProgress Status = "IN-PROGRESS"
-	StatusReview     Status = "REVIEW"
-	StatusRework     Status = "REWORK"
-	StatusDone       Status = "DONE"
-	StatusBlocked    Status = "BLOCKED"
-	StatusCancelled  Status = "CANCELLED"
+	StatusBacklog     Status = "BACKLOG"
+	StatusOpen        Status = "OPEN"
+	StatusInProgress  Status = "IN-PROGRESS"
+	StatusReview      Status = "REVIEW"
+	StatusHumanReview Status = "HUMAN-REVIEW"
+	StatusRework      Status = "REWORK"
+	StatusDone        Status = "DONE"
+	StatusBlocked     Status = "BLOCKED"
+	StatusCancelled   Status = "CANCELLED"
 )
 
 // ValidStatuses is the set of all valid status values.
 var ValidStatuses = map[Status]bool{
-	StatusBacklog:    true,
-	StatusOpen:       true,
-	StatusInProgress: true,
-	StatusReview:     true,
-	StatusRework:     true,
-	StatusDone:       true,
-	StatusBlocked:    true,
-	StatusCancelled:  true,
+	StatusBacklog:     true,
+	StatusOpen:        true,
+	StatusInProgress:  true,
+	StatusReview:      true,
+	StatusHumanReview: true,
+	StatusRework:      true,
+	StatusDone:        true,
+	StatusBlocked:     true,
+	StatusCancelled:   true,
 }
 
 // Priority represents a ticket priority (P0 = critical, P5 = backlog).

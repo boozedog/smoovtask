@@ -25,13 +25,45 @@ func statusBadgeClass(s ticket.Status) string {
 		return "uk-badge-destructive"
 	case ticket.StatusInProgress, ticket.StatusReview:
 		return "uk-badge-primary"
+	case ticket.StatusHumanReview:
+		return "uk-badge-secondary"
 	default:
 		return "uk-badge-secondary"
 	}
 }
 
 func statusLabel(s ticket.Status) string {
+	switch s {
+	case ticket.StatusReview:
+		return "REVIEW"
+	case ticket.StatusHumanReview:
+		return "HUMAN REVIEW"
+	}
 	return string(s)
+}
+
+func showWorkflowBadge(tk *ticket.Ticket) bool {
+	if tk == nil {
+		return false
+	}
+	return tk.Status == ticket.StatusHumanReview || tk.Status == ticket.StatusRework
+}
+
+func workflowBadgeClass(s ticket.Status) string {
+	if s == ticket.StatusRework {
+		return "uk-badge uk-rounded uk-badge-destructive"
+	}
+	return "uk-badge uk-rounded uk-badge-secondary"
+}
+
+func workflowBadgeLabel(s ticket.Status) string {
+	if s == ticket.StatusRework {
+		return "REWORK"
+	}
+	if s == ticket.StatusHumanReview {
+		return "HUMAN-REVIEW"
+	}
+	return ""
 }
 
 func shortAssignee(s string) string {
@@ -131,13 +163,13 @@ templ TicketCard(tk *ticket.Ticket, source string) {
 		<div class="uk-card-title st-card-title">{ tk.Title }</div>
 		<div class="st-ticket-meta opacity-70 flex gap-2 items-center">
 			@PriorityBadge(tk.Priority)
+			if showWorkflowBadge(tk) {
+				<span class={ workflowBadgeClass(tk.Status) }>{ workflowBadgeLabel(tk.Status) }</span>
+			}
 			<span class="uk-text-meta uk-text-mono opacity-80">{ tk.ID }</span>
 		</div>
 		if showSourceBadge(tk, source) || showAssignee(tk) {
-			<div class="st-ticket-footer flex items-center justify-between gap-2">
-				if showSourceBadge(tk, source) {
-					@SourceBadge(source)
-				}
+			<div class="st-ticket-footer flex items-center gap-2">
 				if showAssignee(tk) {
 					<span class="st-assignee-wrap">
 						<span class="st-session-dot" data-run-id={ tk.Assignee } title="Pulses when this assignee emits hook events" aria-label="Agent hook activity indicator"></span>
@@ -149,7 +181,12 @@ templ TicketCard(tk *ticket.Ticket, source string) {
 							data-session-id={ tk.Assignee }
 							data-source-label={ sourceLabel(source) }
 						>{ shortAssignee(tk.Assignee) }</span>
+						if showSourceBadge(tk, source) {
+							@SourceBadge(source)
+						}
 					</span>
+				} else if showSourceBadge(tk, source) {
+					@SourceBadge(source)
 				}
 			</div>
 		}

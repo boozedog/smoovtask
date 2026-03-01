@@ -74,6 +74,7 @@ templ TicketFormContent(data TicketFormData) {
 						<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
 						<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
 						<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
+						<option value="HUMAN-REVIEW" if data.Values.Status == string(ticket.StatusHumanReview) { selected }>HUMAN-REVIEW</option>
 						<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
 						<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
 						<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>
@@ -164,6 +165,7 @@ templ TicketFormModalPartial(data TicketFormData) {
 						<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
 						<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
 						<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
+						<option value="HUMAN-REVIEW" if data.Values.Status == string(ticket.StatusHumanReview) { selected }>HUMAN-REVIEW</option>
 						<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
 						<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
 						<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>

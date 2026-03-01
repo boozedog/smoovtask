@@ -34,4 +34,5 @@ Tickets are markdown files with YAML frontmatter in an Obsidian vault. Events ar
 - [Building & running](docs/building.md)
 - [Storage paths](docs/storage.md)
 - Franken UI contexts snapshot (local): `docs/franken-ui/contexts/`
-- Snapshot notes and refresh script: `docs/franken-ui/README.md`, `docs/franken-ui/update-contexts.sh`
+- Snapshot notes: `docs/franken-ui/README.md`
+- Vendor script (FrankenUI CSS/JS + context docs + htmx): `scripts/vendor.sh` (`just vendor`)

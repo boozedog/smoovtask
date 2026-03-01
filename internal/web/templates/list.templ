@@ -68,6 +68,7 @@ templ ListPartial(data ListData) {
 				<option value="OPEN" if data.Filter.Status == "OPEN" { selected }>OPEN</option>
 				<option value="IN-PROGRESS" if data.Filter.Status == "IN-PROGRESS" { selected }>IN-PROGRESS</option>
 				<option value="REVIEW" if data.Filter.Status == "REVIEW" { selected }>REVIEW</option>
+				<option value="HUMAN-REVIEW" if data.Filter.Status == "HUMAN-REVIEW" { selected }>HUMAN-REVIEW</option>
 				<option value="REWORK" if data.Filter.Status == "REWORK" { selected }>REWORK</option>
 				<option value="BLOCKED" if data.Filter.Status == "BLOCKED" { selected }>BLOCKED</option>
 				<option value="DONE" if data.Filter.Status == "DONE" { selected }>DONE</option>

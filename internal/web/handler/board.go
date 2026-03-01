@@ -49,15 +49,15 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 		groups[ticket.StatusDone] = recent
 	}
 
-	// Sort tickets within each column.
+	// Sort tickets within each raw status bucket.
 	for status, tks := range groups {
 		if status == ticket.StatusDone || status == ticket.StatusCancelled {
 			// Done/Cancelled: reverse chronological by Updated.
 			sort.Slice(tks, func(i, j int) bool {
 				return tks[i].Updated.After(tks[j].Updated)
 			})
-		} else if status == ticket.StatusReview {
-			// Review: tickets with an active assignee first, then priority ascending,
+		} else if status == ticket.StatusReview || status == ticket.StatusHumanReview {
+			// Review buckets: tickets with an active assignee first, then priority ascending,
 			// then creation date ascending.
 			sort.Slice(tks, func(i, j int) bool {
 				iAssigned := tks[i].Assignee != ""
@@ -83,9 +83,41 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 
 	var columns []templates.BoardColumn
 	for _, status := range statusOrder {
+		columnTickets := append([]*ticket.Ticket{}, groups[status]...)
+		if status == ticket.StatusOpen {
+			columnTickets = append(columnTickets, groups[ticket.StatusRework]...)
+		} else if status == ticket.StatusReview {
+			columnTickets = append(columnTickets, groups[ticket.StatusHumanReview]...)
+		}
+
+		if status == ticket.StatusDone || status == ticket.StatusCancelled {
+			sort.Slice(columnTickets, func(i, j int) bool {
+				return columnTickets[i].Updated.After(columnTickets[j].Updated)
+			})
+		} else if status == ticket.StatusReview {
+			sort.Slice(columnTickets, func(i, j int) bool {
+				iAssigned := columnTickets[i].Assignee != ""
+				jAssigned := columnTickets[j].Assignee != ""
+				if iAssigned != jAssigned {
+					return iAssigned
+				}
+				if columnTickets[i].Priority != columnTickets[j].Priority {
+					return columnTickets[i].Priority < columnTickets[j].Priority
+				}
+				return columnTickets[i].Created.Before(columnTickets[j].Created)
+			})
+		} else {
+			sort.Slice(columnTickets, func(i, j int) bool {
+				if columnTickets[i].Priority != columnTickets[j].Priority {
+					return columnTickets[i].Priority < columnTickets[j].Priority
+				}
+				return columnTickets[i].Created.Before(columnTickets[j].Created)
+			})
+		}
+
 		columns = append(columns, templates.BoardColumn{
 			Status:  status,
-			Tickets: groups[status],
+			Tickets: columnTickets,
 		})
 	}
 

@@ -26,11 +26,10 @@ func New(ticketsDir, eventsDir string, broker *sse.Broker, project string) *Hand
 
 // statusOrder defines the column order for the kanban board.
 var statusOrder = []ticket.Status{
+	ticket.StatusBlocked,
 	ticket.StatusOpen,
 	ticket.StatusInProgress,
 	ticket.StatusReview,
-	ticket.StatusRework,
-	ticket.StatusBlocked,
 	ticket.StatusDone,
 }
 
@@ -47,7 +46,7 @@ func groupByStatus(tickets []*ticket.Ticket) map[ticket.Status][]*ticket.Ticket 
 // active states first, then backlog, then done.
 func statusWeight(s ticket.Status) int {
 	switch s {
-	case ticket.StatusOpen, ticket.StatusInProgress, ticket.StatusReview, ticket.StatusRework, ticket.StatusBlocked:
+	case ticket.StatusOpen, ticket.StatusInProgress, ticket.StatusReview, ticket.StatusHumanReview, ticket.StatusRework, ticket.StatusBlocked:
 		return 0
 	case ticket.StatusBacklog:
 		return 1

@@ -49,6 +49,14 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		return nil, fmt.Errorf("list review tickets: %w", err)
 	}
 
+	humanReviewTickets, err := store.List(ticket.ListFilter{
+		Project: proj,
+		Status:  ticket.StatusHumanReview,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list human review tickets: %w", err)
+	}
+
 	// Log session-start event
 	eventsDir, err := cfg.EventsDir()
 	if err != nil {
@@ -63,8 +71,9 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		RunID:   input.SessionID,
 		Source:  input.Source,
 		Data: map[string]any{
-			"open_count":   len(openTickets),
-			"review_count": len(reviewTickets),
+			"open_count":         len(openTickets),
+			"review_count":       len(reviewTickets),
+			"human_review_count": len(humanReviewTickets),
 		},
 	})
 
@@ -72,22 +81,26 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	fmt.Fprintf(&b, "You are working in a tracked smoovtask project called %s. ", proj)
 	fmt.Fprintf(&b, "Your run ID is `%s`; include `--run-id <run-id>` on every `st` command.\n", input.SessionID)
 	b.WriteString("Ask the user whether you are implementing or reviewing — do not guess.\n")
-	b.WriteString("Before submitting work for review, confirm with the user that the work is actually done.\n\n")
+	b.WriteString("Before moving a ticket to `review`, confirm with the user that implementation is actually done.\n\n")
 	b.WriteString(quickRef)
 
 	return &Output{AdditionalContext: b.String()}, nil
 }
 
-const quickRef = "## Implementing\n" +
+const quickRef = "## Review Semantics\n" +
+	"`st status review` moves work to `REVIEW` (agentic review queue), and `st status human-review` moves it to `HUMAN-REVIEW` (human sign-off queue).\n" +
+	"Use `st review` only for claiming agent-review tickets.\n\n" +
+	"## Implementing\n" +
 	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
 	"- `st list --run-id <run-id>`              view candidate tickets\n" +
 	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
 	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
-	"- `st status review --run-id <run-id>`    submit for review when done\n\n" +
+	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
 	"## Reviewing\n" +
-	"Use `st review` to claim — it prints the checklist and ticket context.\n" +
+	"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
 	"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
-	"- `st status done --run-id <run-id>`        approve after review\n" +
+	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
+	"- `st status done --run-id <run-id>`         mark done after human review\n" +
 	"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
 	"## Always\n" +
 	"- `st note \"message\" --run-id <run-id>`     log progress, decisions, and user interactions frequently\n" +

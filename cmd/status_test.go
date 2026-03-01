@@ -130,7 +130,7 @@ func TestStatus_AutoUnblock(t *testing.T) {
 		t.Fatalf("save ticket A: %v", err)
 	}
 
-	// Move B: IN-PROGRESS → REVIEW → DONE (need two transitions)
+	// Move B: IN-PROGRESS → REVIEW → HUMAN-REVIEW → DONE
 	// Add a note (required before review)
 	env.addNoteEvent(t, tkB.ID)
 	// First go to REVIEW
@@ -138,6 +138,16 @@ func TestStatus_AutoUnblock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("review transition: %v", err)
 	}
+
+	// Add a review note and hand off to HUMAN-REVIEW.
+	env.addNoteEvent(t, tkB.ID)
+	_, err = env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "human-review")
+	if err != nil {
+		t.Fatalf("human-review transition: %v", err)
+	}
+
+	// Add final sign-off note before DONE.
+	env.addNoteEvent(t, tkB.ID)
 
 	// Then go to DONE
 	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "done")

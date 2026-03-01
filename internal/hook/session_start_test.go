@@ -106,4 +106,10 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	if !strings.Contains(ctx, "do not guess") {
 		t.Error("missing instruction to ask user about role")
 	}
+	if !strings.Contains(ctx, "st status review` moves work to `REVIEW`") {
+		t.Error("missing clarification for REVIEW transition")
+	}
+	if !strings.Contains(ctx, "st status human-review") {
+		t.Error("missing HUMAN-REVIEW handoff command")
+	}
 }

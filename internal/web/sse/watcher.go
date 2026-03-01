@@ -69,8 +69,12 @@ func (w *Watcher) loop() {
 				work, activity, pings := readNewLines(ev.Name, offsets)
 
 				// Broadcast agent pings immediately — no debounce.
-				for runID := range pings {
-					w.broker.Broadcast(event.Event{Event: "agent-ping", RunID: runID})
+				for runID, hookName := range pings {
+					w.broker.Broadcast(event.Event{
+						Event: "agent-ping",
+						RunID: runID,
+						Data:  map[string]any{"hook": hookName},
+					})
 				}
 
 				// Accumulate refresh flags for the debounced batch.
@@ -102,13 +106,13 @@ func (w *Watcher) loop() {
 
 // readNewLines reads new JSONL lines from path (past the tracked offset) and
 // classifies them. Agent-ping run IDs are returned in a deduplicated set.
-func readNewLines(path string, offsets map[string]int64) (workChanged, activityChanged bool, agentPingRunIDs map[string]struct{}) {
-	agentPingRunIDs = make(map[string]struct{})
+func readNewLines(path string, offsets map[string]int64) (workChanged, activityChanged bool, agentPingRunIDs map[string]string) {
+	agentPingRunIDs = make(map[string]string)
 
 	currentOffset := offsets[path]
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return
+		return workChanged, activityChanged, agentPingRunIDs
 	}
 	if fileInfo.Size() < currentOffset {
 		currentOffset = 0
@@ -116,12 +120,12 @@ func readNewLines(path string, offsets map[string]int64) (workChanged, activityC
 
 	f, err := os.Open(path)
 	if err != nil {
-		return
+		return workChanged, activityChanged, agentPingRunIDs
 	}
 	defer f.Close()
 
 	if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
-		return
+		return workChanged, activityChanged, agentPingRunIDs
 	}
 
 	reader := bufio.NewReader(f)
@@ -141,7 +145,7 @@ func readNewLines(path string, offsets map[string]int64) (workChanged, activityC
 			if json.Unmarshal(line, &ev) == nil {
 				activityChanged = true
 				if strings.HasPrefix(ev.Event, "hook.") && ev.RunID != "" {
-					agentPingRunIDs[ev.RunID] = struct{}{}
+					agentPingRunIDs[ev.RunID] = ev.Event
 				}
 				if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
 					workChanged = true
@@ -155,5 +159,5 @@ func readNewLines(path string, offsets map[string]int64) (workChanged, activityC
 	}
 
 	offsets[path] = currentOffset
-	return
+	return workChanged, activityChanged, agentPingRunIDs
 }

@@ -9,14 +9,15 @@ import (
 
 // transitions defines the valid status transitions.
 var transitions = map[ticket.Status][]ticket.Status{
-	ticket.StatusBacklog:    {ticket.StatusOpen, ticket.StatusBlocked, ticket.StatusCancelled},
-	ticket.StatusOpen:       {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
-	ticket.StatusInProgress: {ticket.StatusReview, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
-	ticket.StatusReview:     {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
-	ticket.StatusRework:     {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
-	ticket.StatusBlocked:    {}, // unblocks to prior status, handled separately
-	ticket.StatusDone:       {ticket.StatusBacklog},
-	ticket.StatusCancelled:  {ticket.StatusBacklog},
+	ticket.StatusBacklog:     {ticket.StatusOpen, ticket.StatusBlocked, ticket.StatusCancelled},
+	ticket.StatusOpen:        {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
+	ticket.StatusInProgress:  {ticket.StatusReview, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
+	ticket.StatusReview:      {ticket.StatusHumanReview, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
+	ticket.StatusHumanReview: {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
+	ticket.StatusRework:      {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
+	ticket.StatusBlocked:     {}, // unblocks to prior status, handled separately
+	ticket.StatusDone:        {ticket.StatusBacklog},
+	ticket.StatusCancelled:   {ticket.StatusBacklog},
 }
 
 // CanTransition returns true if the transition from → to is valid.
@@ -50,23 +51,29 @@ func ValidateTransition(from, to ticket.Status) error {
 // StatusFromAlias resolves status aliases to canonical status values.
 func StatusFromAlias(s string) (ticket.Status, error) {
 	aliases := map[string]ticket.Status{
-		"backlog":     ticket.StatusBacklog,
-		"open":        ticket.StatusOpen,
-		"in-progress": ticket.StatusInProgress,
-		"in_progress": ticket.StatusInProgress,
-		"inprogress":  ticket.StatusInProgress,
-		"start":       ticket.StatusInProgress,
-		"begin":       ticket.StatusInProgress,
-		"review":      ticket.StatusReview,
-		"submit":      ticket.StatusReview,
-		"done":        ticket.StatusDone,
-		"complete":    ticket.StatusDone,
-		"rework":      ticket.StatusRework,
-		"reject":      ticket.StatusRework,
-		"blocked":     ticket.StatusBlocked,
-		"block":       ticket.StatusBlocked,
-		"cancelled":   ticket.StatusCancelled,
-		"cancel":      ticket.StatusCancelled,
+		"backlog":      ticket.StatusBacklog,
+		"open":         ticket.StatusOpen,
+		"in-progress":  ticket.StatusInProgress,
+		"in_progress":  ticket.StatusInProgress,
+		"inprogress":   ticket.StatusInProgress,
+		"start":        ticket.StatusInProgress,
+		"begin":        ticket.StatusInProgress,
+		"review":       ticket.StatusReview,
+		"submit":       ticket.StatusReview,
+		"agent-review": ticket.StatusReview,
+		"agent_review": ticket.StatusReview,
+		"agentreview":  ticket.StatusReview,
+		"human-review": ticket.StatusHumanReview,
+		"human_review": ticket.StatusHumanReview,
+		"humanreview":  ticket.StatusHumanReview,
+		"done":         ticket.StatusDone,
+		"complete":     ticket.StatusDone,
+		"rework":       ticket.StatusRework,
+		"reject":       ticket.StatusRework,
+		"blocked":      ticket.StatusBlocked,
+		"block":        ticket.StatusBlocked,
+		"cancelled":    ticket.StatusCancelled,
+		"cancel":       ticket.StatusCancelled,
 	}
 
 	if status, ok := aliases[s]; ok {
@@ -79,5 +86,5 @@ func StatusFromAlias(s string) (ticket.Status, error) {
 		return status, nil
 	}
 
-	return "", fmt.Errorf("unknown status %q — use one of: backlog, open, in-progress, review, done, rework, blocked, cancelled", s)
+	return "", fmt.Errorf("unknown status %q — use one of: backlog, open, in-progress, review, agent-review, human-review, done, rework, blocked, cancelled", s)
 }

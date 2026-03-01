@@ -11,15 +11,14 @@ we can reference them while working without leaving the repo.
 
 ## Refresh
 
-Run:
+Run the unified vendor script:
 
 ```bash
-sh docs/franken-ui/update-contexts.sh
+just vendor docs    # context docs only
+just vendor         # everything (CSS/JS + docs)
 ```
 
-This re-clones the upstream repo into a temp directory, copies `*.md` files into
-`docs/franken-ui/contexts/`, removes nested git metadata, and prints the new
-snapshot commit.
+See `scripts/vendor.sh` for version pins and file mappings.
 
 ## Notes
 

@@ -116,7 +116,11 @@ func (h *Handler) AgentEvents(w http.ResponseWriter, r *http.Request) {
 			if runID != "" && ev.RunID != runID {
 				continue
 			}
-			data, err := json.Marshal(map[string]string{"run_id": ev.RunID})
+			payload := map[string]string{"run_id": ev.RunID}
+			if hook, ok := ev.Data["hook"].(string); ok {
+				payload["hook"] = hook
+			}
+			data, err := json.Marshal(payload)
 			if err != nil {
 				continue
 			}

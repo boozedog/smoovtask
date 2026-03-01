@@ -25,8 +25,8 @@ templ Layout(title string, currentPath string) {
 				.st-ticket-card { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; cursor: pointer; }
 				.st-ticket-card:hover { border-color: hsl(var(--primary)); }
 				.st-card-project { min-height: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-				.st-card-title { font-weight: 500; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: break-word; }
-				.st-ticket-meta { margin-top: 0.1rem; }
+				.st-card-title { font-size: 1rem; line-height: 1.35; font-weight: 500; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: break-word; }
+				.st-ticket-meta { margin-top: 0.35rem; }
 				.st-ticket-footer { margin-top: 0.1rem; }
 				.st-priority-p0 { background: #dc2626; color: white; }
 				.st-priority-p1 { background: #ea580c; color: white; }
@@ -91,9 +91,10 @@ templ Layout(title string, currentPath string) {
 				.st-dep-edge.highlighted { stroke: hsl(var(--primary)); stroke-width: 2.5; }
 				.st-dep-graph.dimmed .st-dep-node { opacity: 0.3; }
 				.st-dep-graph.dimmed .st-dep-node.highlighted { opacity: 1; }
-				@keyframes st-dot-green-blink { 0%, 45% { background: #16a34a; box-shadow: 0 0 5px rgba(22, 163, 74, 0.45); } 50%, 100% { background: #166534; box-shadow: none; } }
-				.st-session-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; transition: background-color 0.2s ease, box-shadow 0.2s ease; }
-				.st-session-dot.st-session-dot-hot { background: #16a34a; animation: st-dot-green-blink 1s ease infinite; }
+				@keyframes st-dot-flash { 0% { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); } 100% { background: #166534; box-shadow: none; } }
+				.st-session-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+				.st-session-dot.st-session-dot-hot { background: #166534; animation: none; }
+				.st-session-dot.st-session-dot-hot.st-session-dot-flash { animation: st-dot-flash 0.4s ease-out forwards; }
 				.st-session-dot.st-session-dot-warm { background: #eab308; box-shadow: none; animation: none; }
 				.st-session-dot.st-session-dot-cold { background: #ef4444; box-shadow: none; animation: none; }
 				@media (max-width: 640px) {
@@ -177,7 +178,7 @@ templ Layout(title string, currentPath string) {
 				</div>
 			</main>
 			<div id="ticket-modal" data-uk-modal>
-				<div class="uk-modal-dialog st-modal-ticket">
+				<div class="uk-modal-dialog uk-margin-auto-vertical st-modal-ticket">
 					<button class="uk-modal-close absolute right-4 top-4 z-10" type="button" data-uk-close></button>
 					<div class="uk-modal-header" id="ticket-modal-header"></div>
 					<div class="uk-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
@@ -205,13 +206,23 @@ templ Layout(title string, currentPath string) {
 					wrapper.classList.toggle('scroll-left', sl);
 					wrapper.classList.toggle('scroll-right', sr);
 				}
-				function pulseSessionDots(runID) {
+				function pulseSessionDots(runID, hookName) {
 					if (!window._stLastHookByRunID) {
 						window._stLastHookByRunID = {};
 					}
 					window._stLastHookByRunID[runID] = Date.now();
+					if (hookName) {
+						if (!window._stLastHookNameByRunID) window._stLastHookNameByRunID = {};
+						window._stLastHookNameByRunID[runID] = hookName;
+					}
 					updateDotActivityStates(runID);
 					updateAssigneePillTooltips(runID);
+					// Trigger a one-shot flash on each event.
+					document.querySelectorAll('.st-session-dot[data-run-id="' + runID + '"]').forEach(function(dot) {
+						dot.classList.remove('st-session-dot-flash');
+						void dot.offsetWidth; // reflow to restart animation
+						dot.classList.add('st-session-dot-flash');
+					});
 				}
 				function sessionDotStateClass(msAgo) {
 					if (msAgo <= 60 * 1000) return 'st-session-dot-hot';
@@ -239,7 +250,9 @@ templ Layout(title string, currentPath string) {
 					var session = sessionID || runID || 'unknown';
 					var lastHook = 'waiting for activity';
 					if (window._stLastHookByRunID && runID && window._stLastHookByRunID[runID]) {
-						lastHook = formatHookAge(Date.now() - window._stLastHookByRunID[runID]);
+						var hookAge = formatHookAge(Date.now() - window._stLastHookByRunID[runID]);
+						var hookName = (window._stLastHookNameByRunID && window._stLastHookNameByRunID[runID]) || '';
+						lastHook = hookName ? hookName + ' (' + hookAge + ')' : hookAge;
 					}
 					return 'Session: ' + session + '\nSource: ' + source + '\nLast hook: ' + lastHook;
 				}
@@ -278,7 +291,7 @@ templ Layout(title string, currentPath string) {
 							}
 							var activeRunIDs = window._stWantedRunIDs || {};
 							if (!payload.run_id || !activeRunIDs[payload.run_id]) return;
-							pulseSessionDots(payload.run_id);
+							pulseSessionDots(payload.run_id, payload.hook || '');
 						});
 						window._stAgentEventStream = stream;
 					}
@@ -292,6 +305,7 @@ templ Layout(title string, currentPath string) {
 						Object.keys(window._stLastHookByRunID).forEach(function(runID) {
 							if (wanted[runID]) return;
 							delete window._stLastHookByRunID[runID];
+							if (window._stLastHookNameByRunID) delete window._stLastHookNameByRunID[runID];
 						});
 					}
 					updateDotActivityStates();
@@ -302,6 +316,12 @@ templ Layout(title string, currentPath string) {
 				if (!window._stInitialized) {
 				window._stInitialized = true;
 
+				document.addEventListener('animationend', function(e) {
+					if (e.target.classList.contains('st-session-dot-flash')) {
+						e.target.classList.remove('st-session-dot-flash');
+					}
+				});
+
 				document.addEventListener('mouseover', function(e) {
 					var pill = e.target.closest('.st-assignee-pill[data-run-id]');
 					if (!pill) return;
@@ -309,8 +329,6 @@ templ Layout(title string, currentPath string) {
 				});
 
 				var _ticketModalOpen = false;
-				var _modalClosingFromHistory = false;
-				var _modalHistoryPushed = false;
 
 				// Close modal on form success (HX-Trigger: closeModal).
 				document.body.addEventListener('closeModal', function() {
@@ -385,20 +403,9 @@ templ Layout(title string, currentPath string) {
 
 					// Ticket modal management.
 					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
-						var url = e.detail.xhr ? e.detail.xhr.responseURL : '';
-						var isFormLoad = url.indexOf('/partials/form/') !== -1;
-						var match = url.match(/\/ticket\/(st_[A-Za-z0-9]+)/);
-						var id = match ? match[1] : '';
-						if (_ticketModalOpen) {
-							// Navigating within an already-open modal (e.g. dep link or edit).
-							if (!isFormLoad && id) history.replaceState({ticketModal: true}, '', '/ticket/' + id);
-						} else {
+						if (!_ticketModalOpen) {
 							UIkit.modal('#ticket-modal').show();
 							_ticketModalOpen = true;
-							if (!isFormLoad && id) {
-								history.pushState({ticketModal: true}, '', '/ticket/' + id);
-								_modalHistoryPushed = true;
-							}
 						}
 					}
 				});
@@ -429,9 +436,7 @@ templ Layout(title string, currentPath string) {
 				window.addEventListener('popstate', function() {
 					var modalEl = document.getElementById('ticket-modal');
 					if (modalEl && _ticketModalOpen) {
-						_modalClosingFromHistory = true;
 						UIkit.modal(modalEl).hide();
-						return;
 					}
 					var path = window.location.pathname;
 					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
@@ -460,11 +465,6 @@ templ Layout(title string, currentPath string) {
 				// Modal hidden cleanup.
 				UIkit.util.on('#ticket-modal', 'hidden', function() {
 					_ticketModalOpen = false;
-					if (!_modalClosingFromHistory && _modalHistoryPushed) {
-						history.back();
-					}
-					_modalClosingFromHistory = false;
-					_modalHistoryPushed = false;
 					document.getElementById('ticket-modal-header').innerHTML = '';
 					document.getElementById('ticket-modal-body').innerHTML = '';
 				});
@@ -476,6 +476,9 @@ templ Layout(title string, currentPath string) {
 					}
 					if (window._stLastHookByRunID) {
 						window._stLastHookByRunID = {};
+					}
+					if (window._stLastHookNameByRunID) {
+						window._stLastHookNameByRunID = {};
 					}
 					if (window._stWantedRunIDs) {
 						window._stWantedRunIDs = {};

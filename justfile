@@ -45,6 +45,10 @@ release:
 web:
     air
 
+# Vendor FrankenUI, htmx, and context docs from npm
+vendor *args:
+    ./scripts/vendor.sh {{args}}
+
 # Remove build artifacts
 clean:
     rm -f {{bin}}

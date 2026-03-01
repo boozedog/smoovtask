@@ -52,7 +52,7 @@ templ BoardContent(data BoardData) {
 			for _, col := range data.Columns {
 				<div class={ columnClasses(col) }>
 					<div class={ "st-column-header " + statusClass(col.Status) }>
-						{ string(col.Status) }
+						{ statusLabel(col.Status) }
 						<span class="opacity-50 font-normal">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
 					</div>
 					for _, tk := range col.Tickets {

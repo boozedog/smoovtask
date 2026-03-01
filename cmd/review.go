@@ -16,7 +16,7 @@ import (
 
 var reviewCmd = &cobra.Command{
 	Use:   "review [ticket-id]",
-	Short: "Claim a ticket for review (eligibility check enforced)",
+	Short: "Claim a ticket for agent review (eligibility check enforced)",
 	Args:  cobra.MaximumNArgs(1),
 	RunE:  runReview,
 }
@@ -100,7 +100,7 @@ func runReview(_ *cobra.Command, args []string) error {
 		Data:    map[string]any{"reviewer": tk.Assignee},
 	})
 
-	fmt.Printf("Claimed %s for review: %s\n\n", tk.ID, tk.Title)
+	fmt.Printf("Claimed %s for agent review: %s\n\n", tk.ID, tk.Title)
 
 	// Print review context
 	fmt.Printf("--- Ticket Metadata ---\n")
@@ -117,7 +117,7 @@ func runReview(_ *cobra.Command, args []string) error {
 		fmt.Println(tk.Body)
 	}
 
-	fmt.Printf("--- Review Checklist ---\n")
+	fmt.Printf("--- Agent Review Checklist ---\n")
 	fmt.Printf("- [ ] Read the ticket description and acceptance criteria\n")
 	fmt.Printf("- [ ] Verify the implementation matches the requirements\n")
 	fmt.Printf("- [ ] Check for edge cases and error handling\n")
@@ -125,7 +125,7 @@ func runReview(_ *cobra.Command, args []string) error {
 	fmt.Printf("- [ ] If the fix cannot be fully verified through code review alone (e.g., UI behavior,\n")
 	fmt.Printf("      runtime issues), ask the user to confirm the fix works before approving\n")
 	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
-	fmt.Printf("\nReminder: `st note` is required before approving (`st status done`) or rejecting (`st status rework`).\n")
+	fmt.Printf("\nReminder: `st note` is required before handing off (`st status human-review`) or rejecting (`st status rework`).\n")
 	fmt.Print(guidance.LoggingReview)
 	return nil
 }

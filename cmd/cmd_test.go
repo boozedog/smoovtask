@@ -110,7 +110,7 @@ func (e *testEnv) createTicket(t *testing.T, title string, status ticket.Status)
 }
 
 // addNoteEvent logs a ticket.note event for the given ticket, so that
-// the RequiresNote check passes when transitioning to REVIEW.
+// the RequiresNote check passes when transitioning to review states.
 func (e *testEnv) addNoteEvent(t *testing.T, ticketID string) {
 	t.Helper()
 	_ = e.EventLog.Append(event.Event{

@@ -105,22 +105,24 @@ func listStatusWeight(s ticket.Status) int {
 	switch s {
 	case ticket.StatusReview:
 		return 0
-	case ticket.StatusRework:
+	case ticket.StatusHumanReview:
 		return 1
-	case ticket.StatusInProgress:
+	case ticket.StatusRework:
 		return 2
-	case ticket.StatusOpen:
+	case ticket.StatusInProgress:
 		return 3
-	case ticket.StatusBlocked:
+	case ticket.StatusOpen:
 		return 4
-	case ticket.StatusBacklog:
+	case ticket.StatusBlocked:
 		return 5
-	case ticket.StatusDone:
+	case ticket.StatusBacklog:
 		return 6
-	case ticket.StatusCancelled:
+	case ticket.StatusDone:
 		return 7
-	default:
+	case ticket.StatusCancelled:
 		return 8
+	default:
+		return 9
 	}
 }
 
