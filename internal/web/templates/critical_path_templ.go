@@ -154,224 +154,214 @@ func CriticalPathContent(data CriticalPathData) templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"max-w-5xl mx-auto\"><div class=\"uk-btn-group mt-2 mb-4\"><a hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"max-w-5xl mx-auto\"><ul class=\"uk-tab-alt mt-2 mb-4\"><li")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if data.Scope == "all" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " class=\"uk-active\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "><a hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(criticalPathPartialURL("all"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 53, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 58, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-push-url=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-push-url=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(criticalPathPageURL("all"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 56, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 61, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 templ.SafeURL
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(criticalPathPageURL("all")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 57, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 62, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\">All Projects</a></li><li")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if data.Scope == "all" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " class=\"uk-btn uk-btn-sm uk-btn-primary\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " class=\"uk-btn uk-btn-sm uk-btn-default\"")
+		if data.Scope == "current" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " class=\"uk-active\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, ">All Projects</a> <a hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "><a hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(criticalPathPartialURL("current"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 67, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 73, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-push-url=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" hx-target=\"#content\" hx-swap=\"innerHTML\" hx-push-url=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(criticalPathPageURL("current"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 70, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 76, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 templ.SafeURL
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(criticalPathPageURL("current")))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 71, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 77, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if data.Scope == "current" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, " class=\"uk-btn uk-btn-sm uk-btn-primary\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " class=\"uk-btn uk-btn-sm uk-btn-default\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, ">Current Project</a></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\">Current Project</a></li></ul>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if data.Graph.Empty {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"uk-alert uk-margin\" data-uk-alert>No dependency chains found.</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"uk-alert uk-margin\" data-uk-alert>No dependency chains found.</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"st-dep-graph uk-margin-top\" id=\"dep-graph\" data-edges=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"st-dep-graph uk-margin-top\" id=\"dep-graph\" data-edges=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(data.Graph.EdgesJSON())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 87, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 89, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"><svg class=\"st-dep-edges\" id=\"dep-edges\"></svg><div class=\"st-dep-grid\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><svg class=\"st-dep-edges\" id=\"dep-edges\"></svg><div class=\"st-dep-grid\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, layer := range data.Graph.Layers {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<div class=\"st-dep-layer\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"st-dep-layer\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				for _, node := range layer {
 					if data.ByID[node.ID] != nil {
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<a href=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var13 templ.SafeURL
 						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("/ticket/%s", node.ID)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 95, Col: 66}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 97, Col: 66}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\" hx-get=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" hx-get=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var14 string
 						templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/partials/ticket/%s", node.ID))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 96, Col: 62}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 98, Col: 62}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" hx-target=\"#ticket-modal-body\" class=\"st-dep-node\" data-node-id=\"")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" hx-target=\"#ticket-modal-body\" class=\"st-dep-node\" data-node-id=\"")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var15 string
 						templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(node.ID)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 99, Col: 32}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 101, Col: 32}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						if data.ByID[node.ID].Project != "" {
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"text-[0.65rem] opacity-50 leading-none\">")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"text-[0.65rem] opacity-50 leading-none\">")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 							var templ_7745c5c3_Var16 string
 							templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(data.ByID[node.ID].Project)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 102, Col: 90}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 104, Col: 90}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
-							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div>")
+							templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div>")
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"st-dep-node-title\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"st-dep-node-title\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var17 string
 						templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(data.ByID[node.ID].Title)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 104, Col: 67}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 106, Col: 67}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</div><div class=\"st-dep-node-meta\">")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div><div class=\"st-dep-node-meta\">")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -383,36 +373,36 @@ func CriticalPathContent(data CriticalPathData) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<span>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						var templ_7745c5c3_Var18 string
 						templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(node.ID)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 108, Col: 26}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/critical_path.templ`, Line: 110, Col: 26}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span></div></a>")
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</span></div></a>")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div></div><script>\n\t\t\t\t(function() {\n\t\t\t\t\tfunction stDepDrawEdges() {\n\t\t\t\t\t\tvar graph = document.getElementById('dep-graph');\n\t\t\t\t\t\tvar svg = document.getElementById('dep-edges');\n\t\t\t\t\t\tif (!graph || !svg) return;\n\n\t\t\t\t\t\tvar edgeData = graph.getAttribute('data-edges');\n\t\t\t\t\t\tif (!edgeData) return;\n\t\t\t\t\t\tvar edgeList = JSON.parse(edgeData);\n\n\t\t\t\t\t\tsvg.setAttribute('width', graph.scrollWidth);\n\t\t\t\t\t\tsvg.setAttribute('height', graph.scrollHeight);\n\t\t\t\t\t\tsvg.innerHTML = '';\n\n\t\t\t\t\t\tedgeList.forEach(function(e) {\n\t\t\t\t\t\t\tvar fromEl = graph.querySelector('[data-node-id=\"' + e.from + '\"]');\n\t\t\t\t\t\t\tvar toEl = graph.querySelector('[data-node-id=\"' + e.to + '\"]');\n\t\t\t\t\t\t\tif (!fromEl || !toEl) return;\n\n\t\t\t\t\t\t\tvar fromRect = fromEl.getBoundingClientRect();\n\t\t\t\t\t\t\tvar toRect = toEl.getBoundingClientRect();\n\t\t\t\t\t\t\tvar graphRect = graph.getBoundingClientRect();\n\n\t\t\t\t\t\t\t// Draw from dependency (to, left) to dependant (from, right).\n\t\t\t\t\t\t\tvar x1 = toRect.right - graphRect.left + graph.scrollLeft;\n\t\t\t\t\t\t\tvar y1 = toRect.top + toRect.height / 2 - graphRect.top + graph.scrollTop;\n\t\t\t\t\t\t\tvar x2 = fromRect.left - graphRect.left + graph.scrollLeft;\n\t\t\t\t\t\t\tvar y2 = fromRect.top + fromRect.height / 2 - graphRect.top + graph.scrollTop;\n\n\t\t\t\t\t\t\tvar dx = Math.abs(x2 - x1) * 0.4;\n\t\t\t\t\t\t\tvar path = document.createElementNS('http://www.w3.org/2000/svg', 'path');\n\t\t\t\t\t\t\tpath.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + (x1 + dx) + ',' + y1 + ' ' + (x2 - dx) + ',' + y2 + ' ' + x2 + ',' + y2);\n\t\t\t\t\t\t\tpath.setAttribute('class', 'st-dep-edge');\n\t\t\t\t\t\t\tpath.setAttribute('data-from', e.from);\n\t\t\t\t\t\t\tpath.setAttribute('data-to', e.to);\n\t\t\t\t\t\t\tsvg.appendChild(path);\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\n\t\t\t\t\t// Hover highlighting (uses event delegation on the graph container).\n\t\t\t\t\tvar graph = document.getElementById('dep-graph');\n\t\t\t\t\tif (graph) {\n\t\t\t\t\t\tgraph.addEventListener('mouseenter', function(evt) {\n\t\t\t\t\t\t\tvar node = evt.target.closest('[data-node-id]');\n\t\t\t\t\t\t\tif (!node) return;\n\t\t\t\t\t\t\tvar id = node.getAttribute('data-node-id');\n\t\t\t\t\t\t\tgraph.classList.add('dimmed');\n\t\t\t\t\t\t\tnode.classList.add('highlighted');\n\n\t\t\t\t\t\t\tgraph.querySelectorAll('.st-dep-edge').forEach(function(edge) {\n\t\t\t\t\t\t\t\tif (edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id) {\n\t\t\t\t\t\t\t\t\tedge.classList.add('highlighted');\n\t\t\t\t\t\t\t\t\tvar otherId = edge.getAttribute('data-from') === id ? edge.getAttribute('data-to') : edge.getAttribute('data-from');\n\t\t\t\t\t\t\t\t\tvar otherNode = graph.querySelector('[data-node-id=\"' + otherId + '\"]');\n\t\t\t\t\t\t\t\t\tif (otherNode) otherNode.classList.add('highlighted');\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}, true);\n\n\t\t\t\t\t\tgraph.addEventListener('mouseleave', function(evt) {\n\t\t\t\t\t\t\tvar node = evt.target.closest('[data-node-id]');\n\t\t\t\t\t\t\tif (!node) return;\n\t\t\t\t\t\t\tgraph.classList.remove('dimmed');\n\t\t\t\t\t\t\tgraph.querySelectorAll('.highlighted').forEach(function(el) {\n\t\t\t\t\t\t\t\tel.classList.remove('highlighted');\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}, true);\n\t\t\t\t\t}\n\n\t\t\t\t\t// Defer initial draw to ensure layout is complete.\n\t\t\t\t\trequestAnimationFrame(function() {\n\t\t\t\t\t\trequestAnimationFrame(stDepDrawEdges);\n\t\t\t\t\t});\n\n\t\t\t\t\tif (!window._stDepEdgesInit) {\n\t\t\t\t\t\twindow._stDepEdgesInit = true;\n\t\t\t\t\t\tdocument.addEventListener('htmx:afterSwap', function() {\n\t\t\t\t\t\t\trequestAnimationFrame(function() {\n\t\t\t\t\t\t\t\trequestAnimationFrame(stDepDrawEdges);\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t});\n\t\t\t\t\t\twindow.addEventListener('resize', stDepDrawEdges);\n\t\t\t\t\t}\n\t\t\t\t})();\n\t\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div></div><script>\n\t\t\t\t(function() {\n\t\t\t\t\tfunction stDepDrawEdges() {\n\t\t\t\t\t\tvar graph = document.getElementById('dep-graph');\n\t\t\t\t\t\tvar svg = document.getElementById('dep-edges');\n\t\t\t\t\t\tif (!graph || !svg) return;\n\n\t\t\t\t\t\tvar edgeData = graph.getAttribute('data-edges');\n\t\t\t\t\t\tif (!edgeData) return;\n\t\t\t\t\t\tvar edgeList = JSON.parse(edgeData);\n\n\t\t\t\t\t\tsvg.setAttribute('width', graph.scrollWidth);\n\t\t\t\t\t\tsvg.setAttribute('height', graph.scrollHeight);\n\t\t\t\t\t\tsvg.innerHTML = '';\n\n\t\t\t\t\t\tedgeList.forEach(function(e) {\n\t\t\t\t\t\t\tvar fromEl = graph.querySelector('[data-node-id=\"' + e.from + '\"]');\n\t\t\t\t\t\t\tvar toEl = graph.querySelector('[data-node-id=\"' + e.to + '\"]');\n\t\t\t\t\t\t\tif (!fromEl || !toEl) return;\n\n\t\t\t\t\t\t\tvar fromRect = fromEl.getBoundingClientRect();\n\t\t\t\t\t\t\tvar toRect = toEl.getBoundingClientRect();\n\t\t\t\t\t\t\tvar graphRect = graph.getBoundingClientRect();\n\n\t\t\t\t\t\t\t// Draw from dependency (to, left) to dependant (from, right).\n\t\t\t\t\t\t\tvar x1 = toRect.right - graphRect.left + graph.scrollLeft;\n\t\t\t\t\t\t\tvar y1 = toRect.top + toRect.height / 2 - graphRect.top + graph.scrollTop;\n\t\t\t\t\t\t\tvar x2 = fromRect.left - graphRect.left + graph.scrollLeft;\n\t\t\t\t\t\t\tvar y2 = fromRect.top + fromRect.height / 2 - graphRect.top + graph.scrollTop;\n\n\t\t\t\t\t\t\tvar dx = Math.abs(x2 - x1) * 0.4;\n\t\t\t\t\t\t\tvar path = document.createElementNS('http://www.w3.org/2000/svg', 'path');\n\t\t\t\t\t\t\tpath.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + (x1 + dx) + ',' + y1 + ' ' + (x2 - dx) + ',' + y2 + ' ' + x2 + ',' + y2);\n\t\t\t\t\t\t\tpath.setAttribute('class', 'st-dep-edge');\n\t\t\t\t\t\t\tpath.setAttribute('data-from', e.from);\n\t\t\t\t\t\t\tpath.setAttribute('data-to', e.to);\n\t\t\t\t\t\t\tsvg.appendChild(path);\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\n\t\t\t\t\t// Hover highlighting (uses event delegation on the graph container).\n\t\t\t\t\tvar graph = document.getElementById('dep-graph');\n\t\t\t\t\tif (graph) {\n\t\t\t\t\t\tgraph.addEventListener('mouseenter', function(evt) {\n\t\t\t\t\t\t\tvar node = evt.target.closest('[data-node-id]');\n\t\t\t\t\t\t\tif (!node) return;\n\t\t\t\t\t\t\tvar id = node.getAttribute('data-node-id');\n\t\t\t\t\t\t\tgraph.classList.add('dimmed');\n\t\t\t\t\t\t\tnode.classList.add('highlighted');\n\n\t\t\t\t\t\t\tgraph.querySelectorAll('.st-dep-edge').forEach(function(edge) {\n\t\t\t\t\t\t\t\tif (edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id) {\n\t\t\t\t\t\t\t\t\tedge.classList.add('highlighted');\n\t\t\t\t\t\t\t\t\tvar otherId = edge.getAttribute('data-from') === id ? edge.getAttribute('data-to') : edge.getAttribute('data-from');\n\t\t\t\t\t\t\t\t\tvar otherNode = graph.querySelector('[data-node-id=\"' + otherId + '\"]');\n\t\t\t\t\t\t\t\t\tif (otherNode) otherNode.classList.add('highlighted');\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}, true);\n\n\t\t\t\t\t\tgraph.addEventListener('mouseleave', function(evt) {\n\t\t\t\t\t\t\tvar node = evt.target.closest('[data-node-id]');\n\t\t\t\t\t\t\tif (!node) return;\n\t\t\t\t\t\t\tgraph.classList.remove('dimmed');\n\t\t\t\t\t\t\tgraph.querySelectorAll('.highlighted').forEach(function(el) {\n\t\t\t\t\t\t\t\tel.classList.remove('highlighted');\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}, true);\n\t\t\t\t\t}\n\n\t\t\t\t\t// Defer initial draw to ensure layout is complete.\n\t\t\t\t\trequestAnimationFrame(function() {\n\t\t\t\t\t\trequestAnimationFrame(stDepDrawEdges);\n\t\t\t\t\t});\n\n\t\t\t\t\tif (!window._stDepEdgesInit) {\n\t\t\t\t\t\twindow._stDepEdgesInit = true;\n\t\t\t\t\t\tdocument.addEventListener('htmx:afterSwap', function() {\n\t\t\t\t\t\t\trequestAnimationFrame(function() {\n\t\t\t\t\t\t\t\trequestAnimationFrame(stDepDrawEdges);\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t});\n\t\t\t\t\t\twindow.addEventListener('resize', stDepDrawEdges);\n\t\t\t\t\t}\n\t\t\t\t})();\n\t\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

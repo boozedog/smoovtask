@@ -48,36 +48,38 @@ templ CriticalPathPartial(data CriticalPathData) {
 
 templ CriticalPathContent(data CriticalPathData) {
 	<div class="max-w-5xl mx-auto">
-		<div class="uk-btn-group mt-2 mb-4">
-			<a
-				hx-get={ criticalPathPartialURL("all") }
-				hx-target="#content"
-				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL("all") }
-				href={ templ.SafeURL(criticalPathPageURL("all")) }
+		<ul class="uk-tab-alt mt-2 mb-4">
+			<li
 				if data.Scope == "all" {
-					class="uk-btn uk-btn-sm uk-btn-primary"
-				} else {
-					class="uk-btn uk-btn-sm uk-btn-default"
+					class="uk-active"
 				}
 			>
-				All Projects
-			</a>
-			<a
-				hx-get={ criticalPathPartialURL("current") }
-				hx-target="#content"
-				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL("current") }
-				href={ templ.SafeURL(criticalPathPageURL("current")) }
+				<a
+					hx-get={ criticalPathPartialURL("all") }
+					hx-target="#content"
+					hx-swap="innerHTML"
+					hx-push-url={ criticalPathPageURL("all") }
+					href={ templ.SafeURL(criticalPathPageURL("all")) }
+				>
+					All Projects
+				</a>
+			</li>
+			<li
 				if data.Scope == "current" {
-					class="uk-btn uk-btn-sm uk-btn-primary"
-				} else {
-					class="uk-btn uk-btn-sm uk-btn-default"
+					class="uk-active"
 				}
 			>
-				Current Project
-			</a>
-		</div>
+				<a
+					hx-get={ criticalPathPartialURL("current") }
+					hx-target="#content"
+					hx-swap="innerHTML"
+					hx-push-url={ criticalPathPageURL("current") }
+					href={ templ.SafeURL(criticalPathPageURL("current")) }
+				>
+					Current Project
+				</a>
+			</li>
+		</ul>
 
 		if data.Graph.Empty {
 			<div class="uk-alert uk-margin" data-uk-alert>

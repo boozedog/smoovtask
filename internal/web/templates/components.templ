@@ -8,7 +8,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "uk-badge st-priority-" + strings.ToLower(string(p))
+	return "uk-badge uk-rounded st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -57,19 +57,25 @@ func shortAssignee(s string) string {
 	return s
 }
 
-func assigneePillColor(s string) string {
-	if len(s) > 8 && s[8] == '-' {
-		return "#f59e0b" // amber for Claude Code UUIDs
-	}
-	if strings.Contains(s, "_") {
-		return "#2563eb" // blue for prefixed IDs (opencode/pi)
-	}
-	return "#6b7280" // gray default
-}
+const assigneePillGray = "#6b7280"
+const assigneePillText = "#111827"
 
 func showAssignee(tk *ticket.Ticket) bool {
 	return tk.Assignee != "" &&
 		(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusReview)
+}
+
+func showSourceBadge(tk *ticket.Ticket, source string) bool {
+	if tk == nil || source == "" {
+		return false
+	}
+
+	switch tk.Status {
+	case ticket.StatusInProgress, ticket.StatusReview:
+		return true
+	default:
+		return false
+	}
 }
 
 func sourceLabel(source string) string {
@@ -85,17 +91,12 @@ func sourceLabel(source string) string {
 	}
 }
 
-func sourceGlyph(source string) string {
-	switch source {
-	case "claude":
-		return "🦀"
-	case "opencode":
-		return "▣"
-	case "pi":
-		return "◉"
-	default:
-		return "\uf059"
+func sessionPillTitle(sessionID string, source string) string {
+	label := sourceLabel(source)
+	if sessionID == "" {
+		return "Session: unknown\nSource: " + label + "\nLast hook: waiting for activity"
 	}
+	return "Session: " + sessionID + "\nSource: " + label + "\nLast hook: waiting for activity"
 }
 
 templ PriorityBadge(p ticket.Priority) {
@@ -103,7 +104,7 @@ templ PriorityBadge(p ticket.Priority) {
 }
 
 templ StatusBadge(s ticket.Status) {
-	<span class={ "uk-badge " + statusBadgeClass(s) }>
+	<span class={ "uk-badge uk-rounded " + statusBadgeClass(s) }>
 		{ statusLabel(s) }
 	</span>
 }
@@ -113,9 +114,12 @@ templ SourceBadge(source string) {
 		<span class="inline-flex items-center gap-1 opacity-70" title={ sourceLabel(source) }>
 			if source == "claude" {
 				<img src="/static/claude-crab.png" alt="Claude" class="st-source-badge-image"/>
+			} else if source == "opencode" {
+				<img src="/static/opencode-logo.png" alt="OpenCode" class="st-source-badge-image"/>
+			} else if source == "pi" {
+				<span class="uk-text-meta uk-text-mono uppercase">pi</span>
 			} else {
-				<span class="st-source-glyph">{ sourceGlyph(source) }</span>
-				<span>{ sourceLabel(source) }</span>
+				<span class="uk-text-meta uk-text-mono uppercase">?</span>
 			}
 		</span>
 	}
@@ -123,21 +127,28 @@ templ SourceBadge(source string) {
 
 templ TicketCard(tk *ticket.Ticket, source string) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-card uk-card-body st-ticket-card">
-		if tk.Project != "" {
-			<div class="opacity-50 leading-none">{ tk.Project }</div>
-		}
+		<div class="st-card-project uk-text-meta opacity-50 leading-none">{ tk.Project }</div>
 		<div class="uk-card-title st-card-title">{ tk.Title }</div>
-		<div class="opacity-70 flex gap-2 items-center">
+		<div class="st-ticket-meta opacity-70 flex gap-2 items-center">
 			@PriorityBadge(tk.Priority)
-			<span class="uk-text-mono">{ tk.ID }</span>
+			<span class="uk-text-meta uk-text-mono opacity-80">{ tk.ID }</span>
 		</div>
-		if source != "" || showAssignee(tk) {
-			<div class="flex items-center justify-between gap-2">
-				@SourceBadge(source)
+		if showSourceBadge(tk, source) || showAssignee(tk) {
+			<div class="st-ticket-footer flex items-center justify-between gap-2">
+				if showSourceBadge(tk, source) {
+					@SourceBadge(source)
+				}
 				if showAssignee(tk) {
 					<span class="st-assignee-wrap">
-						<span class="st-session-dot"></span>
-						<span title={ tk.Assignee } class="st-assignee-pill" style={ "--st-assignee-bg: " + assigneePillColor(tk.Assignee) + ";" }>{ shortAssignee(tk.Assignee) }</span>
+						<span class="st-session-dot" data-run-id={ tk.Assignee } title="Pulses when this assignee emits hook events" aria-label="Agent hook activity indicator"></span>
+						<span
+							title={ sessionPillTitle(tk.Assignee, source) }
+							class="st-assignee-pill uk-rounded uk-text-sm"
+							style={ "--st-assignee-bg: " + assigneePillGray + "; color: " + assigneePillText + ";" }
+							data-run-id={ tk.Assignee }
+							data-session-id={ tk.Assignee }
+							data-source-label={ sourceLabel(source) }
+						>{ shortAssignee(tk.Assignee) }</span>
 					</span>
 				}
 			</div>

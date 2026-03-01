@@ -48,12 +48,13 @@ func (w *Watcher) Close() error {
 }
 
 func (w *Watcher) loop() {
-	// Debounce: collect file change notifications and flush at most once per second.
+	// Agent pings are broadcast immediately on each file event.
+	// Heavier refresh-work / refresh-activity events are debounced.
 	const debounce = time.Second
 	timer := time.NewTimer(debounce)
 	timer.Stop()
-	dirty := make(map[string]struct{})
 	offsets := make(map[string]int64)
+	var pendingWork, pendingActivity, timerRunning bool
 
 	for {
 		select {
@@ -65,19 +66,30 @@ func (w *Watcher) loop() {
 				continue
 			}
 			if ev.Has(fsnotify.Write) || ev.Has(fsnotify.Create) {
-				if len(dirty) == 0 {
-					timer.Reset(debounce)
+				work, activity, pings := readNewLines(ev.Name, offsets)
+
+				// Broadcast agent pings immediately — no debounce.
+				for runID := range pings {
+					w.broker.Broadcast(event.Event{Event: "agent-ping", RunID: runID})
 				}
-				dirty[ev.Name] = struct{}{}
+
+				// Accumulate refresh flags for the debounced batch.
+				pendingWork = pendingWork || work
+				pendingActivity = pendingActivity || activity
+				if (pendingWork || pendingActivity) && !timerRunning {
+					timer.Reset(debounce)
+					timerRunning = true
+				}
 			}
 		case <-timer.C:
-			workChanged, activityChanged := classifyDirtyFiles(dirty, offsets)
-			clear(dirty)
-			if workChanged {
+			timerRunning = false
+			if pendingWork {
 				w.broker.Broadcast(event.Event{Event: "refresh-work"})
+				pendingWork = false
 			}
-			if activityChanged {
+			if pendingActivity {
 				w.broker.Broadcast(event.Event{Event: "refresh-activity"})
+				pendingActivity = false
 			}
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
@@ -88,60 +100,60 @@ func (w *Watcher) loop() {
 	}
 }
 
-func classifyDirtyFiles(dirty map[string]struct{}, offsets map[string]int64) (workChanged, activityChanged bool) {
-	for path := range dirty {
-		currentOffset := offsets[path]
-		fileInfo, err := os.Stat(path)
-		if err != nil {
-			continue
-		}
-		if fileInfo.Size() < currentOffset {
-			currentOffset = 0
-		}
+// readNewLines reads new JSONL lines from path (past the tracked offset) and
+// classifies them. Agent-ping run IDs are returned in a deduplicated set.
+func readNewLines(path string, offsets map[string]int64) (workChanged, activityChanged bool, agentPingRunIDs map[string]struct{}) {
+	agentPingRunIDs = make(map[string]struct{})
 
-		f, err := os.Open(path)
-		if err != nil {
-			continue
-		}
+	currentOffset := offsets[path]
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return
+	}
+	if fileInfo.Size() < currentOffset {
+		currentOffset = 0
+	}
 
-		if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
-			_ = f.Close()
-			continue
-		}
+	f, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
 
-		reader := bufio.NewReader(f)
-		for {
-			line, err := reader.ReadBytes('\n')
-			if len(line) > 0 && line[len(line)-1] == '\n' {
-				currentOffset += int64(len(line))
-				line = line[:len(line)-1]
-				if len(line) == 0 {
-					if err == io.EOF {
-						break
-					}
-					continue
-				}
+	if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
+		return
+	}
 
-				var ev event.Event
-				if json.Unmarshal(line, &ev) == nil {
-					activityChanged = true
-					if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
-						workChanged = true
-					}
-				}
-			}
-
-			if err != nil {
+	reader := bufio.NewReader(f)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 && line[len(line)-1] == '\n' {
+			currentOffset += int64(len(line))
+			line = line[:len(line)-1]
+			if len(line) == 0 {
 				if err == io.EOF {
 					break
 				}
-				break
+				continue
+			}
+
+			var ev event.Event
+			if json.Unmarshal(line, &ev) == nil {
+				activityChanged = true
+				if strings.HasPrefix(ev.Event, "hook.") && ev.RunID != "" {
+					agentPingRunIDs[ev.RunID] = struct{}{}
+				}
+				if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
+					workChanged = true
+				}
 			}
 		}
 
-		offsets[path] = currentOffset
-		_ = f.Close()
+		if err != nil {
+			break
+		}
 	}
 
-	return workChanged, activityChanged
+	offsets[path] = currentOffset
+	return
 }

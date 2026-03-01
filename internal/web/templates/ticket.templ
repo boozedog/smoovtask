@@ -70,14 +70,14 @@ templ TicketHeader(data TicketData) {
 			<a href={ templ.SafeURL("/ticket/" + data.Ticket.ID + "/edit") } hx-get={ "/partials/form/" + data.Ticket.ID + "/edit" } hx-target="#ticket-modal-body" hx-push-url="false" class="uk-btn uk-btn-default uk-btn-sm">Edit</a>
 		</div>
 		<div class="flex gap-2 items-center flex-wrap text-sm">
-			<span data-copy-ticket-id={ data.Ticket.ID } title="Click to copy ticket ID" class="uk-badge st-copy-ticket-id">{ data.Ticket.ID } <uk-icon class="opacity-50 ml-1" icon="copy"></uk-icon></span>
+			<span data-copy-ticket-id={ data.Ticket.ID } title="Click to copy ticket ID" class="uk-badge uk-rounded st-copy-ticket-id">{ data.Ticket.ID } <uk-icon class="opacity-50 ml-1" icon="copy"></uk-icon></span>
 			@StatusBadge(data.Ticket.Status)
 			@PriorityBadge(data.Ticket.Priority)
 			<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 			<span>{ data.Ticket.Project }</span>
 			if data.Ticket.Assignee != "" {
 				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
-				<span title={ data.Ticket.Assignee } class="st-assignee-pill st-assignee-pill-md" style={ "--st-assignee-bg: " + assigneePillColor(data.Ticket.Assignee) + ";" }>{ shortAssignee(data.Ticket.Assignee) }</span>
+				<span title={ data.Ticket.Assignee } class="st-assignee-pill st-assignee-pill-md uk-rounded uk-text-sm" style={ "--st-assignee-bg: " + assigneePillGray + "; color: " + assigneePillText + ";" }>{ shortAssignee(data.Ticket.Assignee) }</span>
 			}
 			<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 			<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") } class="opacity-60">{ relativeTime(data.Ticket.Created) }</time>
@@ -86,7 +86,7 @@ templ TicketHeader(data TicketData) {
 			if len(data.Ticket.Tags) > 0 {
 				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 				for _, tag := range data.Ticket.Tags {
-					<span class="uk-badge uk-badge-secondary">{ tag }</span>
+					<span class="uk-badge uk-badge-secondary uk-rounded">{ tag }</span>
 				}
 			}
 			if len(data.Ticket.DependsOn) > 0 {

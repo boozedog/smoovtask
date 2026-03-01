@@ -76,12 +76,12 @@ function runHookSync(eventJson) {
 // Cache session-start context so we don't shell out on every LLM turn.
 let cachedContext = null;
 
-export default async ({ project, client, $, directory, worktree }) => {
+export default async ({ client, directory }) => {
   return {
     "experimental.chat.system.transform": async (input, output) => {
       if (!cachedContext) {
         log('Running session-start hook for system prompt injection');
-        const event = { type: 'session.created', properties: { info: { id: input.sessionID || 'unknown', directory: directory } } };
+        const event = { type: 'session.created', cwd: directory, session_id: input.sessionID || 'unknown' };
         const result = runHookSync(JSON.stringify(event));
         if (result && result.additionalContext) {
           cachedContext = result.additionalContext;
@@ -92,15 +92,74 @@ export default async ({ project, client, $, directory, worktree }) => {
         output.system.push('<smoovtask>\\n' + cachedContext + '\\n</smoovtask>');
       }
     },
+    tool: {
+      execute: {
+        before: async (input, output) => {
+          const event = {
+            type: 'tool.execute.before',
+            cwd: directory,
+            tool_name: input.tool || '',
+            tool_input: output.args || {},
+            session_id: input.sessionID || '',
+          };
+          log('Tool before: ' + event.tool_name);
+          const result = runHookSync(JSON.stringify(event));
+          if (!result) return;
+          log('Tool before result: ' + JSON.stringify(result).substring(0, 500));
+
+          // Inject pre-tool context into the session
+          if (result.additionalContext && input.sessionID) {
+            try {
+              await client.session.prompt({
+                path: { id: input.sessionID },
+                body: {
+                  noReply: true,
+                  parts: [{ type: 'text', text: result.additionalContext, synthetic: true }]
+                }
+              });
+              log('Injected pre-tool context into session ' + input.sessionID);
+            } catch (e) {
+              log('Prompt inject error: ' + e);
+            }
+          }
+        },
+        after: async (input) => {
+          const event = {
+            type: 'tool.execute.after',
+            cwd: directory,
+            tool_name: input.tool || '',
+            session_id: input.sessionID || '',
+          };
+          log('Tool after: ' + event.tool_name);
+          runHookSync(JSON.stringify(event));
+        }
+      }
+    },
+    stop: async (input) => {
+      const event = { type: 'stop', cwd: directory, session_id: input.sessionID || '' };
+      log('Stop');
+      runHookSync(JSON.stringify(event));
+    },
+    "experimental.session.compacting": async (input, output) => {
+      if (cachedContext) {
+        log('Injecting cached context into compaction');
+        output.system.push('<smoovtask>\\n' + cachedContext + '\\n</smoovtask>');
+      }
+    },
     event: async ({ event }) => {
-      // Only process events that st cares about (not message updates etc.)
-      const handled = ['session.created', 'tool.execute.before', 'tool.execute.after',
-        'session.idle', 'permission.asked', 'session.deleted'];
+      const handled = ['session.created', 'session.idle', 'permission.asked', 'session.deleted'];
       if (!handled.includes(event.type)) return;
 
       log('Event: ' + event.type);
-      const eventJson = JSON.stringify(event);
-      const result = runHookSync(eventJson);
+      // Normalize event payload to include cwd
+      const payload = { type: event.type, cwd: directory };
+      const props = event.properties || {};
+      if (props.sessionID) payload.session_id = props.sessionID;
+      if (event.type === 'session.created') {
+        const info = props.info || {};
+        payload.session_id = info.id || props.sessionID || '';
+      }
+      const result = runHookSync(JSON.stringify(payload));
       if (!result) return;
       log('Result: ' + JSON.stringify(result).substring(0, 500));
 
@@ -108,26 +167,6 @@ export default async ({ project, client, $, directory, worktree }) => {
       if (event.type === 'session.created' && result.additionalContext) {
         cachedContext = result.additionalContext;
         log('Updated cached context from session.created');
-      }
-
-      // Handle pre-tool additionalContext by injecting into the session
-      if (result.additionalContext && event.type === 'tool.execute.before') {
-        const props = event.properties || {};
-        const sessionId = props.sessionID;
-        if (sessionId) {
-          try {
-            await client.session.prompt({
-              path: { id: sessionId },
-              body: {
-                noReply: true,
-                parts: [{ type: 'text', text: result.additionalContext, synthetic: true }]
-              }
-            });
-            log('Injected pre-tool context into session ' + sessionId);
-          } catch (e) {
-            log('Prompt inject error: ' + e);
-          }
-        }
       }
     }
   };

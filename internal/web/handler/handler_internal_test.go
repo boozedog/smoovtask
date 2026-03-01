@@ -1,10 +1,15 @@
 package handler
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/web/sse"
 )
 
 func TestResolveRunSources(t *testing.T) {
@@ -58,4 +63,108 @@ func TestResolveRunSources(t *testing.T) {
 	if _, ok := runSources["run-missing"]; ok {
 		t.Fatal("run-missing should be absent")
 	}
+}
+
+func TestEventsSkipsAgentPing(t *testing.T) {
+	h := &Handler{broker: sse.NewBroker()}
+
+	req := httptest.NewRequest(http.MethodGet, "/events", nil)
+	ctx, cancel := context.WithCancel(req.Context())
+	defer cancel()
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.Events(w, req)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_1"})
+	h.broker.Broadcast(event.Event{Event: "refresh-activity"})
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	<-done
+
+	body := w.Body.String()
+	if strings.Contains(body, "event: agent-ping") {
+		t.Fatal("agent-ping should not be forwarded to global /events stream")
+	}
+	if !strings.Contains(body, "event: refresh-activity") {
+		t.Fatal("expected refresh-activity event in /events stream")
+	}
+}
+
+func TestAgentEventsStreamsAllRunIDsWithoutPathFilter(t *testing.T) {
+	h := &Handler{broker: sse.NewBroker()}
+
+	req := httptest.NewRequest(http.MethodGet, "/events/agent", nil)
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.AgentEvents(w, req)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_any"})
+	deadline := time.Now().Add(300 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		body := w.Body.String()
+		if strings.Contains(body, "event: ping") && strings.Contains(body, `"run_id":"ses_any"`) {
+			cancel()
+			<-done
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	cancel()
+	<-done
+	t.Fatal("expected ping payload with run_id on unfiltered agent stream")
+}
+
+func TestAgentEventsStreamsOnlyMatchingRunID(t *testing.T) {
+	h := &Handler{broker: sse.NewBroker()}
+
+	req := httptest.NewRequest(http.MethodGet, "/events/agent/ses_match", nil)
+	req.SetPathValue("runID", "ses_match")
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.AgentEvents(w, req)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_other"})
+	time.Sleep(50 * time.Millisecond)
+	if strings.Contains(w.Body.String(), "event: ping") {
+		cancel()
+		<-done
+		t.Fatal("unexpected ping for non-matching run ID")
+	}
+
+	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_match"})
+	deadline := time.Now().Add(300 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		body := w.Body.String()
+		if strings.Contains(body, "event: ping") && strings.Contains(body, `"run_id":"ses_match"`) {
+			cancel()
+			<-done
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	cancel()
+	<-done
+	t.Fatal("expected ping for matching run ID")
 }

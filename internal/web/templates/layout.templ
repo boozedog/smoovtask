@@ -22,9 +22,12 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
 				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
-				.st-ticket-card { display: block; margin-bottom: 0.5rem; cursor: pointer; }
+				.st-ticket-card { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; cursor: pointer; }
 				.st-ticket-card:hover { border-color: hsl(var(--primary)); }
-				.st-card-title { font-weight: 500; margin: 0; overflow-wrap: break-word; }
+				.st-card-project { min-height: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+				.st-card-title { font-weight: 500; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: break-word; }
+				.st-ticket-meta { margin-top: 0.1rem; }
+				.st-ticket-footer { margin-top: 0.1rem; }
 				.st-priority-p0 { background: #dc2626; color: white; }
 				.st-priority-p1 { background: #ea580c; color: white; }
 				.st-priority-p2 { background: #d97706; color: white; }
@@ -34,10 +37,9 @@ templ Layout(title string, currentPath string) {
 				.st-status-badge-done { background: #22c55e; color: white; }
 				.st-status-badge-cancelled { background: #6b7280; color: white; }
 				.st-source-badge-image { height: 1.5rem; width: auto; image-rendering: pixelated; }
-				.st-source-glyph { font-family: 'Maple Mono NF', monospace; }
 				.st-assignee-wrap { margin-left: auto; display: inline-flex; align-items: center; gap: 0.25rem; }
-				.st-assignee-pill { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 9999px; font-family: 'Maple Mono NF', monospace; font-weight: 600; background: var(--st-assignee-bg, #6b7280); color: hsl(var(--foreground)); }
-					.st-status-backlog { border-color: #6b7280; }
+				.st-assignee-pill { display: inline-block; padding: 0.1rem 0.4rem; font-family: 'Maple Mono NF', monospace; font-weight: 600; background: var(--st-assignee-bg, #6b7280); }
+				.st-status-backlog { border-color: #6b7280; }
 				.st-status-open { border-color: #3b82f6; }
 				.st-status-in-progress { border-color: #f59e0b; }
 				.st-status-review { border-color: #8b5cf6; }
@@ -89,10 +91,12 @@ templ Layout(title string, currentPath string) {
 				.st-dep-edge.highlighted { stroke: hsl(var(--primary)); stroke-width: 2.5; }
 				.st-dep-graph.dimmed .st-dep-node { opacity: 0.3; }
 				.st-dep-graph.dimmed .st-dep-node.highlighted { opacity: 1; }
-				@keyframes st-pulse { 0% { background: hsl(var(--primary)); box-shadow: 0 0 4px hsl(var(--primary)); } 100% { background: hsl(var(--primary) / 0.22); box-shadow: none; } }
-				.st-session-dot { width: 6px; height: 6px; border-radius: 50%; background: hsl(var(--primary) / 0.22); flex-shrink: 0; }
-				.st-session-dot.st-pulse { animation: st-pulse 0.6s ease-out; }
-					@media (max-width: 640px) {
+				@keyframes st-dot-green-blink { 0%, 45% { background: #16a34a; box-shadow: 0 0 5px rgba(22, 163, 74, 0.45); } 50%, 100% { background: #166534; box-shadow: none; } }
+				.st-session-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; transition: background-color 0.2s ease, box-shadow 0.2s ease; }
+				.st-session-dot.st-session-dot-hot { background: #16a34a; animation: st-dot-green-blink 1s ease infinite; }
+				.st-session-dot.st-session-dot-warm { background: #eab308; box-shadow: none; animation: none; }
+				.st-session-dot.st-session-dot-cold { background: #ef4444; box-shadow: none; animation: none; }
+				@media (max-width: 640px) {
 					.st-event-row { gap: 0.35rem; }
 				}
 			</style>
@@ -104,7 +108,7 @@ templ Layout(title string, currentPath string) {
 						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full object-cover object-center"/>
 						<span class="uk-text-mono">smoovtask</span>
 					</a>
-					<ul class="uk-subnav ml-4">
+					<ul class="uk-subnav uk-subnav-secondary ml-4">
 						<li
 							if currentPath == "/" {
 								class="uk-active"
@@ -201,23 +205,107 @@ templ Layout(title string, currentPath string) {
 					wrapper.classList.toggle('scroll-left', sl);
 					wrapper.classList.toggle('scroll-right', sr);
 				}
+				function pulseSessionDots(runID) {
+					if (!window._stLastHookByRunID) {
+						window._stLastHookByRunID = {};
+					}
+					window._stLastHookByRunID[runID] = Date.now();
+					updateDotActivityStates(runID);
+					updateAssigneePillTooltips(runID);
+				}
+				function sessionDotStateClass(msAgo) {
+					if (msAgo <= 60 * 1000) return 'st-session-dot-hot';
+					if (msAgo <= 2 * 60 * 1000) return 'st-session-dot-warm';
+					return 'st-session-dot-cold';
+				}
+				function updateDotActivityStates(runID) {
+					document.querySelectorAll('.st-session-dot[data-run-id]').forEach(function(dot) {
+						var dotRunID = dot.getAttribute('data-run-id');
+						if (runID && dotRunID !== runID) return;
+						var ts = window._stLastHookByRunID && dotRunID ? window._stLastHookByRunID[dotRunID] : 0;
+						var msAgo = ts ? (Date.now() - ts) : Number.MAX_SAFE_INTEGER;
+						dot.classList.remove('st-session-dot-hot', 'st-session-dot-warm', 'st-session-dot-cold');
+						dot.classList.add(sessionDotStateClass(msAgo));
+					});
+				}
+				function formatHookAge(msAgo) {
+					if (msAgo < 1000) return 'just now';
+					if (msAgo < 60 * 1000) return Math.floor(msAgo / 1000) + 's ago';
+					if (msAgo < 60 * 60 * 1000) return Math.floor(msAgo / (60 * 1000)) + 'm ago';
+					return Math.floor(msAgo / (60 * 60 * 1000)) + 'h ago';
+				}
+				function buildSessionTooltip(sessionID, sourceLabel, runID) {
+					var source = sourceLabel || 'Unknown';
+					var session = sessionID || runID || 'unknown';
+					var lastHook = 'waiting for activity';
+					if (window._stLastHookByRunID && runID && window._stLastHookByRunID[runID]) {
+						lastHook = formatHookAge(Date.now() - window._stLastHookByRunID[runID]);
+					}
+					return 'Session: ' + session + '\nSource: ' + source + '\nLast hook: ' + lastHook;
+				}
+				function updateAssigneePillTooltips(runID) {
+					document.querySelectorAll('.st-assignee-pill[data-run-id]').forEach(function(pill) {
+						if (runID && pill.getAttribute('data-run-id') !== runID) return;
+						var pillRunID = pill.getAttribute('data-run-id') || '';
+						var sessionID = pill.getAttribute('data-session-id') || '';
+						var sourceLabel = pill.getAttribute('data-source-label') || '';
+						var tooltip = buildSessionTooltip(sessionID, sourceLabel, pillRunID);
+						pill.setAttribute('title', tooltip);
+						pill.setAttribute('aria-label', tooltip.replace(/\n/g, ', '));
+					});
+				}
+				function syncAgentActivityStreams() {
+					if (!window._stAgentEventStream) {
+						window._stAgentEventStream = null;
+					}
+					var wanted = {};
+					document.querySelectorAll('.st-session-dot[data-run-id]').forEach(function(dot) {
+						var runID = dot.getAttribute('data-run-id');
+						if (runID) wanted[runID] = true;
+					});
+					window._stWantedRunIDs = wanted;
+
+					if (Object.keys(wanted).length > 0 && !window._stAgentEventStream) {
+						var stream = new EventSource('/events/agent');
+						stream.addEventListener('ping', function(e) {
+							var payload = {};
+							if (e.data) {
+								try {
+									payload = JSON.parse(e.data);
+								} catch (_) {
+									return;
+								}
+							}
+							var activeRunIDs = window._stWantedRunIDs || {};
+							if (!payload.run_id || !activeRunIDs[payload.run_id]) return;
+							pulseSessionDots(payload.run_id);
+						});
+						window._stAgentEventStream = stream;
+					}
+
+					if (Object.keys(wanted).length === 0 && window._stAgentEventStream) {
+						window._stAgentEventStream.close();
+						window._stAgentEventStream = null;
+					}
+
+					if (window._stLastHookByRunID) {
+						Object.keys(window._stLastHookByRunID).forEach(function(runID) {
+							if (wanted[runID]) return;
+							delete window._stLastHookByRunID[runID];
+						});
+					}
+					updateDotActivityStates();
+					updateAssigneePillTooltips();
+				}
 
 				// Guard: register all event listeners exactly once.
 				if (!window._stInitialized) {
 				window._stInitialized = true;
 
-				// Pulse session dots on every SSE event.
-				document.body.addEventListener('htmx:sseMessage', function() {
-					document.querySelectorAll('.st-session-dot').forEach(function(dot) {
-						dot.classList.remove('st-pulse');
-						void dot.offsetWidth;
-						dot.classList.add('st-pulse');
-					});
-				});
-				document.body.addEventListener('animationend', function(e) {
-					if (e.target.classList.contains('st-session-dot')) {
-						e.target.classList.remove('st-pulse');
-					}
+				document.addEventListener('mouseover', function(e) {
+					var pill = e.target.closest('.st-assignee-pill[data-run-id]');
+					if (!pill) return;
+					updateAssigneePillTooltips(pill.getAttribute('data-run-id'));
 				});
 
 				var _ticketModalOpen = false;
@@ -275,6 +363,10 @@ templ Layout(title string, currentPath string) {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
+					syncAgentActivityStreams();
+					setInterval(function() {
+						updateDotActivityStates();
+					}, 5000);
 				});
 
 				// Consolidated htmx:afterSwap handler.
@@ -283,6 +375,7 @@ templ Layout(title string, currentPath string) {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
+					syncAgentActivityStreams();
 
 					// Scroll to top on content navigation (not SSE refresh).
 					if (e.detail.target && e.detail.target.id === 'content') {
@@ -313,16 +406,16 @@ templ Layout(title string, currentPath string) {
 				// Update active nav link and page title on htmx navigation.
 				document.addEventListener('htmx:pushedIntoHistory', function(e) {
 					var path = e.detail.path || window.location.pathname;
-				document.querySelectorAll('.uk-subnav li').forEach(function(li) {
-					var a = li.querySelector('a[href]');
-					if (!a) return;
-					var linkPath = new URL(a.href, window.location.origin).pathname;
-					if (linkPath === path || (linkPath === '/' && path === '/')) {
-						li.classList.add('uk-active');
-					} else {
-						li.classList.remove('uk-active');
-					}
-				});
+					document.querySelectorAll('.uk-subnav li').forEach(function(li) {
+						var a = li.querySelector('a[href]');
+						if (!a) return;
+						var linkPath = new URL(a.href, window.location.origin).pathname;
+						if (linkPath === path || (linkPath === '/' && path === '/')) {
+							li.classList.add('uk-active');
+						} else {
+							li.classList.remove('uk-active');
+						}
+					});
 					var titleMap = {'/': 'Board', '/list': 'List', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
@@ -360,6 +453,7 @@ templ Layout(title string, currentPath string) {
 								li.classList.remove('uk-active');
 							}
 						});
+						syncAgentActivityStreams();
 					}
 				});
 
@@ -373,6 +467,19 @@ templ Layout(title string, currentPath string) {
 					_modalHistoryPushed = false;
 					document.getElementById('ticket-modal-header').innerHTML = '';
 					document.getElementById('ticket-modal-body').innerHTML = '';
+				});
+
+				window.addEventListener('beforeunload', function() {
+					if (window._stAgentEventStream) {
+						window._stAgentEventStream.close();
+						window._stAgentEventStream = null;
+					}
+					if (window._stLastHookByRunID) {
+						window._stLastHookByRunID = {};
+					}
+					if (window._stWantedRunIDs) {
+						window._stWantedRunIDs = {};
+					}
 				});
 				}
 			</script>

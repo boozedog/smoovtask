@@ -125,6 +125,52 @@ func TestPartialBoard(t *testing.T) {
 	}
 }
 
+func TestBoardReviewColumnSortsAssignedTicketsFirst(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	unassignedReview := &ticket.Ticket{
+		ID:       "st_rev001",
+		Title:    "Unassigned review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusReview,
+		Priority: ticket.PriorityP0,
+		Created:  time.Date(2026, 2, 26, 12, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 12, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(unassignedReview); err != nil {
+		t.Fatal(err)
+	}
+
+	assignedReview := &ticket.Ticket{
+		ID:       "st_rev002",
+		Title:    "Assigned review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusReview,
+		Priority: ticket.PriorityP3,
+		Assignee: "ses_reviewer1",
+		Created:  time.Date(2026, 2, 26, 13, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 13, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(assignedReview); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/board", nil)
+	w := httptest.NewRecorder()
+	h.PartialBoard(w, req)
+
+	body := w.Body.String()
+	assignedIdx := strings.Index(body, assignedReview.Title)
+	unassignedIdx := strings.Index(body, unassignedReview.Title)
+	if assignedIdx == -1 || unassignedIdx == -1 {
+		t.Fatal("expected both review tickets in board output")
+	}
+	if assignedIdx > unassignedIdx {
+		t.Fatalf("expected assigned review ticket before unassigned ticket, got assigned idx=%d unassigned idx=%d", assignedIdx, unassignedIdx)
+	}
+}
+
 func TestList(t *testing.T) {
 	h, _, _ := testSetup(t)
 
@@ -888,6 +934,7 @@ func TestWatcherHookEventBroadcastsActivityOnly(t *testing.T) {
 		Ticket:  "st_test02",
 		Project: "testproj",
 		Actor:   "agent",
+		RunID:   "ses_abc12345",
 	}
 	data, _ := json.Marshal(ev)
 	jsonlPath := filepath.Join(eventsDir, time.Now().Format("2006-01-02")+".jsonl")
@@ -895,21 +942,26 @@ func TestWatcherHookEventBroadcastsActivityOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	select {
-	case received := <-ch:
-		if received.Event != "refresh-activity" {
-			t.Fatalf("expected refresh-activity event, got %s", received.Event)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("timeout waiting for watcher to broadcast activity event")
-	}
+	deadline := time.After(3 * time.Second)
+	hasActivity := false
+	hasAgentPing := false
 
-	select {
-	case received := <-ch:
-		if received.Event == "refresh-work" {
-			t.Fatalf("did not expect refresh-work event for hook-only write")
+	for !hasActivity || !hasAgentPing {
+		select {
+		case received := <-ch:
+			switch received.Event {
+			case "refresh-activity":
+				hasActivity = true
+			case "agent-ping":
+				if received.RunID != "ses_abc12345" {
+					t.Fatalf("expected agent-ping run_id ses_abc12345, got %q", received.RunID)
+				}
+				hasAgentPing = true
+			case "refresh-work":
+				t.Fatal("did not expect refresh-work event for hook-only write")
+			}
+		case <-deadline:
+			t.Fatalf("timeout waiting for expected hook broadcasts: activity=%t agent-ping=%t", hasActivity, hasAgentPing)
 		}
-	case <-time.After(200 * time.Millisecond):
-		// no extra work refresh is expected
 	}
 }

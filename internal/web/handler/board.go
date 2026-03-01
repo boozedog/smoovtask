@@ -56,6 +56,20 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 			sort.Slice(tks, func(i, j int) bool {
 				return tks[i].Updated.After(tks[j].Updated)
 			})
+		} else if status == ticket.StatusReview {
+			// Review: tickets with an active assignee first, then priority ascending,
+			// then creation date ascending.
+			sort.Slice(tks, func(i, j int) bool {
+				iAssigned := tks[i].Assignee != ""
+				jAssigned := tks[j].Assignee != ""
+				if iAssigned != jAssigned {
+					return iAssigned
+				}
+				if tks[i].Priority != tks[j].Priority {
+					return tks[i].Priority < tks[j].Priority
+				}
+				return tks[i].Created.Before(tks[j].Created)
+			})
 		} else {
 			// All others: priority ascending (P0 first), then creation date ascending.
 			sort.Slice(tks, func(i, j int) bool {

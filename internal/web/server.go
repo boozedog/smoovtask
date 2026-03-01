@@ -80,6 +80,8 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 	// SSE endpoint.
 	mux.HandleFunc("GET /events", h.Events)
+	mux.HandleFunc("GET /events/agent", h.AgentEvents)
+	mux.HandleFunc("GET /events/agent/{runID}", h.AgentEvents)
 
 	// Partials for htmx.
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)

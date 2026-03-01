@@ -70,23 +70,27 @@ func HandleSessionStart(input *Input) (*Output, error) {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "You are working in a tracked smoovtask project called %s. ", proj)
-	fmt.Fprintf(&b, "Your run ID is %s; include `--run-id %s` on smoovtask commands. ", input.SessionID, input.SessionID)
-	b.WriteString("Before making code changes, ensure you have an active ticket assigned to this run. ")
-	b.WriteString("If no ticket ID has been provided, ask the user before picking or creating a ticket.\n\n")
+	fmt.Fprintf(&b, "Your run ID is `%s`; include `--run-id <run-id>` on every `st` command.\n", input.SessionID)
+	b.WriteString("Ask the user whether you are implementing or reviewing — do not guess.\n")
+	b.WriteString("Before submitting work for review, confirm with the user that the work is actually done.\n\n")
 	b.WriteString(quickRef)
 
 	return &Output{AdditionalContext: b.String()}, nil
 }
 
-const quickRef = "Quick workflow:\n" +
-	"- `st list --run-id <run-id>`                           view candidate tickets\n" +
-	"- `st pick <ticket-id> --run-id <run-id>`              claim a specific ticket\n" +
-	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`   create a new ticket (after user confirmation)\n" +
-	"- `st note --run-id <run-id> \"message\"`                log significant progress, findings, major changes, and notable user interactions\n" +
-	"- `st status review --run-id <run-id>`                 submit ticket for review when done\n\n" +
-	"Useful extras:\n" +
-	"- `st show <ticket-id> --run-id <run-id>`              view full ticket details\n" +
-	"- `st context --run-id <run-id>`                       check current session context\n\n" +
-	"Help:\n" +
-	"- `st --help`\n" +
-	"- `st <command> --help`\n"
+const quickRef = "## Implementing\n" +
+	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
+	"- `st list --run-id <run-id>`              view candidate tickets\n" +
+	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
+	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+	"- `st status review --run-id <run-id>`    submit for review when done\n\n" +
+	"## Reviewing\n" +
+	"Use `st review` to claim — it prints the checklist and ticket context.\n" +
+	"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
+	"- `st status done --run-id <run-id>`        approve after review\n" +
+	"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
+	"## Always\n" +
+	"- `st note \"message\" --run-id <run-id>`     log progress, decisions, and user interactions frequently\n" +
+	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+	"- `st context --run-id <run-id>`            check current session context\n\n" +
+	"Run `st --help` for more.\n"
