@@ -101,12 +101,17 @@ func (h *Handler) buildAgentsData() templates.AgentsData {
 			heat = "warm"
 		}
 
-		// Resolve ticket title.
+		// Resolve ticket title, but only if this agent is still the assignee.
+		// Events may reference a ticket that has since been reassigned.
 		var ticketTitle string
 		if a.ticket != "" {
 			tk, err := h.store.Get(a.ticket)
 			if err == nil && tk != nil {
-				ticketTitle = tk.Title
+				if tk.Assignee == a.runID {
+					ticketTitle = tk.Title
+				} else {
+					a.ticket = ""
+				}
 			}
 		}
 

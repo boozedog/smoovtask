@@ -31,10 +31,13 @@ func HandlePreTool(input *Input) (Output, error) {
 
 	proj := project.Detect(cfg, input.CWD)
 
+	ticketID := lookupActiveTicket(cfg, proj, input.SessionID)
+
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookPreTool,
+		Ticket:  ticketID,
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
@@ -44,37 +47,42 @@ func HandlePreTool(input *Input) (Output, error) {
 		},
 	})
 
-	// Warn if a writing tool is used with no active ticket
-	if writingTools[input.ToolName] && proj != "" && input.SessionID != "" {
-		ticketsDir, err := cfg.TicketsDir()
-		if err != nil {
-			return Output{}, nil
-		}
-
-		store := ticket.NewStore(ticketsDir)
-		if !hasActiveTicket(store, proj, input.SessionID) {
-			return Output{
-				AdditionalContext: "WARNING: You are editing code without an active smoovtask ticket. " +
-					"Run `st pick st_xxxxxx` to claim a ticket first. " +
-					"Unattributed work creates audit gaps.",
-			}, nil
-		}
+	// Warn if a writing tool is used with no active ticket.
+	if writingTools[input.ToolName] && ticketID == "" && proj != "" && input.SessionID != "" {
+		return Output{
+			AdditionalContext: "WARNING: You are editing code without an active smoovtask ticket. " +
+				"Run `st pick st_xxxxxx` to claim a ticket first. " +
+				"Unattributed work creates audit gaps.",
+		}, nil
 	}
 
 	return Output{}, nil
 }
 
-// hasActiveTicket checks if the session has an IN-PROGRESS or REWORK ticket.
-func hasActiveTicket(store *ticket.Store, proj, sessionID string) bool {
+// activeTicketID returns the ticket ID assigned to sessionID, or "" if none.
+func activeTicketID(store *ticket.Store, proj, sessionID string) string {
 	tickets, err := store.List(ticket.ListFilter{Project: proj})
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, tk := range tickets {
 		if tk.Assignee == sessionID &&
 			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
-			return true
+			return tk.ID
 		}
 	}
-	return false
+	return ""
+}
+
+// lookupActiveTicket resolves the active ticket for a session.
+// Returns "" if config, project, or session ID are missing, or no ticket is assigned.
+func lookupActiveTicket(cfg *config.Config, proj, sessionID string) string {
+	if proj == "" || sessionID == "" {
+		return ""
+	}
+	ticketsDir, err := cfg.TicketsDir()
+	if err != nil {
+		return ""
+	}
+	return activeTicketID(ticket.NewStore(ticketsDir), proj, sessionID)
 }

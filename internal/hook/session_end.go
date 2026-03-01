@@ -26,6 +26,7 @@ func HandleSessionEnd(input *Input) error {
 	return el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookSessionEnd,
+		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,

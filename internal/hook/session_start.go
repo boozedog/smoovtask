@@ -66,6 +66,7 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	_ = el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookSessionStart,
+		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,

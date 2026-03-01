@@ -2,9 +2,30 @@ package templates
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
+
+func boardStatusLabel(s ticket.Status) string {
+	raw := strings.ToLower(string(s))
+	raw = strings.ReplaceAll(raw, "-", " ")
+	raw = strings.ReplaceAll(raw, "_", " ")
+	parts := strings.Fields(raw)
+	for i, part := range parts {
+		runes := []rune(part)
+		if len(runes) == 0 {
+			continue
+		}
+		runes[0] = unicode.ToUpper(runes[0])
+		parts[i] = string(runes)
+	}
+	if len(parts) == 0 {
+		return statusLabel(s)
+	}
+	return strings.Join(parts, " ")
+}
 
 type BoardData struct {
 	Columns    []BoardColumn
@@ -52,7 +73,7 @@ templ BoardContent(data BoardData) {
 			for _, col := range data.Columns {
 				<div class={ columnClasses(col) }>
 					<div class={ "st-column-header " + statusClass(col.Status) }>
-						{ statusLabel(col.Status) }
+						{ boardStatusLabel(col.Status) }
 						<span class="opacity-50 font-normal">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
 					</div>
 					for _, tk := range col.Tickets {

@@ -21,7 +21,7 @@ templ Layout(title string, currentPath string) {
 				.st-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; height: 100%; }
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
-				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
+				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; text-transform: none; letter-spacing: normal; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
 				.st-ticket-card { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; cursor: pointer; position: relative; }
 				.st-card-corner-badge { position: absolute; top: 0.75rem; right: 0.75rem; z-index: 1; display: inline-flex; width: auto; align-self: flex-start; }
 				.st-ticket-card:hover { border-color: hsl(var(--primary)); }
@@ -115,7 +115,7 @@ templ Layout(title string, currentPath string) {
 						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full object-cover object-center"/>
 						<span class="uk-text-mono">smoovtask</span>
 					</a>
-					<ul class="uk-subnav uk-subnav-secondary ml-4">
+					<ul class="uk-tab ml-4 st-main-nav">
 						<li
 							if currentPath == "/" {
 								class="uk-active"
@@ -507,7 +507,7 @@ templ Layout(title string, currentPath string) {
 				// Update active nav link and page title on htmx navigation.
 				document.addEventListener('htmx:pushedIntoHistory', function(e) {
 					var path = e.detail.path || window.location.pathname;
-					document.querySelectorAll('.uk-subnav li').forEach(function(li) {
+					document.querySelectorAll('.st-main-nav li').forEach(function(li) {
 						var a = li.querySelector('a[href]');
 						if (!a) return;
 						var linkPath = new URL(a.href, window.location.origin).pathname;
@@ -542,7 +542,7 @@ templ Layout(title string, currentPath string) {
 						var url = partial;
 						if (window.location.search) url += window.location.search;
 						htmx.ajax('GET', url, {target: '#content', swap: 'innerHTML'});
-						document.querySelectorAll('.uk-subnav li').forEach(function(li) {
+						document.querySelectorAll('.st-main-nav li').forEach(function(li) {
 							var a = li.querySelector('a[href]');
 							if (!a) return;
 							var linkPath = new URL(a.href, window.location.origin).pathname;

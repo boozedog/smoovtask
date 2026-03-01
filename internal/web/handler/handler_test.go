@@ -880,6 +880,8 @@ func TestAgents(t *testing.T) {
 	h, _, eventsDir := testSetup(t)
 
 	// Add hook events for an active agent.
+	// RunID must match the ticket's Assignee ("session-123") so the
+	// agent→ticket association is retained after cross-referencing.
 	evLog := event.NewEventLog(eventsDir)
 	ev := event.Event{
 		TS:      time.Now().UTC().Add(-30 * time.Second),
@@ -887,7 +889,7 @@ func TestAgents(t *testing.T) {
 		Ticket:  "st_def456",
 		Project: "testproj",
 		Actor:   "agent",
-		RunID:   "run-active-1",
+		RunID:   "session-123",
 		Source:  "claude",
 	}
 	if err := evLog.Append(ev); err != nil {
@@ -899,7 +901,7 @@ func TestAgents(t *testing.T) {
 		Ticket:  "st_def456",
 		Project: "testproj",
 		Actor:   "agent",
-		RunID:   "run-active-1",
+		RunID:   "session-123",
 		Source:  "claude",
 	}
 	if err := evLog.Append(ev2); err != nil {
@@ -914,7 +916,7 @@ func TestAgents(t *testing.T) {
 		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, "run-acti") {
+	if !strings.Contains(body, "session-") {
 		t.Error("expected agents page to contain shortened run ID")
 	}
 	if !strings.Contains(body, "In progress ticket") {

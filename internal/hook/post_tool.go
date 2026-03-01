@@ -26,6 +26,7 @@ func HandlePostTool(input *Input) error {
 	return el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookPostTool,
+		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,

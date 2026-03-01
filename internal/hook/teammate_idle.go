@@ -26,6 +26,7 @@ func HandleTeammateIdle(input *Input) error {
 	return el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookTeammateIdle,
+		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
