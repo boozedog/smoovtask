@@ -69,16 +69,24 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	})
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "smoovtask — %s\n", proj)
-	fmt.Fprintf(&b, "Run: %s\n", input.SessionID)
+	fmt.Fprintf(&b, "You are working in a tracked smoovtask project called %s. ", proj)
+	fmt.Fprintf(&b, "Your run ID is %s; include `--run-id %s` on smoovtask commands. ", input.SessionID, input.SessionID)
+	b.WriteString("Before making code changes, ensure you have an active ticket assigned to this run. ")
+	b.WriteString("If no ticket ID has been provided, ask the user before picking or creating a ticket.\n\n")
 	b.WriteString(quickRef)
 
 	return &Output{AdditionalContext: b.String()}, nil
 }
 
-const quickRef = "\nOther commands (always pass --run-id <your-run-id>):\n" +
-	"  st new \"title\" [-p P0..P5] [-d \"desc\"]       — create a ticket\n" +
-	"  st list [--project X] [--status open|review]  — filter tickets\n" +
-	"  st show <id>                                  — full ticket detail\n" +
-	"  st context                                    — current session info\n" +
-	"All commands support --help for full usage.\n"
+const quickRef = "Quick workflow:\n" +
+	"- `st list --run-id <run-id>`                           view candidate tickets\n" +
+	"- `st pick <ticket-id> --run-id <run-id>`              claim a specific ticket\n" +
+	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`   create a new ticket (after user confirmation)\n" +
+	"- `st note --run-id <run-id> \"message\"`                log significant progress, findings, major changes, and notable user interactions\n" +
+	"- `st status review --run-id <run-id>`                 submit ticket for review when done\n\n" +
+	"Useful extras:\n" +
+	"- `st show <ticket-id> --run-id <run-id>`              view full ticket details\n" +
+	"- `st context --run-id <run-id>`                       check current session context\n\n" +
+	"Help:\n" +
+	"- `st --help`\n" +
+	"- `st <command> --help`\n"

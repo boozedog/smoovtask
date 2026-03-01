@@ -172,3 +172,27 @@ func TestStatus_NoActiveTicket(t *testing.T) {
 		t.Fatal("expected error when no active ticket")
 	}
 }
+
+func TestStatus_MultipleActiveTickets(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk1 := env.createTicket(t, "active 1", ticket.StatusInProgress)
+	tk1.Assignee = "test-session-status"
+	if err := env.Store.Save(tk1); err != nil {
+		t.Fatalf("save ticket 1: %v", err)
+	}
+
+	tk2 := env.createTicket(t, "active 2", ticket.StatusRework)
+	tk2.Assignee = "test-session-status"
+	if err := env.Store.Save(tk2); err != nil {
+		t.Fatalf("save ticket 2: %v", err)
+	}
+
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "review")
+	if err == nil {
+		t.Fatal("expected error when run has multiple active tickets")
+	}
+	if !strings.Contains(err.Error(), "multiple active tickets") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "multiple active tickets")
+	}
+}

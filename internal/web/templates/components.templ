@@ -59,12 +59,12 @@ func shortAssignee(s string) string {
 
 func assigneePillColor(s string) string {
 	if len(s) > 8 && s[8] == '-' {
-		return "hsl(var(--warning))" // warning tone for Claude Code UUIDs
+		return "#f59e0b" // amber for Claude Code UUIDs
 	}
 	if strings.Contains(s, "_") {
-		return "hsl(var(--primary))" // primary tone for prefixed IDs (opencode/pi)
+		return "#2563eb" // blue for prefixed IDs (opencode/pi)
 	}
-	return "hsl(var(--secondary))" // secondary tone default
+	return "#6b7280" // gray default
 }
 
 func showAssignee(tk *ticket.Ticket) bool {
@@ -110,7 +110,7 @@ templ StatusBadge(s ticket.Status) {
 
 templ SourceBadge(source string) {
 	if source != "" {
-		<span class="inline-flex items-center gap-1 text-xs opacity-70" title={ sourceLabel(source) }>
+		<span class="inline-flex items-center gap-1 opacity-70" title={ sourceLabel(source) }>
 			if source == "claude" {
 				<img src="/static/claude-crab.png" alt="Claude" class="st-source-badge-image"/>
 			} else {
@@ -124,15 +124,15 @@ templ SourceBadge(source string) {
 templ TicketCard(tk *ticket.Ticket, source string) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-card uk-card-body st-ticket-card">
 		if tk.Project != "" {
-			<div class="text-[0.65rem] opacity-50 leading-none">{ tk.Project }</div>
+			<div class="opacity-50 leading-none">{ tk.Project }</div>
 		}
 		<div class="uk-card-title st-card-title">{ tk.Title }</div>
-		<div class="text-xs opacity-70 flex gap-2 items-center">
+		<div class="opacity-70 flex gap-2 items-center">
 			@PriorityBadge(tk.Priority)
-			<span>{ tk.ID }</span>
+			<span class="uk-text-mono">{ tk.ID }</span>
 		</div>
 		if source != "" || showAssignee(tk) {
-			<div class="mt-1 flex items-center justify-between gap-2">
+			<div class="flex items-center justify-between gap-2">
 				@SourceBadge(source)
 				if showAssignee(tk) {
 					<span class="st-assignee-wrap">

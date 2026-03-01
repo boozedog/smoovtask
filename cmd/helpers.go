@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/project"
@@ -40,43 +41,35 @@ func resolveCurrentTicket(store *ticket.Store, cfg *config.Config, runID, ticket
 		return nil, fmt.Errorf("list tickets: %w", err)
 	}
 
+	var matches []*ticket.Ticket
 	for _, tk := range tickets {
 		if tk.Assignee == runID &&
 			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
-			return tk, nil
+			matches = append(matches, tk)
 		}
+	}
+
+	if len(matches) == 1 {
+		return matches[0], nil
+	}
+
+	if len(matches) > 1 {
+		ids := make([]string, 0, len(matches))
+		for _, tk := range matches {
+			ids = append(ids, tk.ID)
+		}
+		return nil, fmt.Errorf("multiple active tickets found for run %q: %s — use --ticket <id>", runID, strings.Join(ids, ", "))
 	}
 
 	return nil, fmt.Errorf("no active ticket found for run %q — use `st pick` first or specify --ticket", runID)
 }
 
 // resolveReviewTicket finds a ticket to review.
-// Priority: ticketOverride (from --ticket flag) > scan for REVIEW-status tickets in the current project.
-func resolveReviewTicket(store *ticket.Store, cfg *config.Config, ticketOverride string) (*ticket.Ticket, error) {
-	if ticketOverride != "" {
-		return store.Get(ticketOverride)
+// A ticket must be specified explicitly to avoid accidentally claiming a different ticket.
+func resolveReviewTicket(store *ticket.Store, ticketID string) (*ticket.Ticket, error) {
+	if ticketID == "" {
+		return nil, fmt.Errorf("no ticket specified — use `st review <id>` or `st review --ticket <id>`")
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("get working directory: %w", err)
-	}
-
-	proj := ""
-	if cfg != nil {
-		proj = findProjectFromCwd(cfg, cwd)
-	}
-
-	tickets, err := store.List(ticket.ListFilter{Project: proj})
-	if err != nil {
-		return nil, fmt.Errorf("list tickets: %w", err)
-	}
-
-	for _, tk := range tickets {
-		if tk.Status == ticket.StatusReview {
-			return tk, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no ticket in REVIEW status found — use --ticket <id>")
+	return store.Get(ticketID)
 }

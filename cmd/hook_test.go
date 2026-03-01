@@ -20,10 +20,10 @@ func TestRunHook_PIEventSessionStart(t *testing.T) {
 		t.Fatalf("run hook: %v", err)
 	}
 
-	if !strings.Contains(out, "smoovtask — testproject") {
-		t.Fatalf("output = %q, want board summary", out)
+	if !strings.Contains(out, "project called testproject") {
+		t.Fatalf("output = %q, want project intro", out)
 	}
-	if !strings.Contains(out, "Run: run-pi-1") {
+	if !strings.Contains(out, "Your run ID is run-pi-1") {
 		t.Fatalf("output = %q, want run id", out)
 	}
 }

@@ -48,7 +48,7 @@ func TestHandleSessionStartLogsEvent(t *testing.T) {
 
 	// Output should be minimal — no ticket listings
 	ctx := out.AdditionalContext
-	if !strings.Contains(ctx, "Run: sess-start-test") {
+	if !strings.Contains(ctx, "Your run ID is sess-start-test") {
 		t.Error("missing run ID in output")
 	}
 	if strings.Contains(ctx, "st_test01") {
@@ -88,10 +88,10 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	}
 
 	ctx := out.AdditionalContext
-	if !strings.Contains(ctx, "smoovtask — test-project") {
+	if !strings.Contains(ctx, "project called test-project") {
 		t.Error("missing project name in output")
 	}
-	if !strings.Contains(ctx, "Run: sess-minimal") {
+	if !strings.Contains(ctx, "Your run ID is sess-minimal") {
 		t.Error("missing run ID in output")
 	}
 	if !strings.Contains(ctx, "st list") {
@@ -99,5 +99,8 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	}
 	if !strings.Contains(ctx, "st show") {
 		t.Error("missing quick reference commands")
+	}
+	if !strings.Contains(ctx, "st <command> --help") {
+		t.Error("missing help commands")
 	}
 }

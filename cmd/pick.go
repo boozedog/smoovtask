@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -10,14 +9,13 @@ import (
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/identity"
-	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
 )
 
 var pickCmd = &cobra.Command{
-	Use:   "pick [ticket-id]",
+	Use:   "pick <ticket-id>",
 	Short: "Pick up a ticket and start working on it",
 	Args:  cobra.MaximumNArgs(1),
 	RunE:  runPick,
@@ -45,37 +43,38 @@ func runPick(_ *cobra.Command, args []string) error {
 	runID := identity.RunID()
 	actor := identity.Actor()
 
-	// Resolve ticket ID: --ticket flag takes precedence, then positional arg, then auto-detect
+	// Resolve ticket ID: --ticket flag takes precedence, then positional arg.
 	ticketID := pickTicket
 	if ticketID == "" && len(args) == 1 {
 		ticketID = args[0]
 	}
+	if ticketID == "" {
+		return fmt.Errorf("ticket ID required — use `st list` then `st pick <id>` (or `--ticket <id>`)")
+	}
 
-	var tk *ticket.Ticket
-	if ticketID != "" {
-		tk, err = store.Get(ticketID)
-		if err != nil {
-			return fmt.Errorf("get ticket: %w", err)
-		}
-	} else {
-		// Find an open ticket for the current project
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("get working directory: %w", err)
-		}
-		proj := project.Detect(cfg, cwd)
-		if proj == "" {
-			return fmt.Errorf("not in a registered project — run `st init` first")
-		}
+	tk, err := store.Get(ticketID)
+	if err != nil {
+		return fmt.Errorf("get ticket: %w", err)
+	}
 
-		tickets, err := store.List(ticket.ListFilter{Project: proj, Status: ticket.StatusOpen})
+	if runID != "" {
+		tickets, err := store.List(ticket.ListFilter{})
 		if err != nil {
 			return fmt.Errorf("list tickets: %w", err)
 		}
-		if len(tickets) == 0 {
-			return fmt.Errorf("no open tickets for project %q", proj)
+
+		var active []string
+		for _, t := range tickets {
+			if t.Assignee == runID &&
+				(t.Status == ticket.StatusInProgress || t.Status == ticket.StatusRework) &&
+				t.ID != tk.ID {
+				active = append(active, t.ID)
+			}
 		}
-		tk = tickets[0]
+
+		if len(active) > 0 {
+			return fmt.Errorf("run %q already has active ticket(s): %s — hand off or submit before picking another", runID, strings.Join(active, ", "))
+		}
 	}
 
 	// Validate transition

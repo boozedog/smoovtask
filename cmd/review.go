@@ -15,20 +15,20 @@ import (
 )
 
 var reviewCmd = &cobra.Command{
-	Use:   "review",
+	Use:   "review [ticket-id]",
 	Short: "Claim a ticket for review (eligibility check enforced)",
-	Args:  cobra.NoArgs,
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runReview,
 }
 
 var reviewTicket string
 
 func init() {
-	reviewCmd.Flags().StringVar(&reviewTicket, "ticket", "", "ticket ID (default: current ticket)")
+	reviewCmd.Flags().StringVar(&reviewTicket, "ticket", "", "ticket ID to review")
 	rootCmd.AddCommand(reviewCmd)
 }
 
-func runReview(_ *cobra.Command, _ []string) error {
+func runReview(_ *cobra.Command, args []string) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -43,7 +43,12 @@ func runReview(_ *cobra.Command, _ []string) error {
 	runID := identity.RunID()
 	actor := identity.Actor()
 
-	tk, err := resolveReviewTicket(store, cfg, reviewTicket)
+	ticketID := reviewTicket
+	if ticketID == "" && len(args) == 1 {
+		ticketID = args[0]
+	}
+
+	tk, err := resolveReviewTicket(store, ticketID)
 	if err != nil {
 		return err
 	}

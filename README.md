@@ -119,8 +119,7 @@ st show <ticket-id>                        Show full ticket detail (frontmatter 
 ### Agent Workflow
 
 ```
-st pick [ticket-id]                        Pick up a ticket (assigns to current session)
-                                           Omit ID to auto-pick highest-priority open ticket
+st pick <ticket-id>                        Pick up a specific ticket (assigns to current session)
 st note <message>                          Append a note to the current ticket
 st status <status>                         Transition ticket status
                                            Aliases: review/submit, start/begin, done/complete
