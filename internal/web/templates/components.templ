@@ -172,15 +172,16 @@ templ TicketCard(tk *ticket.Ticket, source string) {
 			<div class="st-ticket-footer flex items-center gap-2">
 				if showAssignee(tk) {
 					<span class="st-assignee-wrap">
-						<span class="st-alert-icon" data-run-id={ tk.Assignee } title="Permission requested — agent is waiting for input" aria-label="Permission request alert">
+						<span class="st-alert-icon" data-run-id={ tk.Assignee } data-ticket-id={ tk.ID } title="Permission requested — agent is waiting for input" aria-label="Permission request alert">
 							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 14h14L8 1z" fill="#f59e0b" stroke="#b45309" stroke-width="1"/><text x="8" y="12.5" text-anchor="middle" fill="#000" font-size="9" font-weight="bold">!</text></svg>
 						</span>
-						<span class="st-session-dot" data-run-id={ tk.Assignee } title="Pulses when this assignee emits hook events" aria-label="Agent hook activity indicator"></span>
+						<span class="st-session-dot" data-run-id={ tk.Assignee } data-ticket-id={ tk.ID } title="Pulses when this assignee emits hook events" aria-label="Agent hook activity indicator"></span>
 						<span
 							title={ sessionPillTitle(tk.Assignee, source) }
 							class="st-assignee-pill uk-rounded uk-text-sm"
 							style={ "--st-assignee-bg: " + assigneePillGray + "; color: " + assigneePillText + ";" }
 							data-run-id={ tk.Assignee }
+							data-ticket-id={ tk.ID }
 							data-session-id={ tk.Assignee }
 							data-source-label={ sourceLabel(source) }
 						>{ shortAssignee(tk.Assignee) }</span>

@@ -9,6 +9,37 @@ import (
 	"github.com/boozedog/smoovtask/internal/web/templates"
 )
 
+func reviewTicketRank(status ticket.Status) int {
+	switch status {
+	case ticket.StatusReview:
+		return 0
+	case ticket.StatusHumanReview:
+		return 1
+	default:
+		return 2
+	}
+}
+
+func reviewTicketLess(a, b *ticket.Ticket) bool {
+	aRank := reviewTicketRank(a.Status)
+	bRank := reviewTicketRank(b.Status)
+	if aRank != bRank {
+		return aRank < bRank
+	}
+
+	aAssigned := a.Assignee != ""
+	bAssigned := b.Assignee != ""
+	if aAssigned != bAssigned {
+		return aAssigned
+	}
+
+	if a.Priority != b.Priority {
+		return a.Priority < b.Priority
+	}
+
+	return a.Created.Before(b.Created)
+}
+
 // Board renders the kanban board page.
 func (h *Handler) Board(w http.ResponseWriter, r *http.Request) {
 	data, err := h.buildBoardData()
@@ -57,18 +88,11 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 				return tks[i].Updated.After(tks[j].Updated)
 			})
 		} else if status == ticket.StatusReview || status == ticket.StatusHumanReview {
-			// Review buckets: tickets with an active assignee first, then priority ascending,
+			// Review buckets: agent review first, then human review.
+			// Within each, tickets with an active assignee first, then priority ascending,
 			// then creation date ascending.
 			sort.Slice(tks, func(i, j int) bool {
-				iAssigned := tks[i].Assignee != ""
-				jAssigned := tks[j].Assignee != ""
-				if iAssigned != jAssigned {
-					return iAssigned
-				}
-				if tks[i].Priority != tks[j].Priority {
-					return tks[i].Priority < tks[j].Priority
-				}
-				return tks[i].Created.Before(tks[j].Created)
+				return reviewTicketLess(tks[i], tks[j])
 			})
 		} else {
 			// All others: priority ascending (P0 first), then creation date ascending.
@@ -96,15 +120,7 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 			})
 		} else if status == ticket.StatusReview {
 			sort.Slice(columnTickets, func(i, j int) bool {
-				iAssigned := columnTickets[i].Assignee != ""
-				jAssigned := columnTickets[j].Assignee != ""
-				if iAssigned != jAssigned {
-					return iAssigned
-				}
-				if columnTickets[i].Priority != columnTickets[j].Priority {
-					return columnTickets[i].Priority < columnTickets[j].Priority
-				}
-				return columnTickets[i].Created.Before(columnTickets[j].Created)
+				return reviewTicketLess(columnTickets[i], columnTickets[j])
 			})
 		} else {
 			sort.Slice(columnTickets, func(i, j int) bool {

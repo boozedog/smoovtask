@@ -2,7 +2,7 @@ package templates
 
 templ Layout(title string, currentPath string) {
 	<!DOCTYPE html>
-	<html lang="en" class="dark uk-theme-zinc">
+	<html lang="en" class="dark uk-theme-orange">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -80,6 +80,23 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper.scroll-left::before { opacity: 1; }
 				.st-board-wrapper.scroll-right::after { opacity: 1; }
 				.st-modal-ticket { width: 66vw; max-width: 1200px; }
+				.st-modal-header { padding: 1rem 1.25rem 0.85rem; padding-right: 3.5rem; border-bottom: 1px solid hsl(var(--border)); }
+				.st-modal-body { padding: 1.1rem 1.25rem 1.25rem; }
+				.st-ticket-header { display: flex; flex-direction: column; gap: 0.5rem; }
+				.st-ticket-header-title { line-height: 1.2; }
+				.st-ticket-header-meta { row-gap: 0.45rem; }
+				.st-ticket-form-modal { padding-top: 0.35rem; }
+				.st-ticket-form-grid { row-gap: 0.75rem; }
+				.st-ticket-form-actions { padding-top: 0.85rem; border-top: 1px solid hsl(var(--border)); }
+				.st-ticket-form-shell { padding-bottom: 1.5rem; }
+				.st-ticket-form-page-header { margin-bottom: 1rem; }
+				.st-ticket-form { border: 0; border-radius: 0; background: transparent; }
+				.st-ticket-form-page { padding: 1.25rem; row-gap: 0.85rem; }
+				.st-ticket-form-label { font-weight: 600; letter-spacing: 0.01em; }
+				.st-ticket-form-field { padding-bottom: 0.55rem; }
+				.st-ticket-form-input { transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s; }
+				.st-ticket-form-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 25%, transparent); }
+				.st-ticket-form-help { margin: 0.35rem 0 0; font-size: 0.76rem; opacity: 0.72; }
 				.st-dep-graph { position: relative; overflow-x: auto; padding-bottom: 1rem; }
 				.st-dep-grid { display: flex; gap: 2rem; align-items: flex-start; min-width: min-content; }
 				.st-dep-layer { display: flex; flex-direction: column; gap: 0.75rem; min-width: 14rem; }
@@ -105,6 +122,14 @@ templ Layout(title string, currentPath string) {
 				.st-audio-toggle:hover { opacity: 1; }
 				@media (max-width: 640px) {
 					.st-event-row { gap: 0.35rem; }
+					.st-modal-ticket { width: calc(100vw - 1rem); margin: 0.5rem; }
+					.st-modal-header { padding: 0.9rem 1rem 0.8rem; padding-right: 2.75rem; }
+					.st-modal-body { padding: 0.9rem 1rem 1rem; }
+					.st-ticket-header-top { gap: 0.65rem; }
+					.st-ticket-header-title { font-size: 1.25rem; }
+					.st-ticket-header-edit { margin-left: 0; }
+					.st-ticket-form-page { padding: 1rem; }
+					.st-ticket-form-actions { gap: 0.5rem; }
 				}
 			</style>
 		</head>
@@ -141,7 +166,7 @@ templ Layout(title string, currentPath string) {
 								hx-push-url="/list"
 								href="/list"
 							>
-								List
+								Tickets
 							</a>
 						</li>
 						<li
@@ -209,9 +234,9 @@ templ Layout(title string, currentPath string) {
 			</main>
 			<div id="ticket-modal" data-uk-modal>
 				<div class="uk-modal-dialog uk-margin-auto-vertical st-modal-ticket">
-					<button class="uk-modal-close absolute right-4 top-4 z-10" type="button" data-uk-close></button>
-					<div class="uk-modal-header" id="ticket-modal-header"></div>
-					<div class="uk-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
+					<button class="uk-modal-close absolute right-3 top-3 z-10" type="button" data-uk-close></button>
+					<div class="uk-modal-header st-modal-header" id="ticket-modal-header"></div>
+					<div class="uk-modal-body st-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
 				</div>
 			</div>
 			<script>
@@ -263,11 +288,22 @@ templ Layout(title string, currentPath string) {
 				}
 
 				// --- Alert icon toggle ---
-				function stUpdateAlertIcons(runID, hookName) {
+				function stUpdateAlertIcons(runID, hookName, ticketID) {
 					var active = hookName === 'hook.permission-request';
-					document.querySelectorAll('.st-alert-icon[data-run-id="' + runID + '"]').forEach(function(el) {
+					var selector = '.st-alert-icon[data-run-id="' + runID + '"]';
+					if (ticketID) {
+						selector += ', .st-alert-icon[data-ticket-id="' + ticketID + '"]';
+					}
+					document.querySelectorAll(selector).forEach(function(el) {
 						el.classList.toggle('st-alert-active', active);
 					});
+				}
+
+				function stRunIDForTicket(ticketID) {
+					if (!ticketID) return '';
+					var dot = document.querySelector('.st-session-dot[data-ticket-id="' + ticketID + '"][data-run-id]');
+					if (!dot) return '';
+					return dot.getAttribute('data-run-id') || '';
 				}
 
 				function toggleDone(btn) {
@@ -290,7 +326,11 @@ templ Layout(title string, currentPath string) {
 					wrapper.classList.toggle('scroll-left', sl);
 					wrapper.classList.toggle('scroll-right', sr);
 				}
-				function pulseSessionDots(runID, hookName) {
+				function pulseSessionDots(runID, hookName, ticketID) {
+					if (!runID && ticketID) {
+						runID = stRunIDForTicket(ticketID);
+					}
+					if (!runID) return;
 					if (!window._stLastHookByRunID) {
 						window._stLastHookByRunID = {};
 					}
@@ -302,7 +342,7 @@ templ Layout(title string, currentPath string) {
 					updateDotActivityStates(runID);
 					updateAssigneePillTooltips(runID);
 					if (hookName) {
-						stUpdateAlertIcons(runID, hookName);
+						stUpdateAlertIcons(runID, hookName, ticketID);
 						stPlayHookSound(hookName);
 					}
 					// Trigger a one-shot flash on each event.
@@ -378,8 +418,12 @@ templ Layout(title string, currentPath string) {
 								}
 							}
 							var activeRunIDs = window._stWantedRunIDs || {};
-							if (!payload.run_id || !activeRunIDs[payload.run_id]) return;
-							pulseSessionDots(payload.run_id, payload.hook || '');
+							var runID = payload.run_id || '';
+							if (!runID || !activeRunIDs[runID]) {
+								runID = stRunIDForTicket(payload.ticket || '');
+							}
+							if (!runID || !activeRunIDs[runID]) return;
+							pulseSessionDots(runID, payload.hook || '', payload.ticket || '');
 						});
 						window._stAgentEventStream = stream;
 					}
@@ -517,7 +561,7 @@ templ Layout(title string, currentPath string) {
 							li.classList.remove('uk-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/list': 'List', '/agents': 'Agents', '/activity': 'Activity', '/critical-path': 'Critical Path'};
+					var titleMap = {'/': 'Board', '/list': 'Tickets', '/agents': 'Agents', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');

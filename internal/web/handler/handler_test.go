@@ -171,6 +171,52 @@ func TestBoardReviewColumnSortsAssignedTicketsFirst(t *testing.T) {
 	}
 }
 
+func TestBoardReviewColumnShowsAgentReviewBeforeHumanReview(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	agentReview := &ticket.Ticket{
+		ID:       "st_rev_agent",
+		Title:    "Agent review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusReview,
+		Priority: ticket.PriorityP5,
+		Created:  time.Date(2026, 2, 26, 14, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 14, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(agentReview); err != nil {
+		t.Fatal(err)
+	}
+
+	humanReview := &ticket.Ticket{
+		ID:       "st_rev_human",
+		Title:    "Human review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusHumanReview,
+		Priority: ticket.PriorityP0,
+		Assignee: "ses_human_reviewer",
+		Created:  time.Date(2026, 2, 26, 15, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 15, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(humanReview); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/board", nil)
+	w := httptest.NewRecorder()
+	h.PartialBoard(w, req)
+
+	body := w.Body.String()
+	agentIdx := strings.Index(body, agentReview.Title)
+	humanIdx := strings.Index(body, humanReview.Title)
+	if agentIdx == -1 || humanIdx == -1 {
+		t.Fatal("expected both review tickets in board output")
+	}
+	if agentIdx > humanIdx {
+		t.Fatalf("expected agent review ticket before human review ticket, got agent idx=%d human idx=%d", agentIdx, humanIdx)
+	}
+}
+
 func TestList(t *testing.T) {
 	h, _, _ := testSetup(t)
 

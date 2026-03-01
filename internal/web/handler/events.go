@@ -120,6 +120,9 @@ func (h *Handler) AgentEvents(w http.ResponseWriter, r *http.Request) {
 			if hook, ok := ev.Data["hook"].(string); ok {
 				payload["hook"] = hook
 			}
+			if ticketID, ok := ev.Data["ticket"].(string); ok && ticketID != "" {
+				payload["ticket"] = ticketID
+			}
 			data, err := json.Marshal(payload)
 			if err != nil {
 				continue

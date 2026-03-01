@@ -21,7 +21,7 @@ type ListFilter struct {
 }
 
 templ ListPage(data ListData) {
-	@Layout("List", "/list") {
+	@Layout("Tickets", "/list") {
 		@ListPartial(data)
 	}
 }
@@ -128,7 +128,7 @@ templ ListContent(data ListData) {
 								Title{ sortIndicator(data.Filter, "title") }
 							</a>
 						</th>
-						<th class="w-28">
+						<th class="w-36">
 							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "status") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								Status{ sortIndicator(data.Filter, "status") }
 							</a>

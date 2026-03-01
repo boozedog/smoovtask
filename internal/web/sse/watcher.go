@@ -20,6 +20,12 @@ type Watcher struct {
 	watcher *fsnotify.Watcher
 }
 
+type agentPing struct {
+	runID  string
+	hook   string
+	ticket string
+}
+
 // NewWatcher creates and starts a file watcher on the events directory.
 func NewWatcher(eventsDir string, broker *Broker) (*Watcher, error) {
 	fw, err := fsnotify.NewWatcher()
@@ -69,11 +75,15 @@ func (w *Watcher) loop() {
 				work, activity, pings := readNewLines(ev.Name, offsets)
 
 				// Broadcast agent pings immediately — no debounce.
-				for runID, hookName := range pings {
+				for _, ping := range pings {
+					data := map[string]any{"hook": ping.hook}
+					if ping.ticket != "" {
+						data["ticket"] = ping.ticket
+					}
 					w.broker.Broadcast(event.Event{
 						Event: "agent-ping",
-						RunID: runID,
-						Data:  map[string]any{"hook": hookName},
+						RunID: ping.runID,
+						Data:  data,
 					})
 				}
 
@@ -105,14 +115,15 @@ func (w *Watcher) loop() {
 }
 
 // readNewLines reads new JSONL lines from path (past the tracked offset) and
-// classifies them. Agent-ping run IDs are returned in a deduplicated set.
-func readNewLines(path string, offsets map[string]int64) (workChanged, activityChanged bool, agentPingRunIDs map[string]string) {
-	agentPingRunIDs = make(map[string]string)
+// classifies them. Agent pings are returned in order, deduplicated by run ID.
+func readNewLines(path string, offsets map[string]int64) (workChanged, activityChanged bool, agentPings []agentPing) {
+	runIDToPing := make(map[string]agentPing)
+	runIDOrder := make([]string, 0)
 
 	currentOffset := offsets[path]
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return workChanged, activityChanged, agentPingRunIDs
+		return workChanged, activityChanged, agentPings
 	}
 	if fileInfo.Size() < currentOffset {
 		currentOffset = 0
@@ -120,12 +131,12 @@ func readNewLines(path string, offsets map[string]int64) (workChanged, activityC
 
 	f, err := os.Open(path)
 	if err != nil {
-		return workChanged, activityChanged, agentPingRunIDs
+		return workChanged, activityChanged, agentPings
 	}
 	defer f.Close()
 
 	if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
-		return workChanged, activityChanged, agentPingRunIDs
+		return workChanged, activityChanged, agentPings
 	}
 
 	reader := bufio.NewReader(f)
@@ -145,7 +156,10 @@ func readNewLines(path string, offsets map[string]int64) (workChanged, activityC
 			if json.Unmarshal(line, &ev) == nil {
 				activityChanged = true
 				if strings.HasPrefix(ev.Event, "hook.") && ev.RunID != "" {
-					agentPingRunIDs[ev.RunID] = ev.Event
+					if _, exists := runIDToPing[ev.RunID]; !exists {
+						runIDOrder = append(runIDOrder, ev.RunID)
+					}
+					runIDToPing[ev.RunID] = agentPing{runID: ev.RunID, hook: ev.Event, ticket: ev.Ticket}
 				}
 				if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
 					workChanged = true
@@ -159,5 +173,8 @@ func readNewLines(path string, offsets map[string]int64) (workChanged, activityC
 	}
 
 	offsets[path] = currentOffset
-	return workChanged, activityChanged, agentPingRunIDs
+	for _, runID := range runIDOrder {
+		agentPings = append(agentPings, runIDToPing[runID])
+	}
+	return workChanged, activityChanged, agentPings
 }

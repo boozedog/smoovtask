@@ -128,6 +128,48 @@ func TestAgentEventsStreamsAllRunIDsWithoutPathFilter(t *testing.T) {
 	t.Fatal("expected ping payload with run_id on unfiltered agent stream")
 }
 
+func TestAgentEventsIncludesTicketWhenPresent(t *testing.T) {
+	h := &Handler{broker: sse.NewBroker()}
+
+	req := httptest.NewRequest(http.MethodGet, "/events/agent", nil)
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.AgentEvents(w, req)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	h.broker.Broadcast(event.Event{
+		Event: "agent-ping",
+		RunID: "ses_any",
+		Data: map[string]any{
+			"hook":   event.HookPreTool,
+			"ticket": "st_ping001",
+		},
+	})
+
+	deadline := time.Now().Add(300 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		body := w.Body.String()
+		if strings.Contains(body, "event: ping") &&
+			strings.Contains(body, `"run_id":"ses_any"`) &&
+			strings.Contains(body, `"ticket":"st_ping001"`) {
+			cancel()
+			<-done
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	cancel()
+	<-done
+	t.Fatal("expected ping payload with ticket when broker event includes ticket")
+}
+
 func TestAgentEventsStreamsOnlyMatchingRunID(t *testing.T) {
 	h := &Handler{broker: sse.NewBroker()}
 

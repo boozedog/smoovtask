@@ -50,6 +50,14 @@ function log(msg) {
   writeFileSync('/tmp/opencode-plugin.log', new Date().toISOString() + ': ' + msg + '\\n', { flag: 'a' });
 }
 
+function dump(label, value) {
+  try {
+    log(label + ': ' + JSON.stringify(value));
+  } catch (e) {
+    log(label + ': [unserializable] ' + String(e));
+  }
+}
+
 function runHookSync(eventJson) {
   const result = spawnSync('st', ['hook', 'opencode-event'], {
     input: eventJson,
@@ -79,6 +87,7 @@ let cachedContext = null;
 export default async ({ client, directory }) => {
   return {
     "experimental.chat.system.transform": async (input, output) => {
+      dump('transform.input', input);
       if (!cachedContext) {
         log('Running session-start hook for system prompt injection');
         const event = { type: 'session.created', cwd: directory, session_id: input.sessionID || 'unknown' };
@@ -91,10 +100,13 @@ export default async ({ client, directory }) => {
 		if (cachedContext) {
 		  output.system.push(cachedContext);
 		}
+      dump('transform.output', output);
     },
     tool: {
       execute: {
         before: async (input, output) => {
+          dump('tool.before.input', input);
+          dump('tool.before.output', output);
           const event = {
             type: 'tool.execute.before',
             cwd: directory,
@@ -122,8 +134,13 @@ export default async ({ client, directory }) => {
               log('Prompt inject error: ' + e);
             }
           }
+
+		  if (result.hookSpecificOutput && result.hookSpecificOutput.behavior === 'deny') {
+			return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' };
+		  }
         },
         after: async (input) => {
+          dump('tool.after.input', input);
           const event = {
             type: 'tool.execute.after',
             cwd: directory,
@@ -136,29 +153,111 @@ export default async ({ client, directory }) => {
       }
     },
     stop: async (input) => {
+      dump('stop.input', input);
       const event = { type: 'stop', cwd: directory, session_id: input.sessionID || '' };
       log('Stop');
       runHookSync(JSON.stringify(event));
     },
     "experimental.session.compacting": async (input, output) => {
+		dump('compacting.input', input);
 		if (cachedContext) {
 		  log('Injecting cached context into compaction');
 		  output.system.push(cachedContext);
 		}
+		dump('compacting.output', output);
     },
     event: async ({ event }) => {
-      const handled = ['session.created', 'session.idle', 'permission.asked', 'session.deleted'];
-      if (!handled.includes(event.type)) return;
+      dump('event.raw', event);
+      const eventType = event.type || '';
+      log('Event: ' + eventType);
 
-      log('Event: ' + event.type);
-      // Normalize event payload to include cwd
-      const payload = { type: event.type, cwd: directory };
       const props = event.properties || {};
-      if (props.sessionID) payload.session_id = props.sessionID;
-      if (event.type === 'session.created') {
+      const sessionID = props.sessionID || props.sessionId || '';
+      const toolName = props.toolName || props.tool || props.name || '';
+
+      // Normalize event payload to include cwd.
+      const payload = { type: eventType, cwd: directory };
+
+      if (sessionID) payload.session_id = sessionID;
+
+      if (eventType === 'session.created') {
         const info = props.info || {};
-        payload.session_id = info.id || props.sessionID || '';
+        payload.session_id = info.id || sessionID || '';
       }
+
+	  // Fallback for OpenCode variants that expose tool activity only on the
+	  // generic event bus with non-canonical names.
+	  const looksLikeTool = eventType.includes('tool');
+	  const looksBefore = eventType.includes('before') || eventType.endsWith('.start');
+	  const looksAfter = eventType.includes('after') || eventType.includes('result') || eventType.endsWith('.stop');
+	  if (looksLikeTool && (looksBefore || looksAfter)) {
+		payload.type = looksBefore ? 'tool.execute.before' : 'tool.execute.after';
+		payload.tool_name = toolName;
+	  }
+
+	  // Some OpenCode builds emit coarse activity states instead of tool hooks.
+	  // Convert status transitions into synthetic before/after events so st can
+	  // still emit hook.pre-tool/post-tool for board activity indicators.
+	  if (eventType === 'session.status') {
+		let statusType = '';
+		if (typeof props.status === 'string') {
+		  statusType = props.status.toLowerCase();
+		} else if (props.status && typeof props.status === 'object') {
+		  const rawType = props.status.type || props.status.state || '';
+		  if (typeof rawType === 'string') {
+			statusType = rawType.toLowerCase();
+		  }
+		}
+		if (statusType === 'running' || statusType === 'working' || statusType === 'busy') {
+		  payload.type = 'tool.execute.before';
+		  payload.tool_name = toolName || 'opencode';
+		}
+		if (statusType === 'idle' || statusType === 'waiting') {
+		  payload.type = 'tool.execute.after';
+		  payload.tool_name = toolName || 'opencode';
+		}
+	  }
+
+	  // Newer OpenCode builds surface tool lifecycle through message parts.
+	  // Bridge those states into canonical tool.execute.before/after hooks.
+	  if (eventType === 'message.part.updated') {
+		const part = props.part || {};
+		const partType = String(part.type || '').toLowerCase();
+		const partSessionID = part.sessionID || part.sessionId || sessionID;
+		if (partSessionID) payload.session_id = partSessionID;
+
+		let partStatus = '';
+		if (typeof part.state === 'string') {
+		  partStatus = part.state.toLowerCase();
+		} else if (part.state && typeof part.state === 'object') {
+		  const rawPartStatus = part.state.status || part.state.type || '';
+		  if (typeof rawPartStatus === 'string') {
+			partStatus = rawPartStatus.toLowerCase();
+		  }
+		}
+
+		if (partType === 'tool') {
+		  const partToolName = part.tool || toolName || 'opencode';
+		  if (partStatus === 'pending' || partStatus === 'running') {
+			payload.type = 'tool.execute.before';
+			payload.tool_name = partToolName;
+		  }
+		  if (partStatus === 'completed' || partStatus === 'done' || partStatus === 'success' || partStatus === 'failed' || partStatus === 'error' || partStatus === 'cancelled') {
+			payload.type = 'tool.execute.after';
+			payload.tool_name = partToolName;
+		  }
+		}
+	  }
+
+      const handled = ['session.created', 'session.idle', 'permission.asked', 'session.deleted', 'tool.execute.before', 'tool.execute.after'];
+      if (!handled.includes(payload.type)) {
+        const keys = Object.keys(props);
+        if (keys.length > 0) {
+          log('Ignored event props keys: ' + keys.join(','));
+        }
+        return;
+      }
+
       const result = runHookSync(JSON.stringify(payload));
       if (!result) return;
       log('Result: ' + JSON.stringify(result).substring(0, 500));

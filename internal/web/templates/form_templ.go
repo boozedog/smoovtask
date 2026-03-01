@@ -113,20 +113,20 @@ func TicketFormContent(data TicketFormData) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-3xl mx-auto\"><h1 class=\"uk-heading-divider\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"max-w-3xl mx-auto st-ticket-form-shell\"><div class=\"st-ticket-form-page-header\"><h1 class=\"uk-heading-divider\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(formTitle(data.Mode))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 48, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 49, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -138,7 +138,7 @@ func TicketFormContent(data TicketFormData) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(data.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 51, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 53, Col: 16}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -149,46 +149,46 @@ func TicketFormContent(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form class=\"uk-form-stacked uk-grid-small\" data-uk-grid method=\"post\" action=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form class=\"uk-form-stacked uk-grid-medium st-ticket-form st-ticket-form-page\" data-uk-grid method=\"post\" action=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 templ.SafeURL
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(formAction(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 54, Col: 98}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 56, Col: 134}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\"><div class=\"uk-width-1-1\"><label class=\"uk-form-label\" for=\"title\">Title</label><div class=\"uk-form-controls\"><input id=\"title\" name=\"title\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\"><div class=\"uk-width-1-1 st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"title\">Title</label><div class=\"uk-form-controls\"><input id=\"title\" name=\"title\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 58, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 60, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" required></div></div><div class=\"uk-width-1-2@s\"><label class=\"uk-form-label\" for=\"project\">Project</label><div class=\"uk-form-controls\"><input id=\"project\" name=\"project\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" required></div></div><div class=\"uk-width-1-2@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"project\">Project</label><div class=\"uk-form-controls\"><input id=\"project\" name=\"project\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Project)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 65, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 67, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" required></div></div><div class=\"uk-width-1-4@s\"><label class=\"uk-form-label\" for=\"status\">Status</label><div class=\"uk-form-controls\"><select id=\"status\" name=\"status\" class=\"uk-select\"><option value=\"BACKLOG\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\" required></div></div><div class=\"uk-width-1-4@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"status\">Status</label><div class=\"uk-form-controls\"><select id=\"status\" name=\"status\" class=\"uk-select st-ticket-form-input\"><option value=\"BACKLOG\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -278,7 +278,7 @@ func TicketFormContent(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, ">CANCELLED</option></select></div></div><div class=\"uk-width-1-4@s\"><label class=\"uk-form-label\" for=\"priority\">Priority</label><div class=\"uk-form-controls\"><select id=\"priority\" name=\"priority\" class=\"uk-select\"><option value=\"P0\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, ">CANCELLED</option></select></div></div><div class=\"uk-width-1-4@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"priority\">Priority</label><div class=\"uk-form-controls\"><select id=\"priority\" name=\"priority\" class=\"uk-select st-ticket-form-input\"><option value=\"P0\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -338,46 +338,46 @@ func TicketFormContent(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, ">P5</option></select></div></div><div class=\"uk-width-1-2@s\"><label class=\"uk-form-label\" for=\"depends-on\">Depends On (comma-separated IDs)</label><div class=\"uk-form-controls\"><input id=\"depends-on\" name=\"depends_on\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, ">P5</option></select></div></div><div class=\"uk-width-1-2@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"depends-on\">Depends On</label><div class=\"uk-form-controls\"><input id=\"depends-on\" name=\"depends_on\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.DependsOn)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 103, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 105, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\"></div></div><div class=\"uk-width-1-2@s\"><label class=\"uk-form-label\" for=\"tags\">Tags (comma-separated)</label><div class=\"uk-form-controls\"><input id=\"tags\" name=\"tags\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\"><p class=\"st-ticket-form-help\">Comma-separated ticket IDs, e.g. st_A1,st_B2</p></div></div><div class=\"uk-width-1-2@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"tags\">Tags</label><div class=\"uk-form-controls\"><input id=\"tags\" name=\"tags\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Tags)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 110, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 113, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\"></div></div><div class=\"uk-width-1-1\"><label class=\"uk-form-label\" for=\"description\">Description / Body</label><div class=\"uk-form-controls\"><textarea id=\"description\" name=\"description\" class=\"uk-textarea\" rows=\"12\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\"><p class=\"st-ticket-form-help\">Use short, comma-separated labels.</p></div></div><div class=\"uk-width-1-1 st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"description\">Description</label><div class=\"uk-form-controls\"><textarea id=\"description\" name=\"description\" class=\"uk-textarea st-ticket-form-input\" rows=\"12\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 117, Col: 106}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 121, Col: 127}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</textarea></div></div><div class=\"uk-width-1-1 uk-flex uk-flex-between uk-margin-top\"><a href=\"/\" class=\"uk-btn uk-btn-default\">Cancel</a> <button type=\"submit\" class=\"uk-btn uk-btn-primary\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</textarea><p class=\"st-ticket-form-help\">Markdown supported for acceptance criteria, implementation notes, and context.</p></div></div><div class=\"uk-width-1-1 uk-flex uk-flex-between uk-margin-top\"><a href=\"/\" class=\"uk-btn uk-btn-default\">Cancel</a> <button type=\"submit\" class=\"uk-btn uk-btn-primary\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -421,14 +421,14 @@ func TicketFormModalPartial(data TicketFormData) templ.Component {
 			templ_7745c5c3_Var12 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<form class=\"uk-form-stacked\" hx-post=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<form class=\"uk-form-stacked st-ticket-form st-ticket-form-modal\" hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(formAction(data))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 138, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 143, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -439,14 +439,14 @@ func TicketFormModalPartial(data TicketFormData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if data.Error != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-alert uk-alert-destructive uk-margin\" data-uk-alert>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<div class=\"uk-alert uk-alert-destructive uk-margin-small-bottom\" data-uk-alert>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(data.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 144, Col: 16}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 149, Col: 16}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -457,33 +457,33 @@ func TicketFormModalPartial(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"uk-grid-small\" data-uk-grid><div class=\"uk-width-1-1\"><label class=\"uk-form-label\" for=\"title\">Title</label><div class=\"uk-form-controls\"><input id=\"title\" name=\"title\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"uk-grid-medium st-ticket-form-grid\" data-uk-grid><div class=\"uk-width-1-1 st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"title\">Title</label><div class=\"uk-form-controls\"><input id=\"title\" name=\"title\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 151, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 156, Col: 99}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\" required></div></div><div class=\"uk-width-1-2@s\"><label class=\"uk-form-label\" for=\"project\">Project</label><div class=\"uk-form-controls\"><input id=\"project\" name=\"project\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "\" required></div></div><div class=\"uk-width-1-2@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"project\">Project</label><div class=\"uk-form-controls\"><input id=\"project\" name=\"project\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Project)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 157, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 162, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\" required></div></div><div class=\"uk-width-1-4@s\"><label class=\"uk-form-label\" for=\"status\">Status</label><div class=\"uk-form-controls\"><select id=\"status\" name=\"status\" class=\"uk-select\"><option value=\"BACKLOG\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "\" required></div></div><div class=\"uk-width-1-4@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"status\">Status</label><div class=\"uk-form-controls\"><select id=\"status\" name=\"status\" class=\"uk-select st-ticket-form-input\"><option value=\"BACKLOG\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -573,7 +573,7 @@ func TicketFormModalPartial(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, ">CANCELLED</option></select></div></div><div class=\"uk-width-1-4@s\"><label class=\"uk-form-label\" for=\"priority\">Priority</label><div class=\"uk-form-controls\"><select id=\"priority\" name=\"priority\" class=\"uk-select\"><option value=\"P0\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 69, ">CANCELLED</option></select></div></div><div class=\"uk-width-1-4@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"priority\">Priority</label><div class=\"uk-form-controls\"><select id=\"priority\" name=\"priority\" class=\"uk-select st-ticket-form-input\"><option value=\"P0\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -633,46 +633,46 @@ func TicketFormModalPartial(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, ">P5</option></select></div></div><div class=\"uk-width-1-2@s\"><label class=\"uk-form-label\" for=\"depends-on\">Depends On (comma-separated IDs)</label><div class=\"uk-form-controls\"><input id=\"depends-on\" name=\"depends_on\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, ">P5</option></select></div></div><div class=\"uk-width-1-2@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"depends-on\">Depends On</label><div class=\"uk-form-controls\"><input id=\"depends-on\" name=\"depends_on\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.DependsOn)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 192, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 197, Col: 113}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\"></div></div><div class=\"uk-width-1-2@s\"><label class=\"uk-form-label\" for=\"tags\">Tags (comma-separated)</label><div class=\"uk-form-controls\"><input id=\"tags\" name=\"tags\" class=\"uk-input\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\"><p class=\"st-ticket-form-help\">Comma-separated ticket IDs.</p></div></div><div class=\"uk-width-1-2@s st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"tags\">Tags</label><div class=\"uk-form-controls\"><input id=\"tags\" name=\"tags\" class=\"uk-input st-ticket-form-input\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Tags)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 198, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 204, Col: 96}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "\"></div></div><div class=\"uk-width-1-1\"><label class=\"uk-form-label\" for=\"description\">Description / Body</label><div class=\"uk-form-controls\"><textarea id=\"description\" name=\"description\" class=\"uk-textarea\" rows=\"6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "\"><p class=\"st-ticket-form-help\">Use short, comma-separated labels.</p></div></div><div class=\"uk-width-1-1 st-ticket-form-field\"><label class=\"uk-form-label st-ticket-form-label\" for=\"description\">Description</label><div class=\"uk-form-controls\"><textarea id=\"description\" name=\"description\" class=\"uk-textarea st-ticket-form-input\" rows=\"7\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(data.Values.Description)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 204, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 211, Col: 126}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</textarea></div></div></div><div class=\"uk-flex uk-flex-between uk-margin-top\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close\">Cancel</button> <button type=\"submit\" class=\"uk-btn uk-btn-primary\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</textarea><p class=\"st-ticket-form-help\">Markdown supported for richer context.</p></div></div></div><div class=\"uk-flex uk-flex-between uk-margin-medium-top st-ticket-form-actions\"><button type=\"button\" class=\"uk-btn uk-btn-default uk-modal-close\">Cancel</button> <button type=\"submit\" class=\"uk-btn uk-btn-primary\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -687,14 +687,14 @@ func TicketFormModalPartial(data TicketFormData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</button></div></form><div class=\"uk-modal-header\" id=\"ticket-modal-header\" hx-swap-oob=\"true\"><h2 class=\"font-bold text-xl\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "</button></div></form><div class=\"uk-modal-header st-modal-header\" id=\"ticket-modal-header\" hx-swap-oob=\"true\"><h2 class=\"font-bold text-xl\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(formTitle(data.Mode))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 220, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/form.templ`, Line: 228, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {

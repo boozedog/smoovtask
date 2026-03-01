@@ -169,7 +169,7 @@ func TicketHeader(data TicketData) templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"mb-0\"><div class=\"flex items-start justify-between gap-4\"><h1 class=\"font-bold mb-2 text-2xl break-words\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"st-ticket-header\"><div class=\"st-ticket-header-top flex items-start justify-between gap-3 flex-wrap\"><h1 class=\"st-ticket-header-title font-bold text-2xl break-words mb-0\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -208,7 +208,7 @@ func TicketHeader(data TicketData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#ticket-modal-body\" hx-push-url=\"false\" class=\"uk-btn uk-btn-default uk-btn-sm\">Edit</a></div><div class=\"flex gap-2 items-center flex-wrap text-sm\"><span data-copy-ticket-id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" hx-target=\"#ticket-modal-body\" hx-push-url=\"false\" class=\"uk-btn uk-btn-default uk-btn-sm shrink-0 st-ticket-header-edit\">Edit</a></div><div class=\"st-ticket-header-meta flex gap-2 items-center flex-wrap text-sm\"><span data-copy-ticket-id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -572,7 +572,7 @@ func TicketModalPartial(data TicketData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div></div><div class=\"uk-modal-header\" id=\"ticket-modal-header\" hx-swap-oob=\"true\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div></div><div class=\"uk-modal-header st-modal-header\" id=\"ticket-modal-header\" hx-swap-oob=\"true\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
