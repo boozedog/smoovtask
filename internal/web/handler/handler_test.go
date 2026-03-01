@@ -963,41 +963,6 @@ func TestAgentsExcludesEndedSessions(t *testing.T) {
 	}
 }
 
-func TestPartialAgentCount(t *testing.T) {
-	h, _, eventsDir := testSetup(t)
-
-	// Add an active agent.
-	evLog := event.NewEventLog(eventsDir)
-	ev := event.Event{
-		TS:      time.Now().UTC().Add(-15 * time.Second),
-		Event:   event.HookPreTool,
-		Ticket:  "st_def456",
-		Project: "testproj",
-		Actor:   "agent",
-		RunID:   "run-count-1",
-		Source:  "claude",
-	}
-	if err := evLog.Append(ev); err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/partials/agent-count", nil)
-	w := httptest.NewRecorder()
-	h.PartialAgentCount(w, req)
-
-	if w.Result().StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
-	}
-	body := w.Body.String()
-	if !strings.Contains(body, "agent-count-badge") {
-		t.Error("expected agent count badge element")
-	}
-	// Should contain "1" for one active agent.
-	if !strings.Contains(body, ">1<") {
-		t.Errorf("expected badge to show count 1, got: %s", body)
-	}
-}
-
 func TestWatcher(t *testing.T) {
 	eventsDir := t.TempDir()
 	broker := sse.NewBroker()

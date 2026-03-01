@@ -172,15 +172,6 @@ templ Layout(title string, currentPath string) {
 								Agents
 							</a>
 						</li>
-						<li class="uk-flex uk-flex-middle" style="margin-left: -0.5rem;">
-							<span
-								id="agent-count-badge"
-								hx-get="/partials/agent-count"
-								hx-trigger="load, sse:refresh-activity"
-								hx-target="this"
-								hx-swap="outerHTML"
-							></span>
-						</li>
 						<li
 							if currentPath == "/activity" {
 								class="uk-active"

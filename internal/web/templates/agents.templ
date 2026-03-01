@@ -1,7 +1,6 @@
 package templates
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
@@ -19,10 +18,6 @@ type AgentInfo struct {
 
 type AgentsData struct {
 	Agents []AgentInfo
-}
-
-type AgentCountData struct {
-	Count int
 }
 
 func heatDotClass(heat string) string {
@@ -107,20 +102,4 @@ templ AgentCard(agent AgentInfo) {
 			</div>
 		}
 	</div>
-}
-
-templ AgentCountBadge(data AgentCountData) {
-	<span
-		id="agent-count-badge"
-		hx-get="/partials/agent-count"
-		hx-trigger="load, sse:refresh-activity"
-		hx-target="this"
-		hx-swap="outerHTML"
-	>
-		if data.Count > 0 {
-			<span class="uk-badge uk-badge-primary uk-rounded text-xs" title={ fmt.Sprintf("%d active agent(s)", data.Count) }>
-				{ fmt.Sprintf("%d", data.Count) }
-			</span>
-		}
-	</span>
 }

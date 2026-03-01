@@ -82,7 +82,7 @@ func Layout(title string, currentPath string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "><a hx-get=\"/partials/agents\" hx-target=\"#content\" hx-push-url=\"/agents\" href=\"/agents\">Agents</a></li><li class=\"uk-flex uk-flex-middle\" style=\"margin-left: -0.5rem;\"><span id=\"agent-count-badge\" hx-get=\"/partials/agent-count\" hx-trigger=\"load, sse:refresh-activity\" hx-target=\"this\" hx-swap=\"outerHTML\"></span></li><li")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "><a hx-get=\"/partials/agents\" hx-target=\"#content\" hx-push-url=\"/agents\" href=\"/agents\">Agents</a></li><li")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

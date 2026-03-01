@@ -22,12 +22,6 @@ func (h *Handler) PartialAgents(w http.ResponseWriter, r *http.Request) {
 	_ = templates.AgentsPartial(data).Render(r.Context(), w)
 }
 
-// PartialAgentCount renders the agent count badge for the top bar.
-func (h *Handler) PartialAgentCount(w http.ResponseWriter, r *http.Request) {
-	data := h.buildAgentsData()
-	_ = templates.AgentCountBadge(templates.AgentCountData{Count: len(data.Agents)}).Render(r.Context(), w)
-}
-
 func (h *Handler) buildAgentsData() templates.AgentsData {
 	const recentLimit = 500
 	const staleThreshold = 10 * time.Minute
