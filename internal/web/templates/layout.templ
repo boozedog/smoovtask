@@ -255,8 +255,10 @@ templ Layout(title string, currentPath string) {
 					'hook.post-tool':          { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] }
 				};
 				var _stStallThresholdMs = 2 * 60 * 1000;
+				var _stStallSpeakCooldownMs = 30 * 1000;
 				var _stLastSoundByCategory = {};
 				var _stAudioUnlocked = false;
+				var _stLastStallSpeakAt = 0;
 
 				function stIsAudioMuted() {
 					return localStorage.getItem('st-audio-muted') === '1';
@@ -334,6 +336,9 @@ templ Layout(title string, currentPath string) {
 				function stSpeakStalledAgent() {
 					if (stIsAudioMuted()) return;
 					if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') return;
+					var now = Date.now();
+					if (_stLastStallSpeakAt && (now - _stLastStallSpeakAt) < _stStallSpeakCooldownMs) return;
+					_stLastStallSpeakAt = now;
 					try {
 						window.speechSynthesis.speak(new SpeechSynthesisUtterance('stalled agent'));
 					} catch (_) {}
@@ -343,6 +348,7 @@ templ Layout(title string, currentPath string) {
 					if (!window._stRunStalledState) {
 						window._stRunStalledState = {};
 					}
+					var shouldSpeak = false;
 					document.querySelectorAll('.st-stalled-icon[data-run-id]').forEach(function(el) {
 						var currentRunID = el.getAttribute('data-run-id') || '';
 						if (runID && currentRunID !== runID) return;
@@ -350,10 +356,13 @@ templ Layout(title string, currentPath string) {
 						el.classList.toggle('st-alert-active', stalled);
 						var previous = window._stRunStalledState[currentRunID];
 						if (typeof previous === 'boolean' && !previous && stalled) {
-							stSpeakStalledAgent();
+							shouldSpeak = true;
 						}
 						window._stRunStalledState[currentRunID] = stalled;
 					});
+					if (shouldSpeak) {
+						stSpeakStalledAgent();
+					}
 				}
 
 				function toggleDone(btn) {

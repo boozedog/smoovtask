@@ -1,0 +1,7 @@
+name: bad-rules
+priority: 10
+event: pre_tool_use
+rules:
+  - match:
+      tool: Bash
+    action: allow

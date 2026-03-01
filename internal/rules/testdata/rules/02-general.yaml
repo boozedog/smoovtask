@@ -1,0 +1,25 @@
+name: general
+description: General rules for testing
+priority: 50
+event: pre_tool_use
+rules:
+  - name: allow-git
+    match:
+      tool: Bash
+      command: "^git\\s+"
+    action: allow
+    message: "git commands allowed"
+
+  - name: allow-read-go
+    match:
+      tool: Read
+      file_path: "\\.go$"
+    action: allow
+    message: "reading go files is fine"
+
+  - name: allow-web-docs
+    match:
+      tool: WebFetch
+      url: "https://docs\\."
+    action: allow
+    message: "fetching docs is fine"

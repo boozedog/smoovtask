@@ -1,0 +1,8 @@
+name: bad-action
+priority: 10
+event: pre_tool_use
+rules:
+  - name: bad-action-rule
+    match:
+      tool: Bash
+    action: yolo

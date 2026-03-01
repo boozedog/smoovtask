@@ -253,7 +253,7 @@ func launchTmux(ctx context.Context, cancel context.CancelFunc, el *event.EventL
 }
 
 // logOutcome logs the spawn result event and returns an error if the worker failed.
-func logOutcome(el *event.EventLog, tk *ticket.Ticket, runID string, started time.Time, pid, exitCode int, waitErr error, ctxErr error) error {
+func logOutcome(el *event.EventLog, tk *ticket.Ticket, runID string, started time.Time, pid, exitCode int, waitErr, ctxErr error) error {
 	now := time.Now().UTC()
 	elapsed := now.Sub(started)
 

@@ -154,6 +154,15 @@ func (c *Config) EventsDir() (string, error) {
 	return filepath.Join(dir, "events"), nil
 }
 
+// RulesDir returns the rules directory path.
+func (c *Config) RulesDir() (string, error) {
+	dir, err := DefaultDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "rules"), nil
+}
+
 // EnsureDirs creates the vault tickets dir and events dir if they don't exist.
 func (c *Config) EnsureDirs() error {
 	tickets, err := c.TicketsDir()

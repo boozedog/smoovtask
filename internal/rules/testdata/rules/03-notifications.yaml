@@ -1,0 +1,10 @@
+name: notifications
+description: Notification rules
+priority: 30
+event: notification
+rules:
+  - name: allow-progress
+    match:
+      notification_type: "progress"
+    action: allow
+    message: "progress notifications are fine"
