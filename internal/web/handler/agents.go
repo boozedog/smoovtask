@@ -24,6 +24,7 @@ func (h *Handler) PartialAgents(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) buildAgentsData() templates.AgentsData {
 	const recentLimit = 500
+	const stalledThreshold = 2 * time.Minute
 	const staleThreshold = 10 * time.Minute
 	const maxEventsPerAgent = 15
 
@@ -93,6 +94,7 @@ func (h *Handler) buildAgentsData() templates.AgentsData {
 
 		// Compute heat state.
 		age := now.Sub(a.lastEventTS)
+		stalled := age > stalledThreshold
 		heat := "cold"
 		switch {
 		case age <= 60*time.Second:
@@ -132,6 +134,7 @@ func (h *Handler) buildAgentsData() templates.AgentsData {
 			TicketTitle: ticketTitle,
 			HeatState:   heat,
 			LastEventTS: a.lastEventTS,
+			Stalled:     stalled,
 			Events:      agentEvents,
 		})
 	}

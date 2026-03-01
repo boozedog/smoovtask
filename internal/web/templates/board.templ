@@ -28,8 +28,10 @@ func boardStatusLabel(s ticket.Status) string {
 }
 
 type BoardData struct {
-	Columns    []BoardColumn
-	RunSources map[string]string
+	Columns          []BoardColumn
+	RunSources       map[string]string
+	RunLastHookUnixMs map[string]int64
+	StalledRunIDs    map[string]bool
 }
 
 type BoardColumn struct {
@@ -77,7 +79,7 @@ templ BoardContent(data BoardData) {
 						<span class="opacity-50 font-normal">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
 					</div>
 					for _, tk := range col.Tickets {
-						@TicketCard(tk, data.RunSources[tk.Assignee])
+						@TicketCard(tk, data.RunSources[tk.Assignee], data.StalledRunIDs[tk.Assignee], data.RunLastHookUnixMs[tk.Assignee])
 					}
 					if len(col.Tickets) == 0 {
 						<div class="p-3 opacity-40 text-center">

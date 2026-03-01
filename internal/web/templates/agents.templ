@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
@@ -13,6 +14,7 @@ type AgentInfo struct {
 	TicketTitle string
 	HeatState   string // "hot", "warm", "cold"
 	LastEventTS time.Time
+	Stalled     bool
 	Events      []event.Event
 }
 
@@ -65,7 +67,8 @@ templ AgentsContent(data AgentsData) {
 templ AgentCard(agent AgentInfo) {
 	<div class="uk-card uk-card-body flex flex-col gap-3">
 		<div class="flex items-center gap-2">
-			<span class={ heatDotClass(agent.HeatState) } data-run-id={ agent.RunID }></span>
+			@StalledIcon(agent.RunID, agent.Ticket, agent.LastEventTS.UnixMilli(), agent.Stalled)
+			<span class={ heatDotClass(agent.HeatState) } data-run-id={ agent.RunID } data-last-hook-ts-ms={ fmt.Sprintf("%d", agent.LastEventTS.UnixMilli()) }></span>
 			<span class="uk-text-mono text-sm font-semibold">{ shortAssignee(agent.RunID) }</span>
 			if agent.Source != "" {
 				@SourceBadge(agent.Source)

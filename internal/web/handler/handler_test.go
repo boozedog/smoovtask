@@ -99,6 +99,54 @@ func TestBoard(t *testing.T) {
 	}
 }
 
+func TestBoardShowsStalledIndicatorForAssignedAgentWithoutRecentHook(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	h.Board(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected stalled indicator icon to be active for assigned agent without recent hooks")
+	}
+}
+
+func TestBoardHidesStalledIndicatorForRecentlyActiveAgent(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	h.Board(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected stalled indicator icon to be hidden for recently active assigned agent")
+	}
+}
+
 func TestPartialBoard(t *testing.T) {
 	h, _, _ := testSetup(t)
 
@@ -967,6 +1015,60 @@ func TestAgents(t *testing.T) {
 	}
 	if !strings.Contains(body, "In progress ticket") {
 		t.Error("expected agents page to contain ticket title")
+	}
+}
+
+func TestAgentsShowsStalledIndicatorAfterTwoMinutes(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-3 * time.Minute),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected agents page to show stalled warning icon for inactive agent")
+	}
+}
+
+func TestAgentsHidesStalledIndicatorWhenRecentHookExists(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	body := w.Body.String()
+	if strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected agents page to hide stalled warning icon for active agent")
 	}
 }
 

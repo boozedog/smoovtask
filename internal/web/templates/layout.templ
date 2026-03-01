@@ -116,8 +116,10 @@ templ Layout(title string, currentPath string) {
 				.st-session-dot.st-session-dot-warm { background: #eab308; box-shadow: none; animation: none; }
 				.st-session-dot.st-session-dot-cold { background: #ef4444; box-shadow: none; animation: none; }
 				.st-alert-icon { display: none; align-items: center; justify-content: center; flex-shrink: 0; cursor: default; }
+				.st-stalled-icon { display: none; align-items: center; justify-content: center; flex-shrink: 0; cursor: default; }
 				@keyframes st-alert-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 				.st-alert-icon.st-alert-active { display: inline-flex; animation: st-alert-pulse 2s ease-in-out infinite; }
+				.st-stalled-icon.st-alert-active { display: inline-flex; animation: st-alert-pulse 1.6s ease-in-out infinite; }
 				.st-audio-toggle { background: transparent; border: 1px solid hsl(var(--border)); border-radius: 0.375rem; padding: 0.25rem 0.5rem; cursor: pointer; color: hsl(var(--foreground)); opacity: 0.7; transition: opacity 0.15s; display: inline-flex; align-items: center; }
 				.st-audio-toggle:hover { opacity: 1; }
 				@media (max-width: 640px) {
@@ -252,6 +254,7 @@ templ Layout(title string, currentPath string) {
 					'hook.pre-tool':           { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
 					'hook.post-tool':          { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] }
 				};
+				var _stStallThresholdMs = 2 * 60 * 1000;
 				var _stLastSoundByCategory = {};
 				var _stAudioUnlocked = false;
 
@@ -306,6 +309,53 @@ templ Layout(title string, currentPath string) {
 					return dot.getAttribute('data-run-id') || '';
 				}
 
+				function seedLastHookStateFromDOM() {
+					if (!window._stLastHookByRunID) {
+						window._stLastHookByRunID = {};
+					}
+					document.querySelectorAll('.st-session-dot[data-run-id][data-last-hook-ts-ms]').forEach(function(dot) {
+						var runID = dot.getAttribute('data-run-id') || '';
+						if (!runID) return;
+						var ts = Number(dot.getAttribute('data-last-hook-ts-ms') || '0');
+						if (!Number.isFinite(ts) || ts <= 0) return;
+						if (!window._stLastHookByRunID[runID] || ts > window._stLastHookByRunID[runID]) {
+							window._stLastHookByRunID[runID] = ts;
+						}
+					});
+				}
+
+				function stIsRunStalled(runID) {
+					if (!runID) return false;
+					var ts = window._stLastHookByRunID && window._stLastHookByRunID[runID];
+					if (!ts) return true;
+					return (Date.now() - ts) > _stStallThresholdMs;
+				}
+
+				function stSpeakStalledAgent() {
+					if (stIsAudioMuted()) return;
+					if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') return;
+					try {
+						window.speechSynthesis.speak(new SpeechSynthesisUtterance('stalled agent'));
+					} catch (_) {}
+				}
+
+				function stUpdateStalledIndicators(runID) {
+					if (!window._stRunStalledState) {
+						window._stRunStalledState = {};
+					}
+					document.querySelectorAll('.st-stalled-icon[data-run-id]').forEach(function(el) {
+						var currentRunID = el.getAttribute('data-run-id') || '';
+						if (runID && currentRunID !== runID) return;
+						var stalled = stIsRunStalled(currentRunID);
+						el.classList.toggle('st-alert-active', stalled);
+						var previous = window._stRunStalledState[currentRunID];
+						if (typeof previous === 'boolean' && !previous && stalled) {
+							stSpeakStalledAgent();
+						}
+						window._stRunStalledState[currentRunID] = stalled;
+					});
+				}
+
 				function toggleDone(btn) {
 					var col = btn.closest('.st-column');
 					col.classList.toggle('st-column-collapsed');
@@ -335,11 +385,18 @@ templ Layout(title string, currentPath string) {
 						window._stLastHookByRunID = {};
 					}
 					window._stLastHookByRunID[runID] = Date.now();
+					document.querySelectorAll('.st-session-dot[data-run-id="' + runID + '"]').forEach(function(dot) {
+						dot.setAttribute('data-last-hook-ts-ms', String(window._stLastHookByRunID[runID]));
+					});
+					document.querySelectorAll('.st-stalled-icon[data-run-id="' + runID + '"]').forEach(function(icon) {
+						icon.setAttribute('data-last-hook-ts-ms', String(window._stLastHookByRunID[runID]));
+					});
 					if (hookName) {
 						if (!window._stLastHookNameByRunID) window._stLastHookNameByRunID = {};
 						window._stLastHookNameByRunID[runID] = hookName;
 					}
 					updateDotActivityStates(runID);
+					stUpdateStalledIndicators(runID);
 					updateAssigneePillTooltips(runID);
 					if (hookName) {
 						stUpdateAlertIcons(runID, hookName, ticketID);
@@ -405,6 +462,7 @@ templ Layout(title string, currentPath string) {
 						if (runID) wanted[runID] = true;
 					});
 					window._stWantedRunIDs = wanted;
+					seedLastHookStateFromDOM();
 
 					if (Object.keys(wanted).length > 0 && !window._stAgentEventStream) {
 						var stream = new EventSource('/events/agent');
@@ -438,9 +496,11 @@ templ Layout(title string, currentPath string) {
 							if (wanted[runID]) return;
 							delete window._stLastHookByRunID[runID];
 							if (window._stLastHookNameByRunID) delete window._stLastHookNameByRunID[runID];
+							if (window._stRunStalledState) delete window._stRunStalledState[runID];
 						});
 					}
 					updateDotActivityStates();
+					stUpdateStalledIndicators();
 					updateAssigneePillTooltips();
 				}
 
@@ -522,6 +582,7 @@ templ Layout(title string, currentPath string) {
 					stSyncMuteIcon();
 					setInterval(function() {
 						updateDotActivityStates();
+						stUpdateStalledIndicators();
 					}, 5000);
 				});
 
@@ -620,6 +681,9 @@ templ Layout(title string, currentPath string) {
 					}
 					if (window._stWantedRunIDs) {
 						window._stWantedRunIDs = {};
+					}
+					if (window._stRunStalledState) {
+						window._stRunStalledState = {};
 					}
 				});
 				}

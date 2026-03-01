@@ -65,6 +65,39 @@ func TestResolveRunSources(t *testing.T) {
 	}
 }
 
+func TestResolveRunLastHookTimes(t *testing.T) {
+	eventsDir := t.TempDir()
+	log := event.NewEventLog(eventsDir)
+
+	appendEvent := func(ev event.Event) {
+		t.Helper()
+		if err := log.Append(ev); err != nil {
+			t.Fatalf("append event: %v", err)
+		}
+	}
+
+	latestRun1 := time.Date(2026, 2, 28, 10, 3, 0, 0, time.UTC)
+	latestRun2 := time.Date(2026, 2, 28, 10, 4, 0, 0, time.UTC)
+
+	appendEvent(event.Event{TS: time.Date(2026, 2, 28, 10, 0, 0, 0, time.UTC), Event: event.HookSessionStart, RunID: "run-1"})
+	appendEvent(event.Event{TS: time.Date(2026, 2, 28, 10, 1, 0, 0, time.UTC), Event: event.TicketCreated, RunID: "run-1"})
+	appendEvent(event.Event{TS: latestRun1, Event: event.HookPostTool, RunID: "run-1"})
+	appendEvent(event.Event{TS: latestRun2, Event: event.HookPreTool, RunID: "run-2"})
+
+	h := &Handler{eventsDir: eventsDir}
+	lastHooks := h.resolveRunLastHookTimes([]string{"run-1", "run-2", "run-3", ""})
+
+	if got := lastHooks["run-1"]; !got.Equal(latestRun1) {
+		t.Fatalf("run-1 last hook = %v, want %v", got, latestRun1)
+	}
+	if got := lastHooks["run-2"]; !got.Equal(latestRun2) {
+		t.Fatalf("run-2 last hook = %v, want %v", got, latestRun2)
+	}
+	if _, ok := lastHooks["run-3"]; ok {
+		t.Fatal("run-3 should be absent when there are no hook events")
+	}
+}
+
 func TestEventsSkipsAgentPing(t *testing.T) {
 	h := &Handler{broker: sse.NewBroker()}
 

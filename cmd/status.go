@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -142,6 +143,14 @@ func runStatus(_ *cobra.Command, args []string) error {
 	})
 
 	fmt.Printf("%s: %s → %s\n", tk.ID, oldStatus, targetStatus)
+
+	// Signal the spawn leader that the worker is done.
+	// ST_SPAWN_DONE_CHANNEL is set by `st spawn` when launching in a tmux pane.
+	if ch := os.Getenv("ST_SPAWN_DONE_CHANNEL"); ch != "" {
+		if targetStatus == ticket.StatusReview || targetStatus == ticket.StatusBlocked {
+			_ = exec.Command("tmux", "wait-for", "-S", ch).Run()
+		}
+	}
 
 	// Prompt agent to report improvements when submitting for agent review
 	if targetStatus == ticket.StatusReview {

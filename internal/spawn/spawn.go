@@ -181,24 +181,29 @@ func launchTmux(ctx context.Context, cancel context.CancelFunc, el *event.EventL
 	// Channel for tmux wait-for synchronization
 	channel := "st-worker-" + workerRunID
 
-	// Shell command to run inside the tmux window.
-	// Runs claude interactively (not -p) so the TUI is visible in the tmux window.
-	// Uses --append-system-prompt for the full instructions (avoids shell escaping issues)
-	// and a short positional prompt to kick off the work.
+	// Shell command to run inside the tmux pane.
+	// Runs claude interactively so the TUI is visible.
+	// ST_SPAWN_DONE_CHANNEL is read by `st status` to signal completion via tmux wait-for.
+	// After signaling, the leader kills this pane to terminate the session.
 	shellCmd := fmt.Sprintf(
-		`ST_ROLE=worker claude --permission-mode acceptEdits --allowedTools "Bash(git commit:*) Bash(git add:*) Bash(st pick:*) Bash(st note:*) Bash(st status:*)" --append-system-prompt "$(cat .worker-prompt)" "Pick up ticket %s and complete the task described in your system prompt."; echo $? > .worker-exitcode; %s wait-for -S %s`,
-		tk.ID, tmuxPath, channel,
+		`ST_ROLE=worker ST_SPAWN_DONE_CHANNEL=%s claude --permission-mode acceptEdits --allowedTools "Bash(git commit:*) Bash(git add:*) Bash(st pick:*) Bash(st note:*) Bash(st status:*) Bash(st context:*)" --append-system-prompt "$(cat .worker-prompt)" "Pick up ticket %s and complete the task described in your system prompt."`,
+		channel, tk.ID,
 	)
 
-	windowName := tk.ID
-	createCmd := exec.Command(tmuxPath, "new-window", "-n", windowName, "-c", worktreePath, "sh", "-c", shellCmd)
-	if err := createCmd.Run(); err != nil {
+	// Split the current window into a new pane so the worker is visible alongside the leader.
+	// -P -F prints the new pane ID so we can target it later for cleanup.
+	createCmd := exec.Command(tmuxPath, "split-window", "-h", "-c", worktreePath,
+		"-P", "-F", "#{pane_id}",
+		"sh", "-c", shellCmd)
+	paneOut, err := createCmd.Output()
+	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("create tmux window: %w", err)
+		return nil, fmt.Errorf("create tmux pane: %w", err)
 	}
+	paneID := strings.TrimSpace(string(paneOut))
 
 	// Get the PID of the process running in the new pane
-	pid := tmuxPanePID(tmuxPath, windowName)
+	pid := tmuxPanePIDByPane(tmuxPath, paneID)
 
 	now := time.Now().UTC()
 	_ = el.Append(event.Event{
@@ -209,17 +214,17 @@ func launchTmux(ctx context.Context, cancel context.CancelFunc, el *event.EventL
 		Actor:   "agent",
 		RunID:   workerRunID,
 		Data: map[string]any{
-			"pid":         pid,
-			"worktree":    worktreePath,
-			"branch":      branch,
-			"backend":     opts.Backend,
-			"timeout":     opts.Timeout.String(),
-			"mode":        "tmux",
-			"tmux_window": windowName,
+			"pid":       pid,
+			"worktree":  worktreePath,
+			"branch":    branch,
+			"backend":   opts.Backend,
+			"timeout":   opts.Timeout.String(),
+			"mode":      "tmux",
+			"tmux_pane": paneID,
 		},
 	})
 
-	// Start the wait-for command — blocks until the tmux window signals completion
+	// Start the wait-for command — blocks until `st status` signals the channel
 	waitCmd := exec.CommandContext(ctx, tmuxPath, "wait-for", channel)
 	if err := waitCmd.Start(); err != nil {
 		cancel()
@@ -229,8 +234,11 @@ func launchTmux(ctx context.Context, cancel context.CancelFunc, el *event.EventL
 	waitFn := func() error {
 		defer cancel()
 		waitErr := waitCmd.Wait()
-		exitCode := readExitCodeFile(filepath.Join(worktreePath, ".worker-exitcode"))
-		return logOutcome(el, tk, workerRunID, now, pid, exitCode, waitErr, ctx.Err())
+
+		// Kill the tmux pane — the worker session is done, no need to keep it open
+		_ = exec.Command(tmuxPath, "kill-pane", "-t", paneID).Run()
+
+		return logOutcome(el, tk, workerRunID, now, pid, 0, waitErr, ctx.Err())
 	}
 
 	return &Result{
@@ -239,7 +247,7 @@ func launchTmux(ctx context.Context, cancel context.CancelFunc, el *event.EventL
 		Branch:       branch,
 		RunID:        workerRunID,
 		LogPath:      logPath,
-		TmuxWindow:   windowName,
+		TmuxWindow:   paneID,
 		Wait:         waitFn,
 	}, nil
 }
@@ -301,27 +309,14 @@ func logOutcome(el *event.EventLog, tk *ticket.Ticket, runID string, started tim
 	return nil
 }
 
-// tmuxPanePID returns the PID of the process in a tmux window's active pane.
-func tmuxPanePID(tmuxPath, windowName string) int {
-	out, err := exec.Command(tmuxPath, "list-panes", "-t", windowName, "-F", "#{pane_pid}").Output()
+// tmuxPanePIDByPane returns the PID of the process in a specific tmux pane.
+func tmuxPanePIDByPane(tmuxPath, paneID string) int {
+	out, err := exec.Command(tmuxPath, "list-panes", "-t", paneID, "-F", "#{pane_pid}").Output()
 	if err != nil {
 		return 0
 	}
 	pid, _ := strconv.Atoi(strings.TrimSpace(string(out)))
 	return pid
-}
-
-// readExitCodeFile reads an exit code written to a file by the worker shell command.
-func readExitCodeFile(path string) int {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return -1
-	}
-	code, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	if err != nil {
-		return -1
-	}
-	return code
 }
 
 // Event type constants for spawn events.

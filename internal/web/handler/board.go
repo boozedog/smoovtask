@@ -61,6 +61,8 @@ func (h *Handler) PartialBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) buildBoardData() (templates.BoardData, error) {
+	const stalledThreshold = 2 * time.Minute
+
 	tickets, err := h.store.ListMeta(ticket.ListFilter{})
 	if err != nil {
 		return templates.BoardData{}, err
@@ -149,7 +151,26 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 	for runID := range runIDSet {
 		runIDs = append(runIDs, runID)
 	}
-	runSources := h.resolveRunSources(runIDs)
 
-	return templates.BoardData{Columns: columns, RunSources: runSources}, nil
+	now := time.Now().UTC()
+	runSources := h.resolveRunSources(runIDs)
+	runLastHooks := h.resolveRunLastHookTimes(runIDs)
+	runLastHookUnixMs := make(map[string]int64, len(runIDs))
+	stalledRunIDs := make(map[string]bool, len(runIDs))
+	for _, runID := range runIDs {
+		lastHookTS, ok := runLastHooks[runID]
+		if ok {
+			runLastHookUnixMs[runID] = lastHookTS.UnixMilli()
+		}
+		if !ok || now.Sub(lastHookTS) > stalledThreshold {
+			stalledRunIDs[runID] = true
+		}
+	}
+
+	return templates.BoardData{
+		Columns:           columns,
+		RunSources:        runSources,
+		RunLastHookUnixMs: runLastHookUnixMs,
+		StalledRunIDs:     stalledRunIDs,
+	}, nil
 }

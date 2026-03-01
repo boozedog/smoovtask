@@ -36,8 +36,10 @@ func boardStatusLabel(s ticket.Status) string {
 }
 
 type BoardData struct {
-	Columns    []BoardColumn
-	RunSources map[string]string
+	Columns           []BoardColumn
+	RunSources        map[string]string
+	RunLastHookUnixMs map[string]int64
+	StalledRunIDs     map[string]bool
 }
 
 type BoardColumn struct {
@@ -214,7 +216,7 @@ func BoardContent(data BoardData) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(boardStatusLabel(col.Status))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 76, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 78, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -227,7 +229,7 @@ func BoardContent(data BoardData) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("(%d)", len(col.Tickets)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 77, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 79, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -238,7 +240,7 @@ func BoardContent(data BoardData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, tk := range col.Tickets {
-				templ_7745c5c3_Err = TicketCard(tk, data.RunSources[tk.Assignee]).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = TicketCard(tk, data.RunSources[tk.Assignee], data.StalledRunIDs[tk.Assignee], data.RunLastHookUnixMs[tk.Assignee]).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -257,7 +259,7 @@ func BoardContent(data BoardData) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(col.Tickets)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 88, Col: 112}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 90, Col: 112}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -270,7 +272,7 @@ func BoardContent(data BoardData) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(col.Tickets)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 89, Col: 54}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/board.templ`, Line: 91, Col: 54}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {

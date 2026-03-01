@@ -128,6 +128,19 @@ func sessionPillTitle(sessionID string, source string) string {
 	return "Session: " + sessionID + "\nSource: " + label + "\nLast hook: waiting for activity"
 }
 
+func stalledIconClass(stalled bool) string {
+	if stalled {
+		return "st-stalled-icon st-alert-active"
+	}
+	return "st-stalled-icon"
+}
+
+templ StalledIcon(runID string, ticketID string, lastHookUnixMs int64, stalled bool) {
+	<span class={ stalledIconClass(stalled) } data-run-id={ runID } data-ticket-id={ ticketID } data-last-hook-ts-ms={ fmt.Sprintf("%d", lastHookUnixMs) } title="Stalled agent — no hooks for 2+ minutes" aria-label="Stalled agent warning">
+		<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="8,1 11,1.8 14.2,5 15,8 14.2,11 11,14.2 8,15 5,14.2 1.8,11 1,8 1.8,5 5,1.8" fill="#ef4444" stroke="#dc2626" stroke-width="1"/><rect x="4.1" y="7.2" width="7.8" height="1.6" rx="0.8" fill="#ffffff"/></svg>
+	</span>
+}
+
 templ PriorityBadge(p ticket.Priority) {
 	<span class={ priorityClass(p) }>{ string(p) }</span>
 }
@@ -154,7 +167,7 @@ templ SourceBadge(source string) {
 	}
 }
 
-templ TicketCard(tk *ticket.Ticket, source string) {
+templ TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs int64) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-card uk-card-body st-ticket-card">
 		if tk.Status == ticket.StatusHumanReview {
 			<span class="uk-badge uk-rounded uk-badge-secondary st-card-corner-badge">Human</span>
@@ -172,10 +185,11 @@ templ TicketCard(tk *ticket.Ticket, source string) {
 			<div class="st-ticket-footer flex items-center gap-2">
 				if showAssignee(tk) {
 					<span class="st-assignee-wrap">
+						@StalledIcon(tk.Assignee, tk.ID, lastHookUnixMs, stalled)
 						<span class="st-alert-icon" data-run-id={ tk.Assignee } data-ticket-id={ tk.ID } title="Permission requested — agent is waiting for input" aria-label="Permission request alert">
 							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 14h14L8 1z" fill="#f59e0b" stroke="#b45309" stroke-width="1"/><text x="8" y="12.5" text-anchor="middle" fill="#000" font-size="9" font-weight="bold">!</text></svg>
 						</span>
-						<span class="st-session-dot" data-run-id={ tk.Assignee } data-ticket-id={ tk.ID } title="Pulses when this assignee emits hook events" aria-label="Agent hook activity indicator"></span>
+						<span class="st-session-dot" data-run-id={ tk.Assignee } data-ticket-id={ tk.ID } data-last-hook-ts-ms={ fmt.Sprintf("%d", lastHookUnixMs) } title="Pulses when this assignee emits hook events" aria-label="Agent hook activity indicator"></span>
 						<span
 							title={ sessionPillTitle(tk.Assignee, source) }
 							class="st-assignee-pill uk-rounded uk-text-sm"
