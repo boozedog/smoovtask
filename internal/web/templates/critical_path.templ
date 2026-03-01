@@ -1,62 +1,31 @@
 package templates
 
-import "github.com/boozedog/smoovtask/internal/ticket"
+import (
+	"fmt"
+
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
 
 type CriticalPathData struct {
 	Project    string
 	Scope      string
-	View       string
-	Paths      []ticket.CriticalPath
+	Graph      ticket.DependencyGraph
 	ByID       map[string]*ticket.Ticket
 	RunSources map[string]string
 }
 
-func criticalPathPartialURL(view, scope string) string {
-	if view == "horizontal" && scope == "current" {
-		return "/partials/critical-path?view=horizontal&scope=current"
-	}
-	if view == "horizontal" {
-		return "/partials/critical-path?view=horizontal"
-	}
+func criticalPathPartialURL(scope string) string {
 	if scope == "current" {
 		return "/partials/critical-path?scope=current"
 	}
 	return "/partials/critical-path"
 }
 
-func criticalPathPageURL(view, scope string) string {
-	if view == "horizontal" && scope == "current" {
-		return "/critical-path?view=horizontal&scope=current"
-	}
-	if view == "horizontal" {
-		return "/critical-path?view=horizontal"
-	}
+func criticalPathPageURL(scope string) string {
 	if scope == "current" {
 		return "/critical-path?scope=current"
 	}
 	return "/critical-path"
-}
-
-func arrowForView(view string) string {
-	if view == "horizontal" {
-		return "→"
-	}
-	return "↓"
-}
-
-func chainClasses(view string) string {
-	if view == "horizontal" {
-		return "flex items-start gap-3 overflow-x-auto pb-2"
-	}
-	return "flex flex-col gap-2"
-}
-
-func dependencyFlow(ids []string) []string {
-	flow := make([]string, 0, len(ids))
-	for i := len(ids) - 1; i >= 0; i-- {
-		flow = append(flow, ids[i])
-	}
-	return flow
 }
 
 templ CriticalPathPage(data CriticalPathData) {
@@ -67,7 +36,7 @@ templ CriticalPathPage(data CriticalPathData) {
 
 templ CriticalPathPartial(data CriticalPathData) {
 	<div
-		hx-get={ criticalPathPartialURL(data.View, data.Scope) }
+		hx-get={ criticalPathPartialURL(data.Scope) }
 		hx-trigger="sse:refresh-work"
 		hx-target="this"
 		hx-swap="outerHTML"
@@ -79,88 +48,158 @@ templ CriticalPathPartial(data CriticalPathData) {
 
 templ CriticalPathContent(data CriticalPathData) {
 	<div class="max-w-5xl mx-auto">
-		<div class="uk-button-group uk-margin-small-top uk-margin-right">
+		<div class="uk-btn-group mt-2 mb-4">
 			<a
-				hx-get={ criticalPathPartialURL(data.View, "all") }
+				hx-get={ criticalPathPartialURL("all") }
 				hx-target="#content"
 				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL(data.View, "all") }
-				href={ templ.SafeURL(criticalPathPageURL(data.View, "all")) }
+				hx-push-url={ criticalPathPageURL("all") }
+				href={ templ.SafeURL(criticalPathPageURL("all")) }
 				if data.Scope == "all" {
-					class="uk-button uk-button-small uk-button-primary"
+					class="uk-btn uk-btn-sm uk-btn-primary"
 				} else {
-					class="uk-button uk-button-small uk-button-default"
+					class="uk-btn uk-btn-sm uk-btn-default"
 				}
 			>
 				All Projects
 			</a>
 			<a
-				hx-get={ criticalPathPartialURL(data.View, "current") }
+				hx-get={ criticalPathPartialURL("current") }
 				hx-target="#content"
 				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL(data.View, "current") }
-				href={ templ.SafeURL(criticalPathPageURL(data.View, "current")) }
+				hx-push-url={ criticalPathPageURL("current") }
+				href={ templ.SafeURL(criticalPathPageURL("current")) }
 				if data.Scope == "current" {
-					class="uk-button uk-button-small uk-button-primary"
+					class="uk-btn uk-btn-sm uk-btn-primary"
 				} else {
-					class="uk-button uk-button-small uk-button-default"
+					class="uk-btn uk-btn-sm uk-btn-default"
 				}
 			>
 				Current Project
 			</a>
 		</div>
-		<div class="uk-button-group uk-margin-small-top uk-margin">
-			<a
-				hx-get={ criticalPathPartialURL("vertical", data.Scope) }
-				hx-target="#content"
-				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL("vertical", data.Scope) }
-				href={ templ.SafeURL(criticalPathPageURL("vertical", data.Scope)) }
-				if data.View == "vertical" {
-					class="uk-button uk-button-small uk-button-primary"
-				} else {
-					class="uk-button uk-button-small uk-button-default"
-				}
-			>
-				Vertical
-			</a>
-			<a
-				hx-get={ criticalPathPartialURL("horizontal", data.Scope) }
-				hx-target="#content"
-				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL("horizontal", data.Scope) }
-				href={ templ.SafeURL(criticalPathPageURL("horizontal", data.Scope)) }
-				if data.View == "horizontal" {
-					class="uk-button uk-button-small uk-button-primary"
-				} else {
-					class="uk-button uk-button-small uk-button-default"
-				}
-			>
-				Horizontal
-			</a>
-		</div>
 
-		if len(data.Paths) == 0 {
-			<div class="uk-alert-primary uk-margin" data-uk-alert>
+		if data.Graph.Empty {
+			<div class="uk-alert uk-margin" data-uk-alert>
 				No dependency chains found.
 			</div>
 		} else {
-			for _, path := range data.Paths {
-				<div class="uk-card uk-card-default uk-card-body uk-margin">
-					<div class={ chainClasses(data.View) + " uk-margin-top" }>
-						for i, id := range dependencyFlow(path.IDs) {
-							if data.ByID[id] != nil {
-								<div style="min-width: 16rem;">
-									@TicketCard(data.ByID[id], data.RunSources[data.ByID[id].Assignee])
-								</div>
+			<div class="st-dep-graph uk-margin-top" id="dep-graph" data-edges={ data.Graph.EdgesJSON() }>
+				<svg class="st-dep-edges" id="dep-edges"></svg>
+				<div class="st-dep-grid">
+					for _, layer := range data.Graph.Layers {
+						<div class="st-dep-layer">
+							for _, node := range layer {
+								if data.ByID[node.ID] != nil {
+									<a
+										href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", node.ID)) }
+										hx-get={ fmt.Sprintf("/partials/ticket/%s", node.ID) }
+										hx-target="#ticket-modal-body"
+										class="st-dep-node"
+										data-node-id={ node.ID }
+									>
+									if data.ByID[node.ID].Project != "" {
+										<div class="text-[0.65rem] opacity-50 leading-none">{ data.ByID[node.ID].Project }</div>
+									}
+										<div class="st-dep-node-title">{ data.ByID[node.ID].Title }</div>
+										<div class="st-dep-node-meta">
+											@PriorityBadge(data.ByID[node.ID].Priority)
+											@StatusBadge(data.ByID[node.ID].Status)
+											<span>{ node.ID }</span>
+										</div>
+									</a>
+								}
 							}
-							if i < len(path.IDs)-1 {
-								<div class="flex items-center justify-center opacity-50" style="font-size: 1.5rem; min-width: 2rem;">{ arrowForView(data.View) }</div>
-							}
-						}
-					</div>
+						</div>
+					}
 				</div>
-			}
+			</div>
+			<script>
+				(function() {
+					function stDepDrawEdges() {
+						var graph = document.getElementById('dep-graph');
+						var svg = document.getElementById('dep-edges');
+						if (!graph || !svg) return;
+
+						var edgeData = graph.getAttribute('data-edges');
+						if (!edgeData) return;
+						var edgeList = JSON.parse(edgeData);
+
+						svg.setAttribute('width', graph.scrollWidth);
+						svg.setAttribute('height', graph.scrollHeight);
+						svg.innerHTML = '';
+
+						edgeList.forEach(function(e) {
+							var fromEl = graph.querySelector('[data-node-id="' + e.from + '"]');
+							var toEl = graph.querySelector('[data-node-id="' + e.to + '"]');
+							if (!fromEl || !toEl) return;
+
+							var fromRect = fromEl.getBoundingClientRect();
+							var toRect = toEl.getBoundingClientRect();
+							var graphRect = graph.getBoundingClientRect();
+
+							// Draw from dependency (to, left) to dependant (from, right).
+							var x1 = toRect.right - graphRect.left + graph.scrollLeft;
+							var y1 = toRect.top + toRect.height / 2 - graphRect.top + graph.scrollTop;
+							var x2 = fromRect.left - graphRect.left + graph.scrollLeft;
+							var y2 = fromRect.top + fromRect.height / 2 - graphRect.top + graph.scrollTop;
+
+							var dx = Math.abs(x2 - x1) * 0.4;
+							var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+							path.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + (x1 + dx) + ',' + y1 + ' ' + (x2 - dx) + ',' + y2 + ' ' + x2 + ',' + y2);
+							path.setAttribute('class', 'st-dep-edge');
+							path.setAttribute('data-from', e.from);
+							path.setAttribute('data-to', e.to);
+							svg.appendChild(path);
+						});
+					}
+
+					// Hover highlighting (uses event delegation on the graph container).
+					var graph = document.getElementById('dep-graph');
+					if (graph) {
+						graph.addEventListener('mouseenter', function(evt) {
+							var node = evt.target.closest('[data-node-id]');
+							if (!node) return;
+							var id = node.getAttribute('data-node-id');
+							graph.classList.add('dimmed');
+							node.classList.add('highlighted');
+
+							graph.querySelectorAll('.st-dep-edge').forEach(function(edge) {
+								if (edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id) {
+									edge.classList.add('highlighted');
+									var otherId = edge.getAttribute('data-from') === id ? edge.getAttribute('data-to') : edge.getAttribute('data-from');
+									var otherNode = graph.querySelector('[data-node-id="' + otherId + '"]');
+									if (otherNode) otherNode.classList.add('highlighted');
+								}
+							});
+						}, true);
+
+						graph.addEventListener('mouseleave', function(evt) {
+							var node = evt.target.closest('[data-node-id]');
+							if (!node) return;
+							graph.classList.remove('dimmed');
+							graph.querySelectorAll('.highlighted').forEach(function(el) {
+								el.classList.remove('highlighted');
+							});
+						}, true);
+					}
+
+					// Defer initial draw to ensure layout is complete.
+					requestAnimationFrame(function() {
+						requestAnimationFrame(stDepDrawEdges);
+					});
+
+					if (!window._stDepEdgesInit) {
+						window._stDepEdgesInit = true;
+						document.addEventListener('htmx:afterSwap', function() {
+							requestAnimationFrame(function() {
+								requestAnimationFrame(stDepDrawEdges);
+							});
+						});
+						window.addEventListener('resize', stDepDrawEdges);
+					}
+				})();
+			</script>
 		}
 	</div>
 }

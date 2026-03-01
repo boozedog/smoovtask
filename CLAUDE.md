@@ -33,3 +33,5 @@ Tickets are markdown files with YAML frontmatter in an Obsidian vault. Events ar
 - [Project structure](docs/structure.md)
 - [Building & running](docs/building.md)
 - [Storage paths](docs/storage.md)
+- Franken UI contexts snapshot (local): `docs/franken-ui/contexts/`
+- Snapshot notes and refresh script: `docs/franken-ui/README.md`, `docs/franken-ui/update-contexts.sh`

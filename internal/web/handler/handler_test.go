@@ -735,56 +735,14 @@ func TestCriticalPathPage(t *testing.T) {
 	if !strings.Contains(body, "Critical Path") {
 		t.Fatal("expected critical path page content")
 	}
+	if !strings.Contains(body, "st-dep-graph") {
+		t.Fatal("expected dependency graph container")
+	}
 	if !strings.Contains(body, "st_cproot") {
-		t.Fatal("expected path to include root ticket")
+		t.Fatal("expected graph to include root ticket")
 	}
-}
-
-func TestCriticalPathHorizontalView(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
-	store := ticket.NewStore(ticketsDir)
-
-	dep := &ticket.Ticket{
-		ID:       "st_cphdep",
-		Title:    "Dep",
-		Project:  "testproj",
-		Status:   ticket.StatusOpen,
-		Priority: ticket.PriorityP3,
-		Created:  time.Now().UTC(),
-		Updated:  time.Now().UTC(),
-	}
-	if err := store.Create(dep); err != nil {
-		t.Fatal(err)
-	}
-
-	root := &ticket.Ticket{
-		ID:        "st_cphroot",
-		Title:     "Root",
-		Project:   "testproj",
-		Status:    ticket.StatusOpen,
-		Priority:  ticket.PriorityP3,
-		DependsOn: []string{"st_cphdep"},
-		Created:   time.Now().UTC(),
-		Updated:   time.Now().UTC(),
-	}
-	if err := store.Create(root); err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/critical-path?view=horizontal", nil)
-	w := httptest.NewRecorder()
-
-	h.CriticalPath(w, req)
-
-	if w.Result().StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
-	}
-	body := w.Body.String()
-	if !strings.Contains(body, "Horizontal") {
-		t.Fatal("expected horizontal toggle")
-	}
-	if !strings.Contains(body, "→") {
-		t.Fatal("expected horizontal arrow")
+	if !strings.Contains(body, "st_cpdep") {
+		t.Fatal("expected graph to include dependency ticket")
 	}
 }
 

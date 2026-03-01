@@ -8,11 +8,26 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "st-badge st-badge-" + strings.ToLower(string(p))
+	return "uk-badge st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
 	return "st-status-" + strings.ToLower(string(s))
+}
+
+func statusBadgeClass(s ticket.Status) string {
+	switch s {
+	case ticket.StatusDone:
+		return "st-status-badge-done"
+	case ticket.StatusCancelled:
+		return "st-status-badge-cancelled"
+	case ticket.StatusBlocked, ticket.StatusRework:
+		return "uk-badge-destructive"
+	case ticket.StatusInProgress, ticket.StatusReview:
+		return "uk-badge-primary"
+	default:
+		return "uk-badge-secondary"
+	}
 }
 
 func statusLabel(s ticket.Status) string {
@@ -44,12 +59,12 @@ func shortAssignee(s string) string {
 
 func assigneePillColor(s string) string {
 	if len(s) > 8 && s[8] == '-' {
-		return "#f97316" // orange for Claude Code UUIDs
+		return "hsl(var(--warning))" // warning tone for Claude Code UUIDs
 	}
 	if strings.Contains(s, "_") {
-		return "#3b82f6" // blue for prefixed IDs (opencode/pi)
+		return "hsl(var(--primary))" // primary tone for prefixed IDs (opencode/pi)
 	}
-	return "#22c55e" // default green
+	return "hsl(var(--secondary))" // secondary tone default
 }
 
 func showAssignee(tk *ticket.Ticket) bool {
@@ -88,18 +103,18 @@ templ PriorityBadge(p ticket.Priority) {
 }
 
 templ StatusBadge(s ticket.Status) {
-	<span class={ "st-badge " + statusClass(s) } style="border: 1px solid; background: transparent;">
+	<span class={ "uk-badge " + statusBadgeClass(s) }>
 		{ statusLabel(s) }
 	</span>
 }
 
 templ SourceBadge(source string) {
 	if source != "" {
-		<span class="inline-flex items-center gap-1 opacity-70" title={ sourceLabel(source) } style="font-size: 0.75rem;">
+		<span class="inline-flex items-center gap-1 text-xs opacity-70" title={ sourceLabel(source) }>
 			if source == "claude" {
-				<img src="/static/claude-crab.png" alt="Claude" style="height: 1.5rem; width: auto; image-rendering: pixelated;"/>
+				<img src="/static/claude-crab.png" alt="Claude" class="st-source-badge-image"/>
 			} else {
-				<span style="font-family: 'Maple Mono NF', monospace;">{ sourceGlyph(source) }</span>
+				<span class="st-source-glyph">{ sourceGlyph(source) }</span>
 				<span>{ sourceLabel(source) }</span>
 			}
 		</span>
@@ -107,12 +122,12 @@ templ SourceBadge(source string) {
 }
 
 templ TicketCard(tk *ticket.Ticket, source string) {
-	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="st-card">
+	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-card uk-card-body st-ticket-card">
 		if tk.Project != "" {
-			<div style="font-size: 0.65rem; opacity: 0.5; line-height: 1; margin-bottom: 0.05rem;">{ tk.Project }</div>
+			<div class="text-[0.65rem] opacity-50 leading-none">{ tk.Project }</div>
 		}
-		<div class="st-card-title">{ tk.Title }</div>
-		<div class="st-card-meta">
+		<div class="uk-card-title st-card-title">{ tk.Title }</div>
+		<div class="text-xs opacity-70 flex gap-2 items-center">
 			@PriorityBadge(tk.Priority)
 			<span>{ tk.ID }</span>
 		</div>
@@ -120,7 +135,10 @@ templ TicketCard(tk *ticket.Ticket, source string) {
 			<div class="mt-1 flex items-center justify-between gap-2">
 				@SourceBadge(source)
 				if showAssignee(tk) {
-					<span title={ tk.Assignee } class="inline-block rounded-full font-semibold" style={ "padding: 0.1rem 0.4rem; font-family: 'Maple Mono NF', monospace; font-size: 0.65rem; margin-left: auto; background: " + assigneePillColor(tk.Assignee) + "; color: #000;" }>{ shortAssignee(tk.Assignee) }</span>
+					<span class="st-assignee-wrap">
+						<span class="st-session-dot"></span>
+						<span title={ tk.Assignee } class="st-assignee-pill" style={ "--st-assignee-bg: " + assigneePillColor(tk.Assignee) + ";" }>{ shortAssignee(tk.Assignee) }</span>
+					</span>
 				}
 			</div>
 		}

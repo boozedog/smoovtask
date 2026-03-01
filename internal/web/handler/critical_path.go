@@ -41,18 +41,8 @@ func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPath
 		return templates.CriticalPathData{}, err
 	}
 
-	view := r.URL.Query().Get("view")
-	if view != "horizontal" {
-		view = "vertical"
-	}
+	graph := ticket.BuildDependencyGraph(all)
 
-	paths := ticket.ComputeCriticalPaths(all, 8)
-	filtered := make([]ticket.CriticalPath, 0, len(paths))
-	for _, path := range paths {
-		if len(path.IDs) > 1 {
-			filtered = append(filtered, path)
-		}
-	}
 	byID := make(map[string]*ticket.Ticket)
 	runIDSet := make(map[string]struct{})
 	for _, tk := range all {
@@ -71,8 +61,7 @@ func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPath
 	return templates.CriticalPathData{
 		Project:    h.project,
 		Scope:      scope,
-		View:       view,
-		Paths:      filtered,
+		Graph:      graph,
 		ByID:       byID,
 		RunSources: runSources,
 	}, nil

@@ -34,11 +34,10 @@ templ ListPartial(data ListData) {
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"
 	>
-		<div class="mb-4 flex gap-3 items-center">
+		<div class="mb-4 flex flex-wrap items-center gap-3">
 			<select
 				name="project"
-				class="uk-select uk-form-small"
-				style="max-width: 200px;"
+				class="uk-select uk-form-sm w-52 max-w-full"
 				hx-get="/partials/list-content"
 				hx-target="#list-content"
 				hx-swap="innerHTML"
@@ -58,8 +57,7 @@ templ ListPartial(data ListData) {
 			</select>
 			<select
 				name="status"
-				class="uk-select uk-form-small"
-				style="max-width: 200px;"
+				class="uk-select uk-form-sm w-52 max-w-full"
 				hx-get="/partials/list-content"
 				hx-target="#list-content"
 				hx-swap="innerHTML"
@@ -115,57 +113,59 @@ templ ListContent(data ListData) {
 			No tickets found.
 		</div>
 	} else {
-		<table class="uk-table uk-table-small uk-table-divider uk-table-hover">
-			<thead>
-				<tr>
-					<th style="width: 100px;">
-						<a href="#" hx-get={ sortHeaderURL(data.Filter, "id") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
-							ID{ sortIndicator(data.Filter, "id") }
-						</a>
-					</th>
-					<th>
-						<a href="#" hx-get={ sortHeaderURL(data.Filter, "title") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
-							Title{ sortIndicator(data.Filter, "title") }
-						</a>
-					</th>
-					<th style="width: 120px;">
-						<a href="#" hx-get={ sortHeaderURL(data.Filter, "status") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
-							Status{ sortIndicator(data.Filter, "status") }
-						</a>
-					</th>
-					<th style="width: 60px;">
-						<a href="#" hx-get={ sortHeaderURL(data.Filter, "priority") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
-							Priority{ sortIndicator(data.Filter, "priority") }
-						</a>
-					</th>
-					<th style="width: 120px;">
-						<a href="#" hx-get={ sortHeaderURL(data.Filter, "project") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
-							Project{ sortIndicator(data.Filter, "project") }
-						</a>
-					</th>
-					<th style="width: 160px;">
-						<a href="#" hx-get={ sortHeaderURL(data.Filter, "updated") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']" style="color: inherit; text-decoration: none;">
-							Updated{ sortIndicator(data.Filter, "updated") }
-						</a>
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				for _, tk := range data.Tickets {
-					<tr style="cursor: pointer;" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s", tk.ID) }>
-						<td><span>{ tk.ID }</span></td>
-						<td><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" style="color: inherit; text-decoration: none;">{ tk.Title }</a></td>
-						<td>
-							@StatusBadge(tk.Status)
-						</td>
-						<td>
-							@PriorityBadge(tk.Priority)
-						</td>
-						<td>{ tk.Project }</td>
-						<td style="font-size: 0.8rem; opacity: 0.7;">{ tk.Updated.Format("2006-01-02 15:04") }</td>
+		<div class="uk-overflow-auto">
+			<table class="uk-table uk-table-sm uk-table-divider uk-table-hover uk-table-middle uk-table-responsive uk-table-responsive-stack">
+				<thead>
+					<tr>
+						<th class="w-24">
+							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "id") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+								ID{ sortIndicator(data.Filter, "id") }
+							</a>
+						</th>
+						<th>
+							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "title") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+								Title{ sortIndicator(data.Filter, "title") }
+							</a>
+						</th>
+						<th class="w-28">
+							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "status") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+								Status{ sortIndicator(data.Filter, "status") }
+							</a>
+						</th>
+						<th class="w-20">
+							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "priority") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+								Priority{ sortIndicator(data.Filter, "priority") }
+							</a>
+						</th>
+						<th class="w-32">
+							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "project") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+								Project{ sortIndicator(data.Filter, "project") }
+							</a>
+						</th>
+						<th class="w-40">
+							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "updated") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+								Updated{ sortIndicator(data.Filter, "updated") }
+							</a>
+						</th>
 					</tr>
-				}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					for _, tk := range data.Tickets {
+						<tr class="cursor-pointer" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s", tk.ID) }>
+							<td data-label="ID"><span>{ tk.ID }</span></td>
+							<td data-label="Title"><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-link-reset">{ tk.Title }</a></td>
+							<td data-label="Status">
+								@StatusBadge(tk.Status)
+							</td>
+							<td data-label="Priority">
+								@PriorityBadge(tk.Priority)
+							</td>
+							<td data-label="Project">{ tk.Project }</td>
+							<td data-label="Updated" class="text-xs opacity-70">{ tk.Updated.Format("2006-01-02 15:04") }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
 	}
 }

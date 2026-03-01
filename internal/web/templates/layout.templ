@@ -22,41 +22,43 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
 				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
-				.st-card { display: block; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 0.375rem; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); cursor: pointer; transition: border-color 0.15s; text-decoration: none; color: inherit; }
-				.st-card:hover { border-color: hsl(var(--primary)); }
+				.st-ticket-card { display: block; margin-bottom: 0.5rem; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); cursor: pointer; transition: border-color 0.15s; text-decoration: none; color: inherit; }
+				.st-ticket-card:hover { border-color: hsl(var(--primary)); }
 				.st-card-title { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.25rem; overflow-wrap: break-word; }
-				.st-card-meta { font-size: 0.75rem; opacity: 0.7; display: flex; gap: 0.5rem; align-items: center; }
-				.st-badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 600; }
-				.st-badge-p0 { background: #dc2626; color: white; }
-				.st-badge-p1 { background: #ea580c; color: white; }
-				.st-badge-p2 { background: #d97706; color: white; }
-				.st-badge-p3 { background: #2563eb; color: white; }
-				.st-badge-p4 { background: #6b7280; color: white; }
-				.st-badge-p5 { background: #374151; color: #9ca3af; }
-				.st-status-backlog { border-color: #6b7280; }
-				.st-status-open { border-color: #3b82f6; }
-				.st-status-in-progress { border-color: #f59e0b; }
-				.st-status-review { border-color: #8b5cf6; }
-				.st-status-rework { border-color: #ef4444; }
-				.st-status-blocked { border-color: #dc2626; }
-				.st-status-done { border-color: #22c55e; }
-				.st-status-cancelled { border-color: #9ca3af; }
-				.st-column-count { opacity: 0.5; font-weight: normal; }
+				.st-priority-p0 { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+				.st-priority-p1 { background: hsl(var(--destructive) / 0.82); color: hsl(var(--destructive-foreground)); }
+				.st-priority-p2 { background: hsl(var(--warning)); color: hsl(var(--warning-foreground)); }
+				.st-priority-p3 { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+				.st-priority-p4 { background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
+				.st-priority-p5 { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+				.st-status-badge-done { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+				.st-status-badge-cancelled { background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
+				.st-source-badge-image { height: 1.5rem; width: auto; image-rendering: pixelated; }
+				.st-source-glyph { font-family: 'Maple Mono NF', monospace; }
+				.st-assignee-wrap { margin-left: auto; display: inline-flex; align-items: center; gap: 0.25rem; }
+				.st-assignee-pill { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 9999px; font-family: 'Maple Mono NF', monospace; font-size: 0.65rem; font-weight: 600; background: var(--st-assignee-bg, hsl(var(--primary))); color: hsl(var(--foreground)); }
+				.st-assignee-pill-md { font-size: 0.8rem; }
+				.st-status-backlog { border-color: hsl(var(--muted-foreground)); }
+				.st-status-open { border-color: hsl(var(--primary)); }
+				.st-status-in-progress { border-color: hsl(var(--warning)); }
+				.st-status-review { border-color: hsl(var(--secondary)); }
+				.st-status-rework { border-color: hsl(var(--destructive) / 0.82); }
+				.st-status-blocked { border-color: hsl(var(--destructive)); }
+				.st-status-done { border-color: hsl(var(--primary)); }
+				.st-status-cancelled { border-color: hsl(var(--muted)); }
 				.st-event-row { padding: 0.5rem 0; border-bottom: 1px solid hsl(var(--border)); font-size: 0.85rem; }
-				.st-event-type { font-weight: 600; }
-				.st-event-time { opacity: 0.6; font-size: 0.75rem; }
 				.st-ticket-body { line-height: 1.6; overflow-wrap: break-word; word-break: break-word; margin-top: 1.5rem; }
 				.st-ticket-body h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.25rem; font-weight: 600; }
 				.st-ticket-body h2:first-child { margin-top: 0; }
-				.st-ticket-body h2.st-event-created { color: #60a5fa; }
-				.st-ticket-body h2.st-event-in-progress { color: #f59e0b; }
-				.st-ticket-body h2.st-event-note { color: #a78bfa; }
-				.st-ticket-body h2.st-event-review { color: #c084fc; }
-				.st-ticket-body h2.st-event-done { color: #4ade80; }
-				.st-ticket-body h2.st-event-rework { color: #f87171; }
-				.st-ticket-body h2.st-event-blocked { color: #ef4444; }
-				.st-ticket-body h2.st-event-backlog { color: #9ca3af; }
-				.st-ticket-body h2.st-event-open { color: #38bdf8; }
+				.st-ticket-body h2.st-event-created { color: hsl(var(--primary)); }
+				.st-ticket-body h2.st-event-in-progress { color: hsl(var(--warning)); }
+				.st-ticket-body h2.st-event-note { color: hsl(var(--secondary-foreground)); }
+				.st-ticket-body h2.st-event-review { color: hsl(var(--secondary-foreground)); }
+				.st-ticket-body h2.st-event-done { color: hsl(var(--primary)); }
+				.st-ticket-body h2.st-event-rework { color: hsl(var(--destructive) / 0.82); }
+				.st-ticket-body h2.st-event-blocked { color: hsl(var(--destructive)); }
+				.st-ticket-body h2.st-event-backlog { color: hsl(var(--muted-foreground)); }
+				.st-ticket-body h2.st-event-open { color: hsl(var(--primary)); }
 				.st-ticket-body h3 { font-size: 1.05rem; margin-top: 1.25rem; margin-bottom: 0.5rem; font-weight: 600; }
 				.st-ticket-body p { margin-bottom: 0.75rem; }
 				.st-ticket-body strong { opacity: 0.5; font-weight: 500; }
@@ -64,19 +66,9 @@ templ Layout(title string, currentPath string) {
 				.st-ticket-body :not(pre) > code { font-size: 0.85em; background: hsl(var(--card)); padding: 0.15em 0.4em; border-radius: 0.25rem; }
 				.st-ticket-body pre code { font-size: 0.85em; background: none; padding: 0; }
 				.st-ticket-body ul, .st-ticket-body ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
-				.st-ticket-detail { margin: 0 auto; }
-				.st-ticket-header { margin-bottom: 0; }
-				.st-ticket-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; }
-				.st-meta-sep { width: 1px; height: 1rem; background: hsl(var(--border)); }
-				.st-nav-active { color: hsl(var(--primary)) !important; border-bottom: 2px solid hsl(var(--primary)); }
-				.uk-navbar { display: flex; align-items: center; justify-content: space-between; }
-				.uk-navbar-left { display: flex; align-items: center; min-width: 0; }
-				.uk-navbar-right { display: flex; align-items: center; }
-				.uk-navbar-nav { display: flex; list-style: none; margin: 0; padding: 0; }
-				.uk-navbar-nav > li > a { display: block; padding: 0.75rem 1rem; text-decoration: none; color: inherit; }
-				.uk-navbar-nav > li > a:hover { color: hsl(var(--primary)); }
-				.uk-navbar-nav > li > a { font-size: 0.9rem; }
-				.st-column-collapsed .st-card:nth-child(n+7) { display: none; }
+				.st-copy-ticket-id { border: 1px solid hsl(var(--border)); background: transparent; font-size: 0.8rem; cursor: pointer; user-select: none; }
+				.st-ticket-dep-link { font-size: 0.8rem; }
+				.st-column-collapsed .st-ticket-card:nth-child(n+7) { display: none; }
 				.st-toggle-done { display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem; background: transparent; border: 1px dashed hsl(var(--border)); border-radius: 0.375rem; color: hsl(var(--foreground)); opacity: 0.6; cursor: pointer; font-size: 0.8rem; }
 				.st-toggle-done:hover { opacity: 1; }
 				.st-board-wrapper { position: relative; }
@@ -86,83 +78,159 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper.scroll-left::before { opacity: 1; }
 				.st-board-wrapper.scroll-right::after { opacity: 1; }
 				.st-modal-ticket { width: 66vw; max-width: 1200px; }
-				.st-modal-ticket .st-ticket-detail { max-width: 100%; }
+				.st-dep-graph { position: relative; overflow-x: auto; padding-bottom: 1rem; }
+				.st-dep-grid { display: flex; gap: 2rem; align-items: flex-start; min-width: min-content; }
+				.st-dep-layer { display: flex; flex-direction: column; gap: 0.75rem; min-width: 14rem; }
+				.st-dep-node { padding: 0.75rem; border-radius: 0.375rem; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); cursor: pointer; transition: border-color 0.15s, opacity 0.15s; text-decoration: none; color: inherit; display: block; }
+				.st-dep-node:hover { border-color: hsl(var(--primary)); }
+				.st-dep-node-title { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.25rem; overflow-wrap: break-word; }
+				.st-dep-node-meta { font-size: 0.75rem; opacity: 0.7; display: flex; gap: 0.5rem; align-items: center; }
+				.st-dep-edges { position: absolute; top: 0; left: 0; pointer-events: none; }
+				.st-dep-edge { stroke: hsl(var(--border)); stroke-width: 2; fill: none; transition: stroke 0.15s, stroke-width 0.15s; }
+				.st-dep-edge.highlighted { stroke: hsl(var(--primary)); stroke-width: 2.5; }
+				.st-dep-graph.dimmed .st-dep-node { opacity: 0.3; }
+				.st-dep-graph.dimmed .st-dep-node.highlighted { opacity: 1; }
+				@keyframes st-pulse { 0% { background: hsl(var(--primary)); box-shadow: 0 0 4px hsl(var(--primary)); } 100% { background: hsl(var(--primary) / 0.22); box-shadow: none; } }
+				.st-session-dot { width: 6px; height: 6px; border-radius: 50%; background: hsl(var(--primary) / 0.22); flex-shrink: 0; }
+				.st-session-dot.st-pulse { animation: st-pulse 0.6s ease-out; }
+				@media (max-width: 640px) {
+					.st-event-row { gap: 0.35rem; }
+				}
 			</style>
 		</head>
-		<body hx-ext="sse" sse-connect="/events" class="h-screen flex flex-col overflow-hidden" style="background-color: hsl(var(--background)); color: hsl(var(--foreground));">
-			<nav class="uk-navbar-container uk-navbar px-4 shrink-0">
-				<div class="uk-navbar-left">
-					<a class="uk-navbar-item uk-logo font-bold flex items-center gap-2" href="/" style="font-size: 1.3rem;">
-						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full" style="object-fit: cover; object-position: center;"/>
-						<span style="font-family: 'Maple Mono NF', monospace;">smoovtask</span>
+		<body hx-ext="sse" sse-connect="/events" class="h-screen flex flex-col overflow-hidden bg-background text-foreground">
+			<nav class="flex items-center justify-between px-4 shrink-0">
+				<div class="flex items-center min-w-0">
+					<a class="uk-logo font-bold flex items-center gap-2 text-xl" href="/">
+						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full object-cover object-center"/>
+						<span class="uk-text-mono">smoovtask</span>
 					</a>
-					<ul class="uk-navbar-nav gap-0 ml-4">
-						<li>
+					<ul class="uk-subnav ml-4">
+						<li
+							if currentPath == "/" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/board"
 								hx-target="#content"
 								hx-push-url="/"
 								href="/"
-								if currentPath == "/" {
-									class="st-nav-active"
-								}
 							>
 								Board
 							</a>
 						</li>
-						<li>
+						<li
+							if currentPath == "/list" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/list"
 								hx-target="#content"
 								hx-push-url="/list"
 								href="/list"
-								if currentPath == "/list" {
-									class="st-nav-active"
-								}
 							>
 								List
 							</a>
 						</li>
-						<li>
+						<li
+							if currentPath == "/critical-path" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/critical-path"
 								hx-target="#content"
 								hx-push-url="/critical-path"
 								href="/critical-path"
-								if currentPath == "/critical-path" {
-									class="st-nav-active"
-								}
 							>
 								Critical Path
 							</a>
 						</li>
-						<li>
+						<li
+							if currentPath == "/activity" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/activity"
 								hx-target="#content"
 								hx-push-url="/activity"
 								href="/activity"
-								if currentPath == "/activity" {
-									class="st-nav-active"
-								}
 							>
 								Activity
 							</a>
 						</li>
 					</ul>
 				</div>
-				<div class="uk-navbar-right">
-					<a class="uk-button uk-button-primary uk-button-small" href="/new">New Ticket</a>
+				<div class="flex items-center">
+					<a class="uk-btn uk-btn-primary uk-btn-sm" href="/new" hx-get="/partials/form/new" hx-target="#ticket-modal-body" hx-push-url="false">New Ticket</a>
 				</div>
 			</nav>
-			<main class="uk-container uk-container-expand p-6 flex-1 overflow-y-auto min-h-0">
+			<main class="uk-container uk-container-expand p-4 sm:p-6 flex-1 overflow-y-auto min-h-0">
 				<div id="content">
 					{ children... }
 				</div>
 			</main>
+			<div id="ticket-modal" data-uk-modal>
+				<div class="uk-modal-dialog st-modal-ticket">
+					<button class="uk-modal-close absolute right-4 top-4 z-10" type="button" data-uk-close></button>
+					<div class="uk-modal-header" id="ticket-modal-header"></div>
+					<div class="uk-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
+				</div>
+			</div>
 			<script>
-				if (!window._stClickHandlerBound) {
-				window._stClickHandlerBound = true;
+				// Global function definitions (safe to re-declare on script re-evaluation).
+				function toggleDone(btn) {
+					var col = btn.closest('.st-column');
+					col.classList.toggle('st-column-collapsed');
+					var count = btn.getAttribute('data-count');
+					if (col.classList.contains('st-column-collapsed')) {
+						btn.textContent = 'Show all (' + count + ')';
+					} else {
+						btn.textContent = 'Collapse';
+					}
+				}
+				function updateScrollIndicators() {
+					var wrapper = document.querySelector('.st-board-wrapper');
+					if (!wrapper) return;
+					var board = wrapper.querySelector('.st-board');
+					if (!board) return;
+					var sl = board.scrollLeft > 0;
+					var sr = board.scrollLeft + board.clientWidth < board.scrollWidth - 1;
+					wrapper.classList.toggle('scroll-left', sl);
+					wrapper.classList.toggle('scroll-right', sr);
+				}
+
+				// Guard: register all event listeners exactly once.
+				if (!window._stInitialized) {
+				window._stInitialized = true;
+
+				// Pulse session dots on every SSE event.
+				document.body.addEventListener('htmx:sseMessage', function() {
+					document.querySelectorAll('.st-session-dot').forEach(function(dot) {
+						dot.classList.remove('st-pulse');
+						void dot.offsetWidth;
+						dot.classList.add('st-pulse');
+					});
+				});
+				document.body.addEventListener('animationend', function(e) {
+					if (e.target.classList.contains('st-session-dot')) {
+						e.target.classList.remove('st-pulse');
+					}
+				});
+
+				var _ticketModalOpen = false;
+				var _modalClosingFromHistory = false;
+				var _modalHistoryPushed = false;
+
+				// Close modal on form success (HX-Trigger: closeModal).
+				document.body.addEventListener('closeModal', function() {
+					UIkit.modal('#ticket-modal').hide();
+				});
+
+				// Click delegation: copy-to-clipboard and table row modal opens.
 				document.addEventListener('click', function(e) {
 					var copyTarget = e.target.closest('[data-copy-ticket-id]');
 					if (copyTarget) {
@@ -202,57 +270,60 @@ templ Layout(title string, currentPath string) {
 						}
 					}
 				});
-				}
-			</script>
-			<script>
-				function toggleDone(btn) {
-					var col = btn.closest('.st-column');
-					col.classList.toggle('st-column-collapsed');
-					var count = btn.getAttribute('data-count');
-					if (col.classList.contains('st-column-collapsed')) {
-						btn.textContent = 'Show all (' + count + ')';
-					} else {
-						btn.textContent = 'Collapse';
-					}
-				}
-				function updateScrollIndicators() {
-					var wrapper = document.querySelector('.st-board-wrapper');
-					if (!wrapper) return;
-					var board = wrapper.querySelector('.st-board');
-					if (!board) return;
-					var sl = board.scrollLeft > 0;
-					var sr = board.scrollLeft + board.clientWidth < board.scrollWidth - 1;
-					wrapper.classList.toggle('scroll-left', sl);
-					wrapper.classList.toggle('scroll-right', sr);
-				}
+
+				// Initial scroll indicator setup.
 				document.addEventListener('DOMContentLoaded', function() {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
 				});
+
+				// Consolidated htmx:afterSwap handler.
 				document.addEventListener('htmx:afterSwap', function(e) {
+					// Re-bind scroll indicators when board is swapped in.
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
-				});
-				// Scroll to top on content navigation (not SSE refresh).
-				document.addEventListener('htmx:afterSwap', function(e) {
+
+					// Scroll to top on content navigation (not SSE refresh).
 					if (e.detail.target && e.detail.target.id === 'content') {
 						var main = e.detail.target.closest('main');
 						if (main) main.scrollTop = 0;
 					}
+
+					// Ticket modal management.
+					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
+						var url = e.detail.xhr ? e.detail.xhr.responseURL : '';
+						var isFormLoad = url.indexOf('/partials/form/') !== -1;
+						var match = url.match(/\/ticket\/(st_[A-Za-z0-9]+)/);
+						var id = match ? match[1] : '';
+						if (_ticketModalOpen) {
+							// Navigating within an already-open modal (e.g. dep link or edit).
+							if (!isFormLoad && id) history.replaceState({ticketModal: true}, '', '/ticket/' + id);
+						} else {
+							UIkit.modal('#ticket-modal').show();
+							_ticketModalOpen = true;
+							if (!isFormLoad && id) {
+								history.pushState({ticketModal: true}, '', '/ticket/' + id);
+								_modalHistoryPushed = true;
+							}
+						}
+					}
 				});
+
 				// Update active nav link and page title on htmx navigation.
 				document.addEventListener('htmx:pushedIntoHistory', function(e) {
 					var path = e.detail.path || window.location.pathname;
-					document.querySelectorAll('.uk-navbar-nav a').forEach(function(a) {
-						var linkPath = new URL(a.href, window.location.origin).pathname;
-						if (linkPath === path || (linkPath === '/' && path === '/')) {
-							a.classList.add('st-nav-active');
-						} else {
-							a.classList.remove('st-nav-active');
-						}
-					});
+				document.querySelectorAll('.uk-subnav li').forEach(function(li) {
+					var a = li.querySelector('a[href]');
+					if (!a) return;
+					var linkPath = new URL(a.href, window.location.origin).pathname;
+					if (linkPath === path || (linkPath === '/' && path === '/')) {
+						li.classList.add('uk-active');
+					} else {
+						li.classList.remove('uk-active');
+					}
+				});
 					var titleMap = {'/': 'Board', '/list': 'List', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
@@ -261,9 +332,9 @@ templ Layout(title string, currentPath string) {
 					}
 					if (title) document.title = title + ' — smoovtask';
 				});
+
 				// Handle browser back/forward.
 				window.addEventListener('popstate', function() {
-					// If ticket modal is open, close it and return.
 					var modalEl = document.getElementById('ticket-modal');
 					if (modalEl && _ticketModalOpen) {
 						_modalClosingFromHistory = true;
@@ -280,52 +351,31 @@ templ Layout(title string, currentPath string) {
 						var url = partial;
 						if (window.location.search) url += window.location.search;
 						htmx.ajax('GET', url, {target: '#content', swap: 'innerHTML'});
-						// Update nav active state.
-						document.querySelectorAll('.uk-navbar-nav a').forEach(function(a) {
+						document.querySelectorAll('.uk-subnav li').forEach(function(li) {
+							var a = li.querySelector('a[href]');
+							if (!a) return;
 							var linkPath = new URL(a.href, window.location.origin).pathname;
 							if (linkPath === path) {
-								a.classList.add('st-nav-active');
+								li.classList.add('uk-active');
 							} else {
-								a.classList.remove('st-nav-active');
+								li.classList.remove('uk-active');
 							}
 						});
 					}
 				});
-			</script>
-			<div id="ticket-modal" data-uk-modal>
-				<div class="uk-modal-dialog st-modal-ticket">
-					<button class="uk-modal-close absolute right-4 top-4" type="button" data-uk-close style="z-index: 1;"></button>
-					<div class="uk-modal-header" id="ticket-modal-header"></div>
-					<div class="uk-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
-				</div>
-			</div>
-			<script>
-				// Ticket modal management.
-				var _ticketModalOpen = false;
-				var _modalClosingFromHistory = false;
-				document.addEventListener('htmx:afterSwap', function(e) {
-					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
-						var url = e.detail.xhr ? e.detail.xhr.responseURL : '';
-						var match = url.match(/\/ticket\/(st_[A-Za-z0-9]+)/);
-						var id = match ? match[1] : '';
-						if (_ticketModalOpen) {
-							if (id) history.replaceState({ticketModal: true}, '', '/ticket/' + id);
-						} else {
-							UIkit.modal('#ticket-modal').show();
-							_ticketModalOpen = true;
-							if (id) history.pushState({ticketModal: true}, '', '/ticket/' + id);
-						}
-					}
-				});
+
+				// Modal hidden cleanup.
 				UIkit.util.on('#ticket-modal', 'hidden', function() {
 					_ticketModalOpen = false;
-					if (!_modalClosingFromHistory) {
+					if (!_modalClosingFromHistory && _modalHistoryPushed) {
 						history.back();
 					}
 					_modalClosingFromHistory = false;
+					_modalHistoryPushed = false;
 					document.getElementById('ticket-modal-header').innerHTML = '';
 					document.getElementById('ticket-modal-body').innerHTML = '';
 				});
+				}
 			</script>
 		</body>
 	</html>

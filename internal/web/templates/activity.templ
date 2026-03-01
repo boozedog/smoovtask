@@ -69,11 +69,10 @@ templ ActivityPartial(data ActivityData) {
 		hx-disinherit="hx-swap"
 		hx-include="[name='project'],[name='event_type']"
 	>
-		<div class="mb-4 flex gap-3 items-center">
+		<div class="mb-4 flex flex-wrap items-center gap-3">
 			<select
 				name="project"
-				class="uk-select uk-form-small"
-				style="max-width: 200px;"
+				class="uk-select uk-form-sm w-52 max-w-full"
 				hx-get="/partials/activity-content"
 				hx-target="#activity-content"
 				hx-swap="innerHTML"
@@ -93,8 +92,7 @@ templ ActivityPartial(data ActivityData) {
 			</select>
 			<select
 				name="event_type"
-				class="uk-select uk-form-small"
-				style="max-width: 200px;"
+				class="uk-select uk-form-sm w-52 max-w-full"
 				hx-get="/partials/activity-content"
 				hx-target="#activity-content"
 				hx-swap="innerHTML"
@@ -121,24 +119,24 @@ templ ActivityContent(data ActivityData) {
 	} else {
 		<div>
 			for _, ev := range data.Events {
-				<div class="st-event-row flex gap-4 items-baseline">
-					<span class="st-event-time" style="min-width: 140px;">
+				<div class="st-event-row flex flex-wrap gap-4 items-baseline">
+					<span class="opacity-60 text-xs min-w-[140px]">
 						{ ev.TS.Format("2006-01-02 15:04:05") }
 					</span>
-					<span class="st-event-type" style="min-width: 160px;">
+					<span class="font-semibold min-w-[160px]">
 						{ ev.Event }
 					</span>
 					if ev.Ticket != "" {
-						<a href={ templ.SafeURL("/ticket/" + ev.Ticket) } hx-get={ "/partials/ticket/" + ev.Ticket } hx-target="#content" hx-push-url={ "/ticket/" + ev.Ticket } style="font-size: 0.85rem;">
+						<a href={ templ.SafeURL("/ticket/" + ev.Ticket) } hx-get={ "/partials/ticket/" + ev.Ticket } hx-target="#content" hx-push-url={ "/ticket/" + ev.Ticket } class="text-sm">
 							{ ev.Ticket }
 						</a>
 					}
 					if ev.Project != "" {
-						<span style="opacity: 0.6; font-size: 0.8rem;">{ ev.Project }</span>
+						<span class="opacity-60 text-sm">{ ev.Project }</span>
 					}
-					<span style="opacity: 0.6; font-size: 0.8rem;">{ ev.Actor }</span>
+					<span class="opacity-60 text-sm">{ ev.Actor }</span>
 					if eventContext(ev) != "" {
-						<span class="opacity-50" style="font-size: 0.8rem; font-style: italic;">
+						<span class="opacity-50 text-sm italic">
 							— { eventContext(ev) }
 						</span>
 					}

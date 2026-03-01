@@ -89,6 +89,8 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
 	mux.HandleFunc("GET /partials/critical-path", h.PartialCriticalPath)
+	mux.HandleFunc("GET /partials/form/new", h.PartialNewTicket)
+	mux.HandleFunc("GET /partials/form/{id}/edit", h.PartialEditTicket)
 
 	s.srv = &http.Server{
 		Addr: fmt.Sprintf(":%d", s.port),

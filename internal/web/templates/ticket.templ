@@ -62,37 +62,37 @@ templ TicketPartial(data TicketData) {
 }
 
 templ TicketHeader(data TicketData) {
-	<div class="st-ticket-header">
+	<div class="mb-0">
 		<div class="flex items-start justify-between gap-4">
-			<h1 class="font-bold mb-2" style="font-size: 1.5rem; overflow-wrap: break-word;">
+			<h1 class="font-bold mb-2 text-2xl break-words">
 			{ data.Ticket.Title }
 			</h1>
-			<a href={ templ.SafeURL("/ticket/" + data.Ticket.ID + "/edit") } class="uk-button uk-button-default uk-button-small">Edit</a>
+			<a href={ templ.SafeURL("/ticket/" + data.Ticket.ID + "/edit") } hx-get={ "/partials/form/" + data.Ticket.ID + "/edit" } hx-target="#ticket-modal-body" hx-push-url="false" class="uk-btn uk-btn-default uk-btn-sm">Edit</a>
 		</div>
-		<div class="st-ticket-meta">
-			<span data-copy-ticket-id={ data.Ticket.ID } title="Click to copy ticket ID" class="st-badge" style="border: 1px solid; background: transparent; font-size: 0.8rem; cursor: pointer; user-select: none;">{ data.Ticket.ID } <span style="font-family: 'Maple Mono NF', monospace; opacity: 0.5;">󰆏</span></span>
+		<div class="flex gap-2 items-center flex-wrap text-sm">
+			<span data-copy-ticket-id={ data.Ticket.ID } title="Click to copy ticket ID" class="uk-badge st-copy-ticket-id">{ data.Ticket.ID } <uk-icon class="opacity-50 ml-1" icon="copy"></uk-icon></span>
 			@StatusBadge(data.Ticket.Status)
 			@PriorityBadge(data.Ticket.Priority)
-			<span class="st-meta-sep"></span>
+			<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 			<span>{ data.Ticket.Project }</span>
 			if data.Ticket.Assignee != "" {
-				<span class="st-meta-sep"></span>
-				<span title={ data.Ticket.Assignee } class="inline-block rounded-full font-semibold" style={ "padding: 0.1rem 0.4rem; font-family: 'Maple Mono NF', monospace; font-size: 0.8rem; background: " + assigneePillColor(data.Ticket.Assignee) + "; color: #000;" }>{ shortAssignee(data.Ticket.Assignee) }</span>
+				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
+				<span title={ data.Ticket.Assignee } class="st-assignee-pill st-assignee-pill-md" style={ "--st-assignee-bg: " + assigneePillColor(data.Ticket.Assignee) + ";" }>{ shortAssignee(data.Ticket.Assignee) }</span>
 			}
-			<span class="st-meta-sep"></span>
-			<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") } style="opacity: 0.6;">{ relativeTime(data.Ticket.Created) }</time>
-			<span style="opacity: 0.4;">·</span>
-			<time title={ data.Ticket.Updated.Format("2006-01-02 15:04:05 MST") } style="opacity: 0.6;">updated { relativeTime(data.Ticket.Updated) }</time>
+			<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
+			<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") } class="opacity-60">{ relativeTime(data.Ticket.Created) }</time>
+			<span class="opacity-40">·</span>
+			<time title={ data.Ticket.Updated.Format("2006-01-02 15:04:05 MST") } class="opacity-60">updated { relativeTime(data.Ticket.Updated) }</time>
 			if len(data.Ticket.Tags) > 0 {
-				<span class="st-meta-sep"></span>
+				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 				for _, tag := range data.Ticket.Tags {
-					<span class="st-badge" style="background: #374151; color: #9ca3af;">{ tag }</span>
+					<span class="uk-badge uk-badge-secondary">{ tag }</span>
 				}
 			}
 			if len(data.Ticket.DependsOn) > 0 {
-				<span class="st-meta-sep"></span>
+				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 				for _, dep := range data.Ticket.DependsOn {
-					<a href={ templ.SafeURL("/ticket/" + dep) } hx-get={ "/partials/ticket/" + dep } hx-target="#ticket-modal-body" style="font-size: 0.8rem;">{ dep }</a>
+					<a href={ templ.SafeURL("/ticket/" + dep) } hx-get={ "/partials/ticket/" + dep } hx-target="#ticket-modal-body" class="st-ticket-dep-link">{ dep }</a>
 				}
 			}
 		</div>
@@ -106,7 +106,7 @@ templ TicketBodyOnly(data TicketData) {
 }
 
 templ TicketContent(data TicketData) {
-	<div class="st-ticket-detail max-w-4xl mx-auto">
+	<div class="max-w-4xl mx-auto">
 		@TicketHeader(data)
 		@TicketBodyOnly(data)
 	</div>
@@ -124,7 +124,7 @@ templ TicketModalPartial(data TicketData) {
 		hx-swap="innerHTML"
 		hx-disinherit="hx-swap"
 	>
-		<div class="st-ticket-detail max-w-none">
+		<div class="max-w-none mx-auto">
 			@TicketBodyOnly(data)
 		</div>
 	</div>

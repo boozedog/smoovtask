@@ -53,13 +53,13 @@ templ BoardContent(data BoardData) {
 				<div class={ columnClasses(col) }>
 					<div class={ "st-column-header " + statusClass(col.Status) }>
 						{ string(col.Status) }
-						<span class="st-column-count">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
+						<span class="opacity-50 font-normal">{ fmt.Sprintf("(%d)", len(col.Tickets)) }</span>
 					</div>
 					for _, tk := range col.Tickets {
 						@TicketCard(tk, data.RunSources[tk.Assignee])
 					}
 					if len(col.Tickets) == 0 {
-						<div class="p-3 opacity-40 text-center" style="font-size: 0.8rem;">
+						<div class="p-3 opacity-40 text-center text-xs">
 							No tickets
 						</div>
 					}
