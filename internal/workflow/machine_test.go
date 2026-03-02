@@ -15,8 +15,10 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusBacklog, ticket.StatusOpen, true},
 		{ticket.StatusOpen, ticket.StatusInProgress, true},
 		{ticket.StatusInProgress, ticket.StatusReview, true},
-		{ticket.StatusReview, ticket.StatusDone, true},
+		{ticket.StatusReview, ticket.StatusHumanReview, true},
+		{ticket.StatusHumanReview, ticket.StatusDone, true},
 		{ticket.StatusReview, ticket.StatusRework, true},
+		{ticket.StatusHumanReview, ticket.StatusRework, true},
 		{ticket.StatusRework, ticket.StatusInProgress, true},
 
 		// Blocked transitions
@@ -32,6 +34,7 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusOpen, ticket.StatusBacklog, true},
 		{ticket.StatusInProgress, ticket.StatusBacklog, true},
 		{ticket.StatusReview, ticket.StatusBacklog, true},
+		{ticket.StatusHumanReview, ticket.StatusBacklog, true},
 		{ticket.StatusRework, ticket.StatusBacklog, true},
 		{ticket.StatusDone, ticket.StatusBacklog, true},
 
@@ -40,6 +43,7 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusOpen, ticket.StatusCancelled, true},
 		{ticket.StatusInProgress, ticket.StatusCancelled, true},
 		{ticket.StatusReview, ticket.StatusCancelled, true},
+		{ticket.StatusHumanReview, ticket.StatusCancelled, true},
 		{ticket.StatusRework, ticket.StatusCancelled, true},
 		{ticket.StatusCancelled, ticket.StatusBacklog, true},
 
@@ -48,6 +52,7 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusOpen, ticket.StatusReview, false},
 		{ticket.StatusOpen, ticket.StatusDone, false},
 		{ticket.StatusRework, ticket.StatusDone, false},
+		{ticket.StatusReview, ticket.StatusDone, false},
 		{ticket.StatusDone, ticket.StatusOpen, false},
 		{ticket.StatusDone, ticket.StatusCancelled, false},
 		{ticket.StatusCancelled, ticket.StatusOpen, false},
@@ -85,6 +90,8 @@ func TestStatusFromAlias(t *testing.T) {
 	}{
 		{"review", ticket.StatusReview},
 		{"submit", ticket.StatusReview},
+		{"agent-review", ticket.StatusReview},
+		{"human-review", ticket.StatusHumanReview},
 		{"start", ticket.StatusInProgress},
 		{"begin", ticket.StatusInProgress},
 		{"done", ticket.StatusDone},
@@ -95,6 +102,8 @@ func TestStatusFromAlias(t *testing.T) {
 		{"OPEN", ticket.StatusOpen},
 		{"IN-PROGRESS", ticket.StatusInProgress},
 		{"CANCELLED", ticket.StatusCancelled},
+		{"REVIEW", ticket.StatusReview},
+		{"HUMAN-REVIEW", ticket.StatusHumanReview},
 	}
 
 	for _, tt := range tests {

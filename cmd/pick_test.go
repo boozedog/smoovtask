@@ -110,26 +110,15 @@ func TestPick_TicketFlagPrecedence(t *testing.T) {
 	}
 }
 
-func TestPick_AutoSelect(t *testing.T) {
-	env := newTestEnvResolved(t)
+func TestPick_RequiresTicketID(t *testing.T) {
+	env := newTestEnv(t)
 
-	tk := env.createTicket(t, "auto pick me", ticket.StatusOpen)
-
-	out, err := env.runCmd(t, "--run-id", "test-session-auto", "pick")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	_, err := env.runCmd(t, "--run-id", "test-session-auto", "pick")
+	if err == nil {
+		t.Fatal("expected error when no ticket ID provided")
 	}
-
-	if !strings.Contains(out, "Picked up "+tk.ID) {
-		t.Errorf("output = %q, want substring %q", out, "Picked up "+tk.ID)
-	}
-
-	updated, err := env.Store.Get(tk.ID)
-	if err != nil {
-		t.Fatalf("get ticket: %v", err)
-	}
-	if updated.Status != ticket.StatusInProgress {
-		t.Errorf("status = %s, want IN-PROGRESS", updated.Status)
+	if !strings.Contains(err.Error(), "ticket ID required") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "ticket ID required")
 	}
 }
 
@@ -167,13 +156,23 @@ func TestPick_AlreadyInProgress(t *testing.T) {
 	}
 }
 
-func TestPick_NoOpenTickets(t *testing.T) {
-	env := newTestEnvResolved(t)
+func TestPick_RejectsSecondActiveTicket(t *testing.T) {
+	env := newTestEnv(t)
 
-	// No tickets at all
-	_, err := env.runCmd(t, "--run-id", "test-session", "pick")
+	active := env.createTicket(t, "already active", ticket.StatusInProgress)
+	active.Assignee = "test-session"
+	if err := env.Store.Save(active); err != nil {
+		t.Fatalf("save active ticket: %v", err)
+	}
+
+	newTicket := env.createTicket(t, "new pick", ticket.StatusOpen)
+
+	_, err := env.runCmd(t, "--run-id", "test-session", "pick", newTicket.ID)
 	if err == nil {
-		t.Fatal("expected error for no open tickets")
+		t.Fatal("expected error when run already has active ticket")
+	}
+	if !strings.Contains(err.Error(), "already has active ticket") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "already has active ticket")
 	}
 }
 

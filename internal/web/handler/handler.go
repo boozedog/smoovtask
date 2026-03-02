@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"strings"
+	"time"
+
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/sse"
@@ -26,11 +29,10 @@ func New(ticketsDir, eventsDir string, broker *sse.Broker, project string) *Hand
 
 // statusOrder defines the column order for the kanban board.
 var statusOrder = []ticket.Status{
+	ticket.StatusBlocked,
 	ticket.StatusOpen,
 	ticket.StatusInProgress,
 	ticket.StatusReview,
-	ticket.StatusRework,
-	ticket.StatusBlocked,
 	ticket.StatusDone,
 }
 
@@ -47,7 +49,7 @@ func groupByStatus(tickets []*ticket.Ticket) map[ticket.Status][]*ticket.Ticket 
 // active states first, then backlog, then done.
 func statusWeight(s ticket.Status) int {
 	switch s {
-	case ticket.StatusOpen, ticket.StatusInProgress, ticket.StatusReview, ticket.StatusRework, ticket.StatusBlocked:
+	case ticket.StatusOpen, ticket.StatusInProgress, ticket.StatusReview, ticket.StatusHumanReview, ticket.StatusRework, ticket.StatusBlocked:
 		return 0
 	case ticket.StatusBacklog:
 		return 1
@@ -110,4 +112,39 @@ func (h *Handler) resolveRunSources(runIDs []string) map[string]string {
 	}
 
 	return runSources
+}
+
+func (h *Handler) resolveRunLastHookTimes(runIDs []string) map[string]time.Time {
+	wanted := make(map[string]struct{}, len(runIDs))
+	for _, runID := range runIDs {
+		if runID == "" {
+			continue
+		}
+		wanted[runID] = struct{}{}
+	}
+	if len(wanted) == 0 {
+		return map[string]time.Time{}
+	}
+
+	const recentLimit = 500
+	events := recentEvents(h.eventsDir, event.Query{}, recentLimit)
+	runLastHook := make(map[string]time.Time, len(wanted))
+
+	for _, ev := range events {
+		if ev.RunID == "" || !strings.HasPrefix(ev.Event, "hook.") {
+			continue
+		}
+		if _, ok := wanted[ev.RunID]; !ok {
+			continue
+		}
+		if _, ok := runLastHook[ev.RunID]; ok {
+			continue
+		}
+		runLastHook[ev.RunID] = ev.TS
+		if len(runLastHook) == len(wanted) {
+			break
+		}
+	}
+
+	return runLastHook
 }

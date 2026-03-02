@@ -18,17 +18,26 @@ func TestRequiresAssignee(t *testing.T) {
 	if RequiresAssignee(ticket.StatusReview) {
 		t.Error("REVIEW should not require assignee")
 	}
+	if RequiresAssignee(ticket.StatusHumanReview) {
+		t.Error("HUMAN-REVIEW should not require assignee")
+	}
 }
 
 func TestRequiresNote(t *testing.T) {
 	if !RequiresNote(ticket.StatusInProgress, ticket.StatusReview) {
 		t.Error("IN-PROGRESS → REVIEW should require note")
 	}
-	if !RequiresNote(ticket.StatusReview, ticket.StatusDone) {
-		t.Error("REVIEW → DONE should require note")
+	if !RequiresNote(ticket.StatusReview, ticket.StatusHumanReview) {
+		t.Error("REVIEW → HUMAN-REVIEW should require note")
+	}
+	if !RequiresNote(ticket.StatusHumanReview, ticket.StatusDone) {
+		t.Error("HUMAN-REVIEW → DONE should require note")
 	}
 	if !RequiresNote(ticket.StatusReview, ticket.StatusRework) {
 		t.Error("REVIEW → REWORK should require note")
+	}
+	if !RequiresNote(ticket.StatusHumanReview, ticket.StatusRework) {
+		t.Error("HUMAN-REVIEW → REWORK should require note")
 	}
 	if RequiresNote(ticket.StatusOpen, ticket.StatusInProgress) {
 		t.Error("OPEN → IN-PROGRESS should not require note")

@@ -70,7 +70,7 @@ func TestHandlePreToolNoConfig(t *testing.T) {
 	}
 }
 
-func TestHandlePreToolWarnsOnWriteWithoutTicket(t *testing.T) {
+func TestHandlePreToolBlocksWriteWithoutTicket(t *testing.T) {
 	projectPath := t.TempDir()
 	setupTestEnv(t, projectPath)
 
@@ -85,11 +85,23 @@ func TestHandlePreToolWarnsOnWriteWithoutTicket(t *testing.T) {
 		t.Fatalf("HandlePreTool() error: %v", err)
 	}
 
-	if !strings.Contains(out.AdditionalContext, "WARNING") {
-		t.Error("expected warning when editing without active ticket")
+	if !strings.Contains(out.AdditionalContext, "BLOCKED") {
+		t.Error("expected block guidance when editing without active ticket")
 	}
 	if !strings.Contains(out.AdditionalContext, "st pick") {
-		t.Error("warning should mention st pick")
+		t.Error("block guidance should mention st pick")
+	}
+	if !strings.Contains(out.AdditionalContext, "--run-id sess-no-ticket") {
+		t.Error("block guidance should include the run id")
+	}
+	if out.Decision == nil {
+		t.Fatal("expected deny decision when editing without active ticket")
+	}
+	if out.Decision.Behavior != "deny" {
+		t.Errorf("decision behavior = %q, want %q", out.Decision.Behavior, "deny")
+	}
+	if !strings.Contains(out.Decision.Reason, "st pick") {
+		t.Error("decision reason should include remediation")
 	}
 }
 
@@ -127,6 +139,9 @@ func TestHandlePreToolNoWarningWithActiveTicket(t *testing.T) {
 	if out.AdditionalContext != "" {
 		t.Errorf("expected no warning with active ticket, got: %q", out.AdditionalContext)
 	}
+	if out.Decision != nil {
+		t.Errorf("expected no deny decision with active ticket, got: %#v", out.Decision)
+	}
 }
 
 func TestHandlePreToolNoWarningWithReworkTicket(t *testing.T) {
@@ -163,6 +178,9 @@ func TestHandlePreToolNoWarningWithReworkTicket(t *testing.T) {
 	if out.AdditionalContext != "" {
 		t.Errorf("expected no warning with REWORK ticket, got: %q", out.AdditionalContext)
 	}
+	if out.Decision != nil {
+		t.Errorf("expected no deny decision with REWORK ticket, got: %#v", out.Decision)
+	}
 }
 
 func TestHandlePreToolNoWarningForReadTools(t *testing.T) {
@@ -182,5 +200,34 @@ func TestHandlePreToolNoWarningForReadTools(t *testing.T) {
 
 	if out.AdditionalContext != "" {
 		t.Errorf("expected no warning for Read tool, got: %q", out.AdditionalContext)
+	}
+	if out.Decision != nil {
+		t.Errorf("expected no deny decision for Read tool, got: %#v", out.Decision)
+	}
+}
+
+func TestHandlePreToolBlocksWriteWithoutRunID(t *testing.T) {
+	projectPath := t.TempDir()
+	setupTestEnv(t, projectPath)
+
+	input := &Input{
+		SessionID: "",
+		CWD:       projectPath,
+		ToolName:  "Write",
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	if !strings.Contains(out.AdditionalContext, "BLOCKED") {
+		t.Fatal("expected blocked guidance when run id is missing")
+	}
+	if !strings.Contains(out.AdditionalContext, "st list") {
+		t.Fatal("expected fallback guidance with st list")
+	}
+	if out.Decision == nil || out.Decision.Behavior != "deny" {
+		t.Fatalf("expected deny decision, got %#v", out.Decision)
 	}
 }

@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -12,6 +13,7 @@ import (
 // writingTools is the set of tools that modify files.
 var writingTools = map[string]bool{
 	"Edit":         true,
+	"MultiEdit":    true,
 	"Write":        true,
 	"NotebookEdit": true,
 }
@@ -31,10 +33,13 @@ func HandlePreTool(input *Input) (Output, error) {
 
 	proj := project.Detect(cfg, input.CWD)
 
+	ticketID := lookupActiveTicket(cfg, proj, input.SessionID)
+
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookPreTool,
+		Ticket:  ticketID,
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
@@ -44,37 +49,57 @@ func HandlePreTool(input *Input) (Output, error) {
 		},
 	})
 
-	// Warn if a writing tool is used with no active ticket
-	if writingTools[input.ToolName] && proj != "" && input.SessionID != "" {
-		ticketsDir, err := cfg.TicketsDir()
-		if err != nil {
-			return Output{}, nil
-		}
-
-		store := ticket.NewStore(ticketsDir)
-		if !hasActiveTicket(store, proj, input.SessionID) {
-			return Output{
-				AdditionalContext: "WARNING: You are editing code without an active smoovtask ticket. " +
-					"Run `st pick st_xxxxxx` to claim a ticket first. " +
-					"Unattributed work creates audit gaps.",
-			}, nil
-		}
+	// Hard-block writing tools when no active ticket is assigned to the run.
+	if writingTools[input.ToolName] && ticketID == "" && proj != "" {
+		msg := missingTicketWriteBlockMessage(input.SessionID)
+		return Output{
+			AdditionalContext: msg,
+			Decision: &Decision{
+				Behavior: "deny",
+				Reason:   msg,
+			},
+		}, nil
 	}
 
 	return Output{}, nil
 }
 
-// hasActiveTicket checks if the session has an IN-PROGRESS or REWORK ticket.
-func hasActiveTicket(store *ticket.Store, proj, sessionID string) bool {
+func missingTicketWriteBlockMessage(runID string) string {
+	if runID == "" {
+		return "BLOCKED: write/edit tools require an active smoovtask ticket assigned to this run. " +
+			"Run `st list` and then `st pick <ticket-id>` before retrying."
+	}
+
+	return fmt.Sprintf(
+		"BLOCKED: write/edit tools require an active smoovtask ticket in IN-PROGRESS or REWORK assigned to this run. Run `st pick <ticket-id> --run-id %s` and retry.",
+		runID,
+	)
+}
+
+// activeTicketID returns the ticket ID assigned to sessionID, or "" if none.
+func activeTicketID(store *ticket.Store, proj, sessionID string) string {
 	tickets, err := store.List(ticket.ListFilter{Project: proj})
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, tk := range tickets {
 		if tk.Assignee == sessionID &&
 			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
-			return true
+			return tk.ID
 		}
 	}
-	return false
+	return ""
+}
+
+// lookupActiveTicket resolves the active ticket for a session.
+// Returns "" if config, project, or session ID are missing, or no ticket is assigned.
+func lookupActiveTicket(cfg *config.Config, proj, sessionID string) string {
+	if proj == "" || sessionID == "" {
+		return ""
+	}
+	ticketsDir, err := cfg.TicketsDir()
+	if err != nil {
+		return ""
+	}
+	return activeTicketID(ticket.NewStore(ticketsDir), proj, sessionID)
 }

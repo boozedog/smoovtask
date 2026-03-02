@@ -20,15 +20,15 @@ func TestRunHook_PIEventSessionStart(t *testing.T) {
 		t.Fatalf("run hook: %v", err)
 	}
 
-	if !strings.Contains(out, "smoovtask — testproject") {
-		t.Fatalf("output = %q, want board summary", out)
+	if !strings.Contains(out, "project called testproject") {
+		t.Fatalf("output = %q, want project intro", out)
 	}
-	if !strings.Contains(out, "Run: run-pi-1") {
+	if !strings.Contains(out, "Your run ID is `run-pi-1`") {
 		t.Fatalf("output = %q, want run id", out)
 	}
 }
 
-func TestRunHook_PIEventToolCallWarning(t *testing.T) {
+func TestRunHook_PIEventToolCallBlocked(t *testing.T) {
 	env := newTestEnv(t)
 	_ = env
 
@@ -40,8 +40,24 @@ func TestRunHook_PIEventToolCallWarning(t *testing.T) {
 		t.Fatalf("run hook: %v", err)
 	}
 
-	if !strings.Contains(out, "WARNING: You are editing code without an active smoovtask ticket") {
-		t.Fatalf("output = %q, want warning context", out)
+	if !strings.Contains(out, "\"behavior\":\"deny\"") {
+		t.Fatalf("output = %q, want deny decision", out)
+	}
+	if !strings.Contains(out, "st pick") || !strings.Contains(out, "--run-id run-pi-2") {
+		t.Fatalf("output = %q, want remediation guidance", out)
+	}
+}
+
+func TestRunHook_PreToolBlocksOnDeniedDecision(t *testing.T) {
+	env := newTestEnv(t)
+	cwd := env.Config.Projects["testproject"].Path
+
+	_, err := runHookWithInput(t, "pre-tool", fmt.Sprintf(`{"session_id":"run-claude-1","cwd":%q,"tool_name":"Edit"}`, cwd))
+	if err == nil {
+		t.Fatal("expected pre-tool hook to hard-block Edit without active ticket")
+	}
+	if !strings.Contains(err.Error(), "st pick <ticket-id> --run-id run-claude-1") {
+		t.Fatalf("error = %q, want remediation guidance", err.Error())
 	}
 }
 

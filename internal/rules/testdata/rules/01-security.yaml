@@ -1,0 +1,18 @@
+name: security
+description: Security rules for testing
+priority: 100
+event: pre_tool_use
+rules:
+  - name: deny-rm-rf
+    match:
+      tool: Bash
+      command: "rm\\s+-rf"
+    action: deny
+    message: "rm -rf is not allowed"
+
+  - name: deny-env-access
+    match:
+      tool: Read
+      file_path: "\\.env$"
+    action: deny
+    message: "reading .env files is not allowed"

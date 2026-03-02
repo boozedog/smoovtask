@@ -273,3 +273,63 @@ func TestExpandAgents_BothIncludesPI(t *testing.T) {
 		}
 	}
 }
+
+func TestHookBridgesDoNotWrapContextTwice(t *testing.T) {
+	if strings.Contains(opencodePluginCode, "<smoovtask>") {
+		t.Fatal("opencode plugin should not add wrapper tags; hook context is already wrapped")
+	}
+	if strings.Contains(piExtensionCode, "<smoovtask>") {
+		t.Fatal("pi extension should not add wrapper tags; hook context is already wrapped")
+	}
+	if !strings.Contains(opencodePluginCode, "output.system.push(cachedContext)") {
+		t.Fatal("opencode plugin should push cachedContext directly")
+	}
+	if !strings.Contains(piExtensionCode, "event.systemPrompt + '\\n\\n' + cachedContext") {
+		t.Fatal("pi extension should append cachedContext directly")
+	}
+	if !strings.Contains(opencodePluginCode, "result.hookSpecificOutput.behavior === 'deny'") {
+		t.Fatal("opencode plugin should block denied pre-tool decisions")
+	}
+	if !strings.Contains(opencodePluginCode, "return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' }") {
+		t.Fatal("opencode plugin should return block payload on denied decision")
+	}
+	if !strings.Contains(opencodePluginCode, "tool.execute.before', 'tool.execute.after") {
+		t.Fatal("opencode plugin should include tool event fallback in handled event list")
+	}
+	if !strings.Contains(opencodePluginCode, "const looksLikeTool = eventType.includes('tool')") {
+		t.Fatal("opencode plugin should detect tool-like events from generic event bus")
+	}
+	if !strings.Contains(opencodePluginCode, "payload.type = looksBefore ? 'tool.execute.before' : 'tool.execute.after'") {
+		t.Fatal("opencode plugin should normalize tool fallback events to canonical hook types")
+	}
+	if !strings.Contains(opencodePluginCode, "payload.tool_name = toolName") {
+		t.Fatal("opencode plugin should include normalized tool name for fallback events")
+	}
+	if !strings.Contains(opencodePluginCode, "if (eventType === 'session.status')") {
+		t.Fatal("opencode plugin should synthesize tool activity from session.status events")
+	}
+	if !strings.Contains(opencodePluginCode, "props.status && typeof props.status === 'object'") {
+		t.Fatal("opencode plugin should parse object-form session.status payloads")
+	}
+	if !strings.Contains(opencodePluginCode, "statusType === 'running' || statusType === 'working' || statusType === 'busy'") {
+		t.Fatal("opencode plugin should treat active session statuses as pre-tool")
+	}
+	if !strings.Contains(opencodePluginCode, "statusType === 'idle' || statusType === 'waiting'") {
+		t.Fatal("opencode plugin should treat idle session statuses as post-tool")
+	}
+	if !strings.Contains(opencodePluginCode, "if (eventType === 'message.part.updated')") {
+		t.Fatal("opencode plugin should bridge message part updates into tool activity")
+	}
+	if !strings.Contains(opencodePluginCode, "if (partType === 'tool')") {
+		t.Fatal("opencode plugin should only synthesize tool hooks for tool message parts")
+	}
+	if !strings.Contains(opencodePluginCode, "partStatus === 'pending' || partStatus === 'running'") {
+		t.Fatal("opencode plugin should map pending/running tool parts to pre-tool")
+	}
+	if !strings.Contains(opencodePluginCode, "partStatus === 'completed' || partStatus === 'done' || partStatus === 'success' || partStatus === 'failed' || partStatus === 'error' || partStatus === 'cancelled'") {
+		t.Fatal("opencode plugin should map terminal tool part statuses to post-tool")
+	}
+	if !strings.Contains(piExtensionCode, "result.hookSpecificOutput.behavior === 'deny'") {
+		t.Fatal("pi extension should block denied pre-tool decisions")
+	}
+}

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -30,7 +31,7 @@ func init() {
 	// Aliases
 	submitCmd := &cobra.Command{
 		Use:    "submit",
-		Short:  "Submit current ticket for review (alias for `st status review`)",
+		Short:  "Submit current ticket for agent review (alias for `st status review`)",
 		Args:   cobra.NoArgs,
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -87,7 +88,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 		if !hasNote {
 			noteCmd := fmt.Sprintf("st note --ticket %s --run-id %s \"<message>\"", tk.ID, runID)
 			msg := "cannot move to %s — a very detailed note is required before review. Run `%s` first"
-			if tk.Status == ticket.StatusReview {
+			if tk.Status == ticket.StatusReview || tk.Status == ticket.StatusHumanReview {
 				noteCmd = fmt.Sprintf("st note --ticket %s --run-id %s \"<findings>\"", tk.ID, runID)
 				msg = "cannot move to %s — a very detailed review note is required. Document your findings with `%s` first"
 			}
@@ -100,17 +101,22 @@ func runStatus(_ *cobra.Command, args []string) error {
 	tk.Status = targetStatus
 	tk.Updated = now
 
-	// Clear assignee when submitting for review — the reviewer will claim it via `st review`.
+	// Clear assignee when submitting for agent review — the reviewer will claim it via `st review`.
+	// Clear assignee when handing off to human review — this is now a separate queue.
 	// Clear assignee when moving to backlog — ticket is being deprioritized.
-	if targetStatus == ticket.StatusReview || targetStatus == ticket.StatusBacklog {
+	if targetStatus == ticket.StatusReview || targetStatus == ticket.StatusHumanReview || targetStatus == ticket.StatusBacklog {
 		tk.Assignee = ""
 	}
 
 	heading := statusHeading(targetStatus)
 
 	var sectionFields map[string]string
-	if oldStatus == ticket.StatusReview && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
-		sectionFields = map[string]string{"reviewed-by": tk.Assignee}
+	if oldStatus == ticket.StatusHumanReview && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
+		reviewedBy := runID
+		if reviewedBy == "" {
+			reviewedBy = actor
+		}
+		sectionFields = map[string]string{"reviewed-by": reviewedBy}
 	}
 
 	ticket.AppendSection(tk, heading, actor, runID, "", sectionFields, now)
@@ -138,7 +144,15 @@ func runStatus(_ *cobra.Command, args []string) error {
 
 	fmt.Printf("%s: %s → %s\n", tk.ID, oldStatus, targetStatus)
 
-	// Prompt agent to report improvements when submitting for review
+	// Signal the spawn leader that the worker is done.
+	// ST_SPAWN_DONE_CHANNEL is set by `st spawn` when launching in a tmux pane.
+	if ch := os.Getenv("ST_SPAWN_DONE_CHANNEL"); ch != "" {
+		if targetStatus == ticket.StatusReview || targetStatus == ticket.StatusBlocked {
+			_ = exec.Command("tmux", "wait-for", "-S", ch).Run()
+		}
+	}
+
+	// Prompt agent to report improvements when submitting for agent review
 	if targetStatus == ticket.StatusReview {
 		fmt.Println()
 		fmt.Println("--- Before You Finish ---")
@@ -182,13 +196,14 @@ func runStatus(_ *cobra.Command, args []string) error {
 // statusHeading converts a status to a human-readable section heading.
 func statusHeading(s ticket.Status) string {
 	headings := map[ticket.Status]string{
-		ticket.StatusBacklog:    "Backlog",
-		ticket.StatusOpen:       "Open",
-		ticket.StatusInProgress: "In Progress",
-		ticket.StatusReview:     "Review Requested",
-		ticket.StatusRework:     "Rework",
-		ticket.StatusDone:       "Done",
-		ticket.StatusBlocked:    "Blocked",
+		ticket.StatusBacklog:     "Backlog",
+		ticket.StatusOpen:        "Open",
+		ticket.StatusInProgress:  "In Progress",
+		ticket.StatusReview:      "Review Requested",
+		ticket.StatusHumanReview: "Human Review Requested",
+		ticket.StatusRework:      "Rework",
+		ticket.StatusDone:        "Done",
+		ticket.StatusBlocked:     "Blocked",
 	}
 	if h, ok := headings[s]; ok {
 		return h

@@ -1,23 +1,20 @@
 package hook
 
 import (
-	"cmp"
 	"fmt"
-	"slices"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
-	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 // HandleSessionStart processes the SessionStart hook.
-// It prints the board summary directly to stdout (plain text),
-// which Claude Code automatically injects into the agent's context
-// for SessionStart hooks.
+// It logs a session-start event with ticket counts and returns
+// minimal context (run ID + command reference) for injection.
 func HandleSessionStart(input *Input) (*Output, error) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -36,7 +33,7 @@ func HandleSessionStart(input *Input) (*Output, error) {
 
 	store := ticket.NewStore(ticketsDir)
 
-	// Get open tickets for this project
+	// Count tickets for event logging only — not shown to agent.
 	openTickets, err := store.List(ticket.ListFilter{
 		Project: proj,
 		Status:  ticket.StatusOpen,
@@ -45,13 +42,20 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		return nil, fmt.Errorf("list tickets: %w", err)
 	}
 
-	// Get review tickets for this project
 	reviewTickets, err := store.List(ticket.ListFilter{
 		Project: proj,
 		Status:  ticket.StatusReview,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list review tickets: %w", err)
+	}
+
+	humanReviewTickets, err := store.List(ticket.ListFilter{
+		Project: proj,
+		Status:  ticket.StatusHumanReview,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list human review tickets: %w", err)
 	}
 
 	// Log session-start event
@@ -63,147 +67,117 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	_ = el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookSessionStart,
+		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,
 		Source:  input.Source,
 		Data: map[string]any{
-			"open_count":   len(openTickets),
-			"review_count": len(reviewTickets),
+			"open_count":         len(openTickets),
+			"review_count":       len(reviewTickets),
+			"human_review_count": len(humanReviewTickets),
 		},
 	})
 
-	summary := buildBoardSummary(proj, input.SessionID, openTickets, reviewTickets)
-	if summary == "" {
-		runID := input.SessionID
-		b := strings.Builder{}
-		fmt.Fprintf(&b, "smoovtask — %s — no tickets\nRun: %s\n\n", proj, runID)
-		b.WriteString("Workflow: new → pick → note → review\n\n")
-		b.WriteString("1. `st new \"title\"`\n")
-		fmt.Fprintf(&b, "2. `st pick <id> --run-id %s`\n", runID)
-		fmt.Fprintf(&b, "3. `st note --ticket <id> --run-id %s \"log progress\"`\n", runID)
-		fmt.Fprintf(&b, "4. `st status --ticket <id> --run-id %s review`\n\n", runID)
-		b.WriteString("Always use --ticket and --run-id.\n\n")
-		b.WriteString("Use `st note` often: decisions, approvals, surprises.\n")
-		b.WriteString(quickRef)
-		summary = b.String()
+	var b strings.Builder
+	role := normalizeRole(os.Getenv("ST_ROLE"))
+	fmt.Fprintf(&b, "You are working in a tracked smoovtask project called %s. ", proj)
+	fmt.Fprintf(&b, "Your run ID is `%s`; include `--run-id <run-id>` on every `st` command.\n", input.SessionID)
+	if role == "" {
+		b.WriteString("Ask the user whether you are implementing or reviewing — do not guess.\n")
+		b.WriteString("Before moving a ticket to `review`, confirm with the user that implementation is actually done.\n\n")
+	} else {
+		fmt.Fprintf(&b, "Session role: `%s`.\n\n", role)
 	}
-	o := &Output{AdditionalContext: summary}
-	return o, nil
+	b.WriteString(quickRefForRole(role))
+
+	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil
 }
 
-const quickRef = "\nOther commands (always pass --run-id <your-run-id>):\n" +
-	"  st new \"title\" [-p P0..P5] [-d \"desc\"]       — create a ticket\n" +
-	"  st list [--project X] [--status open|review]  — filter tickets\n" +
-	"  st show <id>                                  — full ticket detail\n" +
-	"  st context                                    — current session info\n" +
-	"All commands support --help for full usage.\n"
+const quickRefGeneric = "## Review Semantics\n" +
+	"`st status review` moves work to `REVIEW` (agentic review queue), and `st status human-review` moves it to `HUMAN-REVIEW` (human sign-off queue).\n" +
+	"Use `st review` only for claiming agent-review tickets.\n\n" +
+	"## Implementing\n" +
+	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
+	"- `st list --run-id <run-id>`              view candidate tickets\n" +
+	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
+	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
+	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
+	"## Reviewing\n" +
+	"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
+	"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
+	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
+	"- `st status done --run-id <run-id>`         mark done after human review\n" +
+	"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
+	"## Always\n" +
+	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Progress\n- Updated startup guidance\nEOF\n)\" --run-id <run-id>`\n" +
+	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+	"- `st context --run-id <run-id>`            check current session context\n\n" +
+	"Run `st --help` for more.\n"
 
-// priorityWeight returns the scoring weight for a ticket priority.
-// P0=60, P1=50, P2=40, P3=30, P4=20, P5=10.
-var priorityWeight = map[ticket.Priority]int{
-	ticket.PriorityP0: 60,
-	ticket.PriorityP1: 50,
-	ticket.PriorityP2: 40,
-	ticket.PriorityP3: 30,
-	ticket.PriorityP4: 20,
-	ticket.PriorityP5: 10,
-}
+const quickRefLeader = "## Leader\n" +
+	"- Launch implementers with `st work` (or `st work --cli opencode`)\n" +
+	"- Launch reviewers with `st review <ticket-id>`\n" +
+	"- Launch background workers with `st spawn <ticket-id> --run-id <run-id>`\n" +
+	"- Monitor work with `st list --run-id <run-id>` and inspect details via `st show <ticket-id>`\n" +
+	"- Track orchestration decisions using `st note " + "\"$(cat <<'EOF'\n## Coordination\n- Assigned workers\nEOF\n)\"" + " --run-id <run-id>`\n\n" +
+	"Run `st --help` for more.\n"
 
-// statusBoost is the score bonus for REVIEW tickets.
-const statusBoostReview = 5
+const quickRefImplementer = "## Implementing\n" +
+	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
+	"- `st list --run-id <run-id>`              view candidate tickets\n" +
+	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
+	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
+	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
+	"## Always\n" +
+	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Progress\n- Updated startup guidance\nEOF\n)\" --run-id <run-id>`\n" +
+	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+	"- `st context --run-id <run-id>`            check current session context\n\n" +
+	"Run `st --help` for more.\n"
 
-// ticketScore calculates the priority score for a ticket.
-// Score = priority weight + status boost (REVIEW gets +5, OPEN gets +0).
-func ticketScore(tk *ticket.Ticket) int {
-	score := priorityWeight[tk.Priority]
-	if tk.Status == ticket.StatusReview {
-		score += statusBoostReview
-	}
-	return score
-}
+const quickRefReviewer = "## Reviewing\n" +
+	"- Claim a ticket with `st review <ticket-id> --run-id <run-id>` (eligibility enforced)\n" +
+	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
+	"- `st status rework --run-id <run-id>`       send back for changes\n\n" +
+	"## Always\n" +
+	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Review Findings\n- Checked behavior against requirements\nEOF\n)\" --run-id <run-id>`\n" +
+	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+	"- `st context --run-id <run-id>`            check current session context\n\n" +
+	"Run `st --help` for more.\n"
 
-// sortByPriority sorts tickets by priority (P0 first, P5 last).
-func sortByPriority(tickets []*ticket.Ticket) {
-	slices.SortFunc(tickets, func(a, b *ticket.Ticket) int {
-		return cmp.Compare(priorityWeight[b.Priority], priorityWeight[a.Priority])
-	})
-}
+const quickRefWorker = "## Worker\n" +
+	"- Use heredoc notes: `st note \"$(cat <<'EOF'\n## Worker Progress\n- Implemented assigned changes\nEOF\n)\" --run-id <run-id>`\n" +
+	"- Update status with `st status <status> --run-id <run-id>`\n" +
+	"- Check context with `st context --run-id <run-id>`\n\n" +
+	"Run `st --help` for more.\n"
 
-// buildBoardSummary formats the board summary for session context injection.
-// It uses score-based batch selection to determine which batch to show first,
-// then appends a summary line for the other batch so the agent has full context.
-func buildBoardSummary(proj, sessionID string, openTickets, reviewTickets []*ticket.Ticket) string {
-	if len(openTickets) == 0 && len(reviewTickets) == 0 {
+func normalizeRole(role string) string {
+	role = strings.ToLower(strings.TrimSpace(role))
+	switch role {
+	case "leader", "implementer", "reviewer", "worker":
+		return role
+	case "work":
+		return "implementer"
+	case "review":
+		return "reviewer"
+	default:
 		return ""
 	}
-
-	// Find the max score across both lists to determine which batch to show first.
-	maxScore := -1
-	showReviewFirst := false
-
-	for _, tk := range openTickets {
-		if s := ticketScore(tk); s > maxScore {
-			maxScore = s
-			showReviewFirst = false
-		}
-	}
-	for _, tk := range reviewTickets {
-		if s := ticketScore(tk); s > maxScore {
-			maxScore = s
-			showReviewFirst = true
-		}
-	}
-
-	// Build sorted copies of each batch.
-	open := make([]*ticket.Ticket, len(openTickets))
-	copy(open, openTickets)
-	sortByPriority(open)
-
-	review := make([]*ticket.Ticket, len(reviewTickets))
-	copy(review, reviewTickets)
-	sortByPriority(review)
-
-	total := len(open) + len(review)
-
-	var b strings.Builder
-	fmt.Fprintf(&b, "smoovtask — %s — %d tickets ready", proj, total)
-	if len(open) > 0 && len(review) > 0 {
-		fmt.Fprintf(&b, " (%d open, %d review)", len(open), len(review))
-	}
-	b.WriteString("\n")
-	if sessionID != "" {
-		fmt.Fprintf(&b, "Run: %s\n", sessionID)
-	}
-
-	// Show the primary batch first, then the secondary batch.
-	if showReviewFirst {
-		writeTicketBatch(&b, "Review", review)
-		writeTicketBatch(&b, "Open", open)
-	} else {
-		writeTicketBatch(&b, "Open", open)
-		writeTicketBatch(&b, "Review", review)
-	}
-
-	b.WriteString("Follow the user's instructions. Default workflow when no specific direction is given:\n")
-	b.WriteString("  Open tickets:   `st pick` → `st note` → `st status review`\n")
-	b.WriteString("  Review tickets: `st review` → `st note` → `st status done` / `st status rework`\n")
-	b.WriteString("Always pass --ticket and --run-id to st commands. Pick a ticket before editing code.\n")
-	fmt.Fprintf(&b, "\n%s\n", guidance.CompactImplementation)
-
-	b.WriteString(quickRef)
-
-	return b.String()
 }
 
-// writeTicketBatch writes a labeled section of tickets to the builder.
-// Does nothing if the slice is empty.
-func writeTicketBatch(b *strings.Builder, label string, tickets []*ticket.Ticket) {
-	if len(tickets) == 0 {
-		return
-	}
-	fmt.Fprintf(b, "\n%s:\n", label)
-	for _, tk := range tickets {
-		fmt.Fprintf(b, "  %-12s %-30s %s\n", tk.ID, tk.Title, tk.Priority)
+func quickRefForRole(role string) string {
+	switch role {
+	case "leader":
+		return quickRefLeader
+	case "implementer":
+		return quickRefImplementer
+	case "reviewer":
+		return quickRefReviewer
+	case "worker":
+		return quickRefWorker
+	default:
+		return quickRefGeneric
 	}
 }

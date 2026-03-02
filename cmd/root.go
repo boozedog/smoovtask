@@ -28,11 +28,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		if humanFlag && runIDFlag != "" {
-			return fmt.Errorf("choose one identity mode: pass --run-id for agent activity or --human for manual activity")
+			return fmt.Errorf("choose one identity mode: pass only one identity flag")
 		}
 
 		if !humanFlag && runIDFlag == "" {
-			return fmt.Errorf("run ID required for agent commands — pass --run-id (or use --human for manual commands)")
+			return fmt.Errorf("run ID required for agent commands — pass --run-id")
 		}
 
 		return nil
@@ -44,7 +44,7 @@ func isIdentityExempt(cmd *cobra.Command) bool {
 		return true
 	}
 
-	if cmd.Name() == "hook" || cmd.Name() == "help" || cmd.Name() == "assign" || cmd.Name() == "init" || cmd.Name() == "show" || cmd.Name() == "web" {
+	if cmd.Name() == "hook" || cmd.Name() == "help" || cmd.Name() == "assign" || cmd.Name() == "init" || cmd.Name() == "show" || cmd.Name() == "web" || cmd.Name() == "leader" || cmd.Name() == "work" || cmd.Name() == "review" {
 		return true
 	}
 
@@ -58,6 +58,7 @@ func isIdentityExempt(cmd *cobra.Command) bool {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&runIDFlag, "run-id", "", "run ID for this agent session")
 	rootCmd.PersistentFlags().BoolVar(&humanFlag, "human", false, "mark command as human/manual activity")
+	_ = rootCmd.PersistentFlags().MarkHidden("human")
 }
 
 // Execute runs the root command and exits on error.

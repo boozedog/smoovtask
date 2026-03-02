@@ -99,6 +99,54 @@ func TestBoard(t *testing.T) {
 	}
 }
 
+func TestBoardShowsStalledIndicatorForAssignedAgentWithoutRecentHook(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	h.Board(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected stalled indicator icon to be active for assigned agent without recent hooks")
+	}
+}
+
+func TestBoardHidesStalledIndicatorForRecentlyActiveAgent(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	h.Board(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected stalled indicator icon to be hidden for recently active assigned agent")
+	}
+}
+
 func TestPartialBoard(t *testing.T) {
 	h, _, _ := testSetup(t)
 
@@ -122,6 +170,98 @@ func TestPartialBoard(t *testing.T) {
 	// Partial should NOT include the full layout.
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("partial should not include full HTML layout")
+	}
+}
+
+func TestBoardReviewColumnSortsAssignedTicketsFirst(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	unassignedReview := &ticket.Ticket{
+		ID:       "st_rev001",
+		Title:    "Unassigned review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusReview,
+		Priority: ticket.PriorityP0,
+		Created:  time.Date(2026, 2, 26, 12, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 12, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(unassignedReview); err != nil {
+		t.Fatal(err)
+	}
+
+	assignedReview := &ticket.Ticket{
+		ID:       "st_rev002",
+		Title:    "Assigned review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusReview,
+		Priority: ticket.PriorityP3,
+		Assignee: "ses_reviewer1",
+		Created:  time.Date(2026, 2, 26, 13, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 13, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(assignedReview); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/board", nil)
+	w := httptest.NewRecorder()
+	h.PartialBoard(w, req)
+
+	body := w.Body.String()
+	assignedIdx := strings.Index(body, assignedReview.Title)
+	unassignedIdx := strings.Index(body, unassignedReview.Title)
+	if assignedIdx == -1 || unassignedIdx == -1 {
+		t.Fatal("expected both review tickets in board output")
+	}
+	if assignedIdx > unassignedIdx {
+		t.Fatalf("expected assigned review ticket before unassigned ticket, got assigned idx=%d unassigned idx=%d", assignedIdx, unassignedIdx)
+	}
+}
+
+func TestBoardReviewColumnShowsAgentReviewBeforeHumanReview(t *testing.T) {
+	h, ticketsDir, _ := testSetup(t)
+	store := ticket.NewStore(ticketsDir)
+
+	agentReview := &ticket.Ticket{
+		ID:       "st_rev_agent",
+		Title:    "Agent review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusReview,
+		Priority: ticket.PriorityP5,
+		Created:  time.Date(2026, 2, 26, 14, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 14, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(agentReview); err != nil {
+		t.Fatal(err)
+	}
+
+	humanReview := &ticket.Ticket{
+		ID:       "st_rev_human",
+		Title:    "Human review ticket",
+		Project:  "testproj",
+		Status:   ticket.StatusHumanReview,
+		Priority: ticket.PriorityP0,
+		Assignee: "ses_human_reviewer",
+		Created:  time.Date(2026, 2, 26, 15, 0, 0, 0, time.UTC),
+		Updated:  time.Date(2026, 2, 26, 15, 0, 0, 0, time.UTC),
+	}
+	if err := store.Create(humanReview); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/board", nil)
+	w := httptest.NewRecorder()
+	h.PartialBoard(w, req)
+
+	body := w.Body.String()
+	agentIdx := strings.Index(body, agentReview.Title)
+	humanIdx := strings.Index(body, humanReview.Title)
+	if agentIdx == -1 || humanIdx == -1 {
+		t.Fatal("expected both review tickets in board output")
+	}
+	if agentIdx > humanIdx {
+		t.Fatalf("expected agent review ticket before human review ticket, got agent idx=%d human idx=%d", agentIdx, humanIdx)
 	}
 }
 
@@ -735,56 +875,14 @@ func TestCriticalPathPage(t *testing.T) {
 	if !strings.Contains(body, "Critical Path") {
 		t.Fatal("expected critical path page content")
 	}
+	if !strings.Contains(body, "st-dep-graph") {
+		t.Fatal("expected dependency graph container")
+	}
 	if !strings.Contains(body, "st_cproot") {
-		t.Fatal("expected path to include root ticket")
+		t.Fatal("expected graph to include root ticket")
 	}
-}
-
-func TestCriticalPathHorizontalView(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
-	store := ticket.NewStore(ticketsDir)
-
-	dep := &ticket.Ticket{
-		ID:       "st_cphdep",
-		Title:    "Dep",
-		Project:  "testproj",
-		Status:   ticket.StatusOpen,
-		Priority: ticket.PriorityP3,
-		Created:  time.Now().UTC(),
-		Updated:  time.Now().UTC(),
-	}
-	if err := store.Create(dep); err != nil {
-		t.Fatal(err)
-	}
-
-	root := &ticket.Ticket{
-		ID:        "st_cphroot",
-		Title:     "Root",
-		Project:   "testproj",
-		Status:    ticket.StatusOpen,
-		Priority:  ticket.PriorityP3,
-		DependsOn: []string{"st_cphdep"},
-		Created:   time.Now().UTC(),
-		Updated:   time.Now().UTC(),
-	}
-	if err := store.Create(root); err != nil {
-		t.Fatal(err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/critical-path?view=horizontal", nil)
-	w := httptest.NewRecorder()
-
-	h.CriticalPath(w, req)
-
-	if w.Result().StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
-	}
-	body := w.Body.String()
-	if !strings.Contains(body, "Horizontal") {
-		t.Fatal("expected horizontal toggle")
-	}
-	if !strings.Contains(body, "→") {
-		t.Fatal("expected horizontal arrow")
+	if !strings.Contains(body, "st_cpdep") {
+		t.Fatal("expected graph to include dependency ticket")
 	}
 }
 
@@ -872,6 +970,149 @@ func TestCriticalPathScopeDefaultsToAllAndSupportsCurrent(t *testing.T) {
 	}
 }
 
+func TestAgents(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	// Add hook events for an active agent.
+	// RunID must match the ticket's Assignee ("session-123") so the
+	// agent→ticket association is retained after cross-referencing.
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+	ev2 := event.Event{
+		TS:      time.Now().UTC().Add(-10 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev2); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "session-") {
+		t.Error("expected agents page to contain shortened run ID")
+	}
+	if !strings.Contains(body, "In progress ticket") {
+		t.Error("expected agents page to contain ticket title")
+	}
+}
+
+func TestAgentsShowsStalledIndicatorAfterTwoMinutes(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-3 * time.Minute),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected agents page to show stalled warning icon for inactive agent")
+	}
+}
+
+func TestAgentsHidesStalledIndicatorWhenRecentHookExists(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "session-123",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	body := w.Body.String()
+	if strings.Contains(body, "st-stalled-icon st-alert-active") {
+		t.Error("expected agents page to hide stalled warning icon for active agent")
+	}
+}
+
+func TestAgentsExcludesEndedSessions(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	// Session start.
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-60 * time.Second),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-ended-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+	// Session end.
+	ev2 := event.Event{
+		TS:      time.Now().UTC().Add(-10 * time.Second),
+		Event:   event.HookSessionEnd,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "run-ended-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev2); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	h.Agents(w, req)
+
+	body := w.Body.String()
+	if strings.Contains(body, "run-ende") {
+		t.Error("expected ended agent to be excluded from agents page")
+	}
+}
+
 func TestWatcher(t *testing.T) {
 	eventsDir := t.TempDir()
 	broker := sse.NewBroker()
@@ -930,6 +1171,7 @@ func TestWatcherHookEventBroadcastsActivityOnly(t *testing.T) {
 		Ticket:  "st_test02",
 		Project: "testproj",
 		Actor:   "agent",
+		RunID:   "ses_abc12345",
 	}
 	data, _ := json.Marshal(ev)
 	jsonlPath := filepath.Join(eventsDir, time.Now().Format("2006-01-02")+".jsonl")
@@ -937,21 +1179,26 @@ func TestWatcherHookEventBroadcastsActivityOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	select {
-	case received := <-ch:
-		if received.Event != "refresh-activity" {
-			t.Fatalf("expected refresh-activity event, got %s", received.Event)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("timeout waiting for watcher to broadcast activity event")
-	}
+	deadline := time.After(3 * time.Second)
+	hasActivity := false
+	hasAgentPing := false
 
-	select {
-	case received := <-ch:
-		if received.Event == "refresh-work" {
-			t.Fatalf("did not expect refresh-work event for hook-only write")
+	for !hasActivity || !hasAgentPing {
+		select {
+		case received := <-ch:
+			switch received.Event {
+			case "refresh-activity":
+				hasActivity = true
+			case "agent-ping":
+				if received.RunID != "ses_abc12345" {
+					t.Fatalf("expected agent-ping run_id ses_abc12345, got %q", received.RunID)
+				}
+				hasAgentPing = true
+			case "refresh-work":
+				t.Fatal("did not expect refresh-work event for hook-only write")
+			}
+		case <-deadline:
+			t.Fatalf("timeout waiting for expected hook broadcasts: activity=%t agent-ping=%t", hasActivity, hasAgentPing)
 		}
-	case <-time.After(200 * time.Millisecond):
-		// no extra work refresh is expected
 	}
 }

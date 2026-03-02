@@ -6,9 +6,11 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
@@ -89,10 +91,30 @@ func runList(_ *cobra.Command, _ []string) error {
 		return tickets[i].Updated.After(tickets[j].Updated)
 	})
 
+	// Look up worker info for each ticket (best-effort)
+	eventsDir, _ := cfg.EventsDir()
+	workerStates := make(map[string]*spawn.WorkerInfo)
+	if eventsDir != "" {
+		for _, tk := range tickets {
+			info, err := spawn.GetWorkerInfo(eventsDir, tk.ID)
+			if err == nil && info != nil {
+				workerStates[tk.ID] = info
+			}
+		}
+	}
+
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	for _, tk := range tickets {
+		worker := ""
+		if info, ok := workerStates[tk.ID]; ok {
+			worker = workerAnnotation(info)
+		}
+		status := string(tk.Status)
+		if worker != "" {
+			status += " " + worker
+		}
 		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
-			tk.ID, truncate(tk.Title, 40), tk.Status, tk.Priority, tk.Project); err != nil {
+			tk.ID, truncate(tk.Title, 40), status, tk.Priority, tk.Project); err != nil {
 			return err
 		}
 	}
@@ -105,22 +127,41 @@ func listStatusWeight(s ticket.Status) int {
 	switch s {
 	case ticket.StatusReview:
 		return 0
-	case ticket.StatusRework:
+	case ticket.StatusHumanReview:
 		return 1
-	case ticket.StatusInProgress:
+	case ticket.StatusRework:
 		return 2
-	case ticket.StatusOpen:
+	case ticket.StatusInProgress:
 		return 3
-	case ticket.StatusBlocked:
+	case ticket.StatusOpen:
 		return 4
-	case ticket.StatusBacklog:
+	case ticket.StatusBlocked:
 		return 5
-	case ticket.StatusDone:
+	case ticket.StatusBacklog:
 		return 6
-	case ticket.StatusCancelled:
+	case ticket.StatusDone:
 		return 7
-	default:
+	case ticket.StatusCancelled:
 		return 8
+	default:
+		return 9
+	}
+}
+
+func workerAnnotation(info *spawn.WorkerInfo) string {
+	switch info.State {
+	case spawn.WorkerRunning:
+		return fmt.Sprintf("[worker: running %s]", info.Elapsed.Truncate(time.Second))
+	case spawn.WorkerCompleted:
+		return "[worker: done]"
+	case spawn.WorkerFailed:
+		return "[worker: failed]"
+	case spawn.WorkerTimeout:
+		return "[worker: timeout]"
+	case spawn.WorkerStale:
+		return "[worker: stale]"
+	default:
+		return ""
 	}
 }
 

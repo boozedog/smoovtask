@@ -23,15 +23,37 @@ func (h *Handler) NewTicket(w http.ResponseWriter, r *http.Request) {
 	_ = templates.TicketFormPage(data).Render(r.Context(), w)
 }
 
+func (h *Handler) PartialNewTicket(w http.ResponseWriter, r *http.Request) {
+	data := templates.TicketFormData{
+		Mode: "new",
+		Values: templates.TicketFormValues{
+			Project:  h.project,
+			Status:   string(ticket.StatusOpen),
+			Priority: string(ticket.DefaultPriority),
+		},
+	}
+	_ = templates.TicketFormModalPartial(data).Render(r.Context(), w)
+}
+
 func (h *Handler) CreateTicket(w http.ResponseWriter, r *http.Request) {
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
 	if err := r.ParseForm(); err != nil {
-		h.renderFormError(w, r, "new", "", "invalid form submission")
+		if isHTMX {
+			h.renderFormModalError(w, r, "new", "", "invalid form submission")
+		} else {
+			h.renderFormError(w, r, "new", "", "invalid form submission")
+		}
 		return
 	}
 
 	values := h.formValuesFromRequest(r)
 	if err := validateFormValues(values); err != nil {
-		h.renderFormErrorWithValues(w, r, "new", "", values, err.Error())
+		if isHTMX {
+			h.renderFormModalErrorWithValues(w, r, "new", "", values, err.Error())
+		} else {
+			h.renderFormErrorWithValues(w, r, "new", "", values, err.Error())
+		}
 		return
 	}
 
@@ -60,7 +82,11 @@ func (h *Handler) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	ticket.AppendSection(tk, "Created", "web", "", body, nil, now)
 
 	if err := h.store.Create(tk); err != nil {
-		h.renderFormErrorWithValues(w, r, "new", "", values, "failed to create ticket")
+		if isHTMX {
+			h.renderFormModalErrorWithValues(w, r, "new", "", values, "failed to create ticket")
+		} else {
+			h.renderFormErrorWithValues(w, r, "new", "", values, "failed to create ticket")
+		}
 		return
 	}
 
@@ -77,6 +103,11 @@ func (h *Handler) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
+	if isHTMX {
+		w.Header().Set("HX-Trigger", "closeModal")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	http.Redirect(w, r, fmt.Sprintf("/ticket/%s", tk.ID), http.StatusSeeOther)
 }
 
@@ -103,7 +134,7 @@ func (h *Handler) EditTicket(w http.ResponseWriter, r *http.Request) {
 	_ = templates.TicketFormPage(data).Render(r.Context(), w)
 }
 
-func (h *Handler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PartialEditTicket(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	tk, err := h.store.Get(id)
 	if err != nil {
@@ -111,14 +142,47 @@ func (h *Handler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data := templates.TicketFormData{
+		Mode:     "edit",
+		TicketID: tk.ID,
+		Values: templates.TicketFormValues{
+			Title:     tk.Title,
+			Project:   tk.Project,
+			Status:    string(tk.Status),
+			Priority:  string(tk.Priority),
+			DependsOn: strings.Join(tk.DependsOn, ","),
+			Tags:      strings.Join(tk.Tags, ","),
+		},
+	}
+	_ = templates.TicketFormModalPartial(data).Render(r.Context(), w)
+}
+
+func (h *Handler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	isHTMX := r.Header.Get("HX-Request") == "true"
+
+	tk, err := h.store.Get(id)
+	if err != nil {
+		http.Error(w, "Ticket not found", http.StatusNotFound)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
-		h.renderFormError(w, r, "edit", tk.ID, "invalid form submission")
+		if isHTMX {
+			h.renderFormModalError(w, r, "edit", tk.ID, "invalid form submission")
+		} else {
+			h.renderFormError(w, r, "edit", tk.ID, "invalid form submission")
+		}
 		return
 	}
 
 	values := h.formValuesFromRequest(r)
 	if err := validateFormValues(values); err != nil {
-		h.renderFormErrorWithValues(w, r, "edit", tk.ID, values, err.Error())
+		if isHTMX {
+			h.renderFormModalErrorWithValues(w, r, "edit", tk.ID, values, err.Error())
+		} else {
+			h.renderFormErrorWithValues(w, r, "edit", tk.ID, values, err.Error())
+		}
 		return
 	}
 
@@ -138,7 +202,11 @@ func (h *Handler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.store.Save(tk); err != nil {
-		h.renderFormErrorWithValues(w, r, "edit", tk.ID, values, "failed to save ticket")
+		if isHTMX {
+			h.renderFormModalErrorWithValues(w, r, "edit", tk.ID, values, "failed to save ticket")
+		} else {
+			h.renderFormErrorWithValues(w, r, "edit", tk.ID, values, "failed to save ticket")
+		}
 		return
 	}
 
@@ -166,6 +234,11 @@ func (h *Handler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	if isHTMX {
+		w.Header().Set("HX-Trigger", "closeModal")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	http.Redirect(w, r, fmt.Sprintf("/ticket/%s", tk.ID), http.StatusSeeOther)
 }
 
@@ -228,4 +301,21 @@ func (h *Handler) renderFormErrorWithValues(w http.ResponseWriter, r *http.Reque
 	}
 	w.WriteHeader(http.StatusBadRequest)
 	_ = templates.TicketFormPage(data).Render(r.Context(), w)
+}
+
+func (h *Handler) renderFormModalError(w http.ResponseWriter, r *http.Request, mode, ticketID, msg string) {
+	h.renderFormModalErrorWithValues(w, r, mode, ticketID, h.formValuesFromRequest(r), msg)
+}
+
+func (h *Handler) renderFormModalErrorWithValues(w http.ResponseWriter, r *http.Request, mode, ticketID string, values templates.TicketFormValues, msg string) {
+	if mode == "new" && values.Project == "" {
+		values.Project = h.project
+	}
+	data := templates.TicketFormData{
+		Mode:     mode,
+		TicketID: ticketID,
+		Values:   values,
+		Error:    msg,
+	}
+	_ = templates.TicketFormModalPartial(data).Render(r.Context(), w)
 }

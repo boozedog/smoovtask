@@ -21,6 +21,9 @@ func TestLoadDefaults(t *testing.T) {
 	if len(cfg.Projects) != 0 {
 		t.Errorf("default Projects = %v, want empty", cfg.Projects)
 	}
+	if cfg.Agent.CLI != "claude" {
+		t.Errorf("default Agent.CLI = %q, want %q", cfg.Agent.CLI, "claude")
+	}
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -29,6 +32,7 @@ func TestRoundTrip(t *testing.T) {
 
 	cfg := &Config{
 		Settings: SettingsConfig{VaultPath: "~/my-vault"},
+		Agent:    AgentConfig{CLI: "opencode"},
 		Projects: map[string]ProjectConfig{
 			"myproject": {Path: "/tmp/myproject"},
 		},
@@ -48,6 +52,9 @@ func TestRoundTrip(t *testing.T) {
 	}
 	if p, ok := loaded.Projects["myproject"]; !ok || p.Path != "/tmp/myproject" {
 		t.Errorf("Projects[myproject] = %+v, want Path=/tmp/myproject", loaded.Projects["myproject"])
+	}
+	if loaded.Agent.CLI != "opencode" {
+		t.Errorf("Agent.CLI = %q, want %q", loaded.Agent.CLI, "opencode")
 	}
 }
 

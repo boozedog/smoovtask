@@ -1,0 +1,14 @@
+name: multi-tool
+description: Rules using tool lists
+priority: 40
+event: pre_tool_use
+rules:
+  - name: allow-file-tools
+    match:
+      tool:
+        - Read
+        - Edit
+        - Write
+      file_path: "^/Users/dev/myproject/"
+    action: allow
+    message: "file operations in project dir allowed"

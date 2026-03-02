@@ -35,33 +35,28 @@ func runHook(_ *cobra.Command, args []string) error {
 		if err := json.Unmarshal(eventData, &event); err != nil {
 			return nil // Skip invalid events
 		}
-		// Create input
+
+		// Build input from the normalized payload the plugin sends
 		input := &hook.Input{Source: "opencode"}
-		// Extract sessionID from event properties
-		if props, ok := event["properties"].(map[string]any); ok {
-			if sid, ok := props["sessionID"].(string); ok {
-				input.SessionID = sid
-			} else if info, ok := props["info"].(map[string]any); ok {
-				if sid, ok := info["sessionID"].(string); ok {
-					input.SessionID = sid
-				}
-			}
+		if sid, ok := event["session_id"].(string); ok {
+			input.SessionID = sid
 		}
+		if cwd, ok := event["cwd"].(string); ok {
+			input.CWD = cwd
+		}
+		if toolName, ok := event["tool_name"].(string); ok {
+			input.ToolName = toolName
+		}
+		if toolInput, ok := event["tool_input"].(map[string]any); ok {
+			input.ToolInput = toolInput
+		}
+
 		// Process based on event type
 		eventType, _ := event["type"].(string)
 		switch eventType {
 		case "session.created":
-			props, _ := event["properties"].(map[string]any)
-			info, _ := props["info"].(map[string]any)
-			sessionID, _ := info["id"].(string)
-			cwd, _ := info["directory"].(string)
-			if sessionID == "" {
+			if input.SessionID == "" {
 				return nil
-			}
-			input := &hook.Input{
-				Source:    "opencode",
-				SessionID: sessionID,
-				CWD:       cwd,
 			}
 			out, err := hook.HandleSessionStart(input)
 			if err != nil {
@@ -73,12 +68,14 @@ func runHook(_ *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			if out.AdditionalContext != "" {
+			if out.AdditionalContext != "" || out.Decision != nil {
 				return hook.WriteOutput(out)
 			}
 			return nil
 		case "tool.execute.after":
 			return hook.HandlePostTool(input)
+		case "stop":
+			return hook.HandleStop(input)
 		case "session.idle":
 			return hook.HandleTeammateIdle(input)
 		case "permission.asked":
@@ -134,7 +131,7 @@ func runHook(_ *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			if out.AdditionalContext != "" {
+			if out.AdditionalContext != "" || out.Decision != nil {
 				return hook.WriteOutput(out)
 			}
 			return nil
@@ -229,6 +226,12 @@ func runHook(_ *cobra.Command, args []string) error {
 		out, err := hook.HandlePreTool(input)
 		if err != nil {
 			return err
+		}
+		if out.Decision != nil && out.Decision.Behavior == "deny" {
+			if out.Decision.Reason != "" {
+				return fmt.Errorf("%s", out.Decision.Reason)
+			}
+			return fmt.Errorf("tool call blocked by smoovtask")
 		}
 		if out.AdditionalContext != "" {
 			return hook.WriteOutput(out)

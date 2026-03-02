@@ -9,6 +9,37 @@ import (
 	"github.com/boozedog/smoovtask/internal/web/templates"
 )
 
+func reviewTicketRank(status ticket.Status) int {
+	switch status {
+	case ticket.StatusReview:
+		return 0
+	case ticket.StatusHumanReview:
+		return 1
+	default:
+		return 2
+	}
+}
+
+func reviewTicketLess(a, b *ticket.Ticket) bool {
+	aRank := reviewTicketRank(a.Status)
+	bRank := reviewTicketRank(b.Status)
+	if aRank != bRank {
+		return aRank < bRank
+	}
+
+	aAssigned := a.Assignee != ""
+	bAssigned := b.Assignee != ""
+	if aAssigned != bAssigned {
+		return aAssigned
+	}
+
+	if a.Priority != b.Priority {
+		return a.Priority < b.Priority
+	}
+
+	return a.Created.Before(b.Created)
+}
+
 // Board renders the kanban board page.
 func (h *Handler) Board(w http.ResponseWriter, r *http.Request) {
 	data, err := h.buildBoardData()
@@ -30,6 +61,8 @@ func (h *Handler) PartialBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) buildBoardData() (templates.BoardData, error) {
+	const stalledThreshold = 2 * time.Minute
+
 	tickets, err := h.store.ListMeta(ticket.ListFilter{})
 	if err != nil {
 		return templates.BoardData{}, err
@@ -49,12 +82,19 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 		groups[ticket.StatusDone] = recent
 	}
 
-	// Sort tickets within each column.
+	// Sort tickets within each raw status bucket.
 	for status, tks := range groups {
 		if status == ticket.StatusDone || status == ticket.StatusCancelled {
 			// Done/Cancelled: reverse chronological by Updated.
 			sort.Slice(tks, func(i, j int) bool {
 				return tks[i].Updated.After(tks[j].Updated)
+			})
+		} else if status == ticket.StatusReview || status == ticket.StatusHumanReview {
+			// Review buckets: agent review first, then human review.
+			// Within each, tickets with an active assignee first, then priority ascending,
+			// then creation date ascending.
+			sort.Slice(tks, func(i, j int) bool {
+				return reviewTicketLess(tks[i], tks[j])
 			})
 		} else {
 			// All others: priority ascending (P0 first), then creation date ascending.
@@ -69,9 +109,33 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 
 	var columns []templates.BoardColumn
 	for _, status := range statusOrder {
+		columnTickets := append([]*ticket.Ticket{}, groups[status]...)
+		if status == ticket.StatusOpen {
+			columnTickets = append(columnTickets, groups[ticket.StatusRework]...)
+		} else if status == ticket.StatusReview {
+			columnTickets = append(columnTickets, groups[ticket.StatusHumanReview]...)
+		}
+
+		if status == ticket.StatusDone || status == ticket.StatusCancelled {
+			sort.Slice(columnTickets, func(i, j int) bool {
+				return columnTickets[i].Updated.After(columnTickets[j].Updated)
+			})
+		} else if status == ticket.StatusReview {
+			sort.Slice(columnTickets, func(i, j int) bool {
+				return reviewTicketLess(columnTickets[i], columnTickets[j])
+			})
+		} else {
+			sort.Slice(columnTickets, func(i, j int) bool {
+				if columnTickets[i].Priority != columnTickets[j].Priority {
+					return columnTickets[i].Priority < columnTickets[j].Priority
+				}
+				return columnTickets[i].Created.Before(columnTickets[j].Created)
+			})
+		}
+
 		columns = append(columns, templates.BoardColumn{
 			Status:  status,
-			Tickets: groups[status],
+			Tickets: columnTickets,
 		})
 	}
 
@@ -87,7 +151,26 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 	for runID := range runIDSet {
 		runIDs = append(runIDs, runID)
 	}
-	runSources := h.resolveRunSources(runIDs)
 
-	return templates.BoardData{Columns: columns, RunSources: runSources}, nil
+	now := time.Now().UTC()
+	runSources := h.resolveRunSources(runIDs)
+	runLastHooks := h.resolveRunLastHookTimes(runIDs)
+	runLastHookUnixMs := make(map[string]int64, len(runIDs))
+	stalledRunIDs := make(map[string]bool, len(runIDs))
+	for _, runID := range runIDs {
+		lastHookTS, ok := runLastHooks[runID]
+		if ok {
+			runLastHookUnixMs[runID] = lastHookTS.UnixMilli()
+		}
+		if !ok || now.Sub(lastHookTS) > stalledThreshold {
+			stalledRunIDs[runID] = true
+		}
+	}
+
+	return templates.BoardData{
+		Columns:           columns,
+		RunSources:        runSources,
+		RunLastHookUnixMs: runLastHookUnixMs,
+		StalledRunIDs:     stalledRunIDs,
+	}, nil
 }

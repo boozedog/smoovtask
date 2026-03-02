@@ -21,7 +21,12 @@ st hooks install --agents both
 # 4. Create a ticket
 st new "Add rate limiting to API" --priority P2
 
-# 5. Start an agent session — st injects the board automatically
+# 5. Start an agent session (always via st launcher)
+st work
+# or: st leader
+# or: st review st_a7Kx2m
+
+# st launches the selected CLI in tmux and injects role-specific guidance.
 # Claude sees open tickets and picks one up:
 #   st pick st_a7Kx2m
 #   st note "Implemented token bucket middleware"
@@ -119,12 +124,15 @@ st show <ticket-id>                        Show full ticket detail (frontmatter 
 ### Agent Workflow
 
 ```
-st pick [ticket-id]                        Pick up a ticket (assigns to current session)
-                                           Omit ID to auto-pick highest-priority open ticket
+st leader                                Start leader/orchestrator session in tmux
+st work                                  Start implementer session in tmux
+st review <ticket-id>                    Start reviewer session in tmux
+       [--cli claude|opencode|pi]        Override configured CLI backend for launcher mode
+st pick <ticket-id>                        Pick up a specific ticket (assigns to current session)
 st note <message>                          Append a note to the current ticket
 st status <status>                         Transition ticket status
                                            Aliases: review/submit, start/begin, done/complete
-st review <ticket-id>                      Claim a ticket for review (eligibility enforced)
+st review <ticket-id> --run-id <run-id>    Claim a ticket for review (eligibility enforced)
 st context                                 Print current session context as JSON
 ```
 

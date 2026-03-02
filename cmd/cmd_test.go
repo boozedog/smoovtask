@@ -110,7 +110,7 @@ func (e *testEnv) createTicket(t *testing.T, title string, status ticket.Status)
 }
 
 // addNoteEvent logs a ticket.note event for the given ticket, so that
-// the RequiresNote check passes when transitioning to REVIEW.
+// the RequiresNote check passes when transitioning to review states.
 func (e *testEnv) addNoteEvent(t *testing.T, ticketID string) {
 	t.Helper()
 	_ = e.EventLog.Append(event.Event{
@@ -202,7 +202,13 @@ func resetFlags() {
 	newTitle = ""
 	pickTicket = ""
 	reviewTicket = ""
+	reviewCLI = ""
+	leaderCLI = ""
+	workCLI = ""
 	handoffTicket = ""
+	spawnTimeout = 45 * time.Minute
+	spawnBackend = "claude"
+	spawnDryRun = false
 }
 
 func TestOverride_HappyPath(t *testing.T) {

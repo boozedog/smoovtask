@@ -27,6 +27,7 @@ func HandleTaskCompleted(input *Input) error {
 	return el.Append(event.Event{
 		TS:      time.Now().UTC(),
 		Event:   event.HookTaskCompleted,
+		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
 		Actor:   "agent",
 		RunID:   input.SessionID,

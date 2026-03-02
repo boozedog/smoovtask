@@ -2,7 +2,7 @@ package templates
 
 templ Layout(title string, currentPath string) {
 	<!DOCTYPE html>
-	<html lang="en" class="dark uk-theme-zinc">
+	<html lang="en" class="dark uk-theme-orange">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -21,18 +21,25 @@ templ Layout(title string, currentPath string) {
 				.st-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; height: 100%; }
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
-				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
-				.st-card { display: block; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 0.375rem; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); cursor: pointer; transition: border-color 0.15s; text-decoration: none; color: inherit; }
-				.st-card:hover { border-color: hsl(var(--primary)); }
-				.st-card-title { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.25rem; overflow-wrap: break-word; }
-				.st-card-meta { font-size: 0.75rem; opacity: 0.7; display: flex; gap: 0.5rem; align-items: center; }
-				.st-badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.7rem; font-weight: 600; }
-				.st-badge-p0 { background: #dc2626; color: white; }
-				.st-badge-p1 { background: #ea580c; color: white; }
-				.st-badge-p2 { background: #d97706; color: white; }
-				.st-badge-p3 { background: #2563eb; color: white; }
-				.st-badge-p4 { background: #6b7280; color: white; }
-				.st-badge-p5 { background: #374151; color: #9ca3af; }
+				.st-column-header { padding: 0.5rem 0.75rem; font-weight: 600; text-transform: none; letter-spacing: normal; border-bottom: 2px solid; margin-bottom: 0.5rem; position: sticky; top: 0; z-index: 1; background: hsl(var(--background)); }
+				.st-ticket-card { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; cursor: pointer; position: relative; }
+				.st-card-corner-badge { position: absolute; top: 0.75rem; right: 0.75rem; z-index: 1; display: inline-flex; width: auto; align-self: flex-start; }
+				.st-ticket-card:hover { border-color: hsl(var(--primary)); }
+				.st-card-project { min-height: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+				.st-card-title { font-size: 1rem; line-height: 1.35; font-weight: 500; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: break-word; }
+				.st-ticket-meta { margin-top: 0.35rem; }
+				.st-ticket-footer { margin-top: 0.1rem; }
+				.st-priority-p0 { background: #dc2626; color: white; }
+				.st-priority-p1 { background: #ea580c; color: white; }
+				.st-priority-p2 { background: #d97706; color: white; }
+				.st-priority-p3 { background: #2563eb; color: white; }
+				.st-priority-p4 { background: #6b7280; color: white; }
+				.st-priority-p5 { background: #374151; color: #9ca3af; }
+				.st-status-badge-done { background: #22c55e; color: white; }
+				.st-status-badge-cancelled { background: #6b7280; color: white; }
+				.st-source-badge-image { height: 1.5rem; width: auto; image-rendering: pixelated; }
+				.st-assignee-wrap { margin-left: auto; display: inline-flex; align-items: center; gap: 0.25rem; }
+				.st-assignee-pill { display: inline-block; padding: 0.1rem 0.4rem; font-family: 'Maple Mono NF', monospace; font-weight: 600; background: var(--st-assignee-bg, #6b7280); }
 				.st-status-backlog { border-color: #6b7280; }
 				.st-status-open { border-color: #3b82f6; }
 				.st-status-in-progress { border-color: #f59e0b; }
@@ -41,10 +48,7 @@ templ Layout(title string, currentPath string) {
 				.st-status-blocked { border-color: #dc2626; }
 				.st-status-done { border-color: #22c55e; }
 				.st-status-cancelled { border-color: #9ca3af; }
-				.st-column-count { opacity: 0.5; font-weight: normal; }
 				.st-event-row { padding: 0.5rem 0; border-bottom: 1px solid hsl(var(--border)); font-size: 0.85rem; }
-				.st-event-type { font-weight: 600; }
-				.st-event-time { opacity: 0.6; font-size: 0.75rem; }
 				.st-ticket-body { line-height: 1.6; overflow-wrap: break-word; word-break: break-word; margin-top: 1.5rem; }
 				.st-ticket-body h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.25rem; font-weight: 600; }
 				.st-ticket-body h2:first-child { margin-top: 0; }
@@ -64,20 +68,10 @@ templ Layout(title string, currentPath string) {
 				.st-ticket-body :not(pre) > code { font-size: 0.85em; background: hsl(var(--card)); padding: 0.15em 0.4em; border-radius: 0.25rem; }
 				.st-ticket-body pre code { font-size: 0.85em; background: none; padding: 0; }
 				.st-ticket-body ul, .st-ticket-body ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
-				.st-ticket-detail { margin: 0 auto; }
-				.st-ticket-header { margin-bottom: 0; }
-				.st-ticket-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; }
-				.st-meta-sep { width: 1px; height: 1rem; background: hsl(var(--border)); }
-				.st-nav-active { color: hsl(var(--primary)) !important; border-bottom: 2px solid hsl(var(--primary)); }
-				.uk-navbar { display: flex; align-items: center; justify-content: space-between; }
-				.uk-navbar-left { display: flex; align-items: center; min-width: 0; }
-				.uk-navbar-right { display: flex; align-items: center; }
-				.uk-navbar-nav { display: flex; list-style: none; margin: 0; padding: 0; }
-				.uk-navbar-nav > li > a { display: block; padding: 0.75rem 1rem; text-decoration: none; color: inherit; }
-				.uk-navbar-nav > li > a:hover { color: hsl(var(--primary)); }
-				.uk-navbar-nav > li > a { font-size: 0.9rem; }
-				.st-column-collapsed .st-card:nth-child(n+7) { display: none; }
-				.st-toggle-done { display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem; background: transparent; border: 1px dashed hsl(var(--border)); border-radius: 0.375rem; color: hsl(var(--foreground)); opacity: 0.6; cursor: pointer; font-size: 0.8rem; }
+				.st-copy-ticket-id { border: 1px solid hsl(var(--border)); background: transparent; font-size: 0.8rem; cursor: pointer; user-select: none; }
+				.st-ticket-dep-link { font-size: 0.8rem; }
+				.st-column-collapsed .st-ticket-card:nth-child(n+7) { display: none; }
+				.st-toggle-done { display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem; background: transparent; border: 1px dashed hsl(var(--border)); border-radius: 0.375rem; color: hsl(var(--foreground)); opacity: 0.6; cursor: pointer; }
 				.st-toggle-done:hover { opacity: 1; }
 				.st-board-wrapper { position: relative; }
 				.st-board-wrapper::before, .st-board-wrapper::after { content: ''; position: absolute; top: 0; bottom: 0; width: 24px; pointer-events: none; z-index: 1; opacity: 0; transition: opacity 0.2s; }
@@ -86,83 +80,463 @@ templ Layout(title string, currentPath string) {
 				.st-board-wrapper.scroll-left::before { opacity: 1; }
 				.st-board-wrapper.scroll-right::after { opacity: 1; }
 				.st-modal-ticket { width: 66vw; max-width: 1200px; }
-				.st-modal-ticket .st-ticket-detail { max-width: 100%; }
+				.st-modal-header { padding: 1rem 1.25rem 0.85rem; padding-right: 3.5rem; border-bottom: 1px solid hsl(var(--border)); }
+				.st-modal-body { padding: 1.1rem 1.25rem 1.25rem; }
+				.st-ticket-header { display: flex; flex-direction: column; gap: 0.5rem; }
+				.st-ticket-header-title { line-height: 1.2; }
+				.st-ticket-header-meta { row-gap: 0.45rem; }
+				.st-ticket-form-modal { padding-top: 0.35rem; }
+				.st-ticket-form-grid { row-gap: 0.75rem; }
+				.st-ticket-form-actions { padding-top: 0.85rem; border-top: 1px solid hsl(var(--border)); }
+				.st-ticket-form-shell { padding-bottom: 1.5rem; }
+				.st-ticket-form-page-header { margin-bottom: 1rem; }
+				.st-ticket-form { border: 0; border-radius: 0; background: transparent; }
+				.st-ticket-form-page { padding: 1.25rem; row-gap: 0.85rem; }
+				.st-ticket-form-label { font-weight: 600; letter-spacing: 0.01em; }
+				.st-ticket-form-field { padding-bottom: 0.55rem; }
+				.st-ticket-form-input { transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s; }
+				.st-ticket-form-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 2px color-mix(in srgb, hsl(var(--primary)) 25%, transparent); }
+				.st-ticket-form-help { margin: 0.35rem 0 0; font-size: 0.76rem; opacity: 0.72; }
+				.st-dep-graph { position: relative; overflow-x: auto; padding-bottom: 1rem; }
+				.st-dep-grid { display: flex; gap: 2rem; align-items: flex-start; min-width: min-content; }
+				.st-dep-layer { display: flex; flex-direction: column; gap: 0.75rem; min-width: 14rem; }
+				.st-dep-node { padding: 0.75rem; border-radius: 0.375rem; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); cursor: pointer; transition: border-color 0.15s, opacity 0.15s; text-decoration: none; color: inherit; display: block; }
+				.st-dep-node:hover { border-color: hsl(var(--primary)); }
+				.st-dep-node-title { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.25rem; overflow-wrap: break-word; }
+				.st-dep-node-meta { font-size: 0.75rem; opacity: 0.7; display: flex; gap: 0.5rem; align-items: center; }
+				.st-dep-edges { position: absolute; top: 0; left: 0; pointer-events: none; }
+				.st-dep-edge { stroke: hsl(var(--border)); stroke-width: 2; fill: none; transition: stroke 0.15s, stroke-width 0.15s; }
+				.st-dep-edge.highlighted { stroke: hsl(var(--primary)); stroke-width: 2.5; }
+				.st-dep-graph.dimmed .st-dep-node { opacity: 0.3; }
+				.st-dep-graph.dimmed .st-dep-node.highlighted { opacity: 1; }
+				@keyframes st-dot-flash { 0% { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); } 100% { background: #166534; box-shadow: none; } }
+				.st-session-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+				.st-session-dot.st-session-dot-hot { background: #166534; animation: none; }
+				.st-session-dot.st-session-dot-hot.st-session-dot-flash { animation: st-dot-flash 0.4s ease-out forwards; }
+				.st-session-dot.st-session-dot-warm { background: #eab308; box-shadow: none; animation: none; }
+				.st-session-dot.st-session-dot-cold { background: #ef4444; box-shadow: none; animation: none; }
+				.st-alert-icon { display: none; align-items: center; justify-content: center; flex-shrink: 0; cursor: default; }
+				.st-stalled-icon { display: none; align-items: center; justify-content: center; flex-shrink: 0; cursor: default; }
+				@keyframes st-alert-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+				.st-alert-icon.st-alert-active { display: inline-flex; animation: st-alert-pulse 2s ease-in-out infinite; }
+				.st-stalled-icon.st-alert-active { display: inline-flex; animation: st-alert-pulse 1.6s ease-in-out infinite; }
+				.st-audio-toggle { background: transparent; border: 1px solid hsl(var(--border)); border-radius: 0.375rem; padding: 0.25rem 0.5rem; cursor: pointer; color: hsl(var(--foreground)); opacity: 0.7; transition: opacity 0.15s; display: inline-flex; align-items: center; }
+				.st-audio-toggle:hover { opacity: 1; }
+				@media (max-width: 640px) {
+					.st-event-row { gap: 0.35rem; }
+					.st-modal-ticket { width: calc(100vw - 1rem); margin: 0.5rem; }
+					.st-modal-header { padding: 0.9rem 1rem 0.8rem; padding-right: 2.75rem; }
+					.st-modal-body { padding: 0.9rem 1rem 1rem; }
+					.st-ticket-header-top { gap: 0.65rem; }
+					.st-ticket-header-title { font-size: 1.25rem; }
+					.st-ticket-header-edit { margin-left: 0; }
+					.st-ticket-form-page { padding: 1rem; }
+					.st-ticket-form-actions { gap: 0.5rem; }
+				}
 			</style>
 		</head>
-		<body hx-ext="sse" sse-connect="/events" class="h-screen flex flex-col overflow-hidden" style="background-color: hsl(var(--background)); color: hsl(var(--foreground));">
-			<nav class="uk-navbar-container uk-navbar px-4 shrink-0">
-				<div class="uk-navbar-left">
-					<a class="uk-navbar-item uk-logo font-bold flex items-center gap-2" href="/" style="font-size: 1.3rem;">
-						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full" style="object-fit: cover; object-position: center;"/>
-						<span style="font-family: 'Maple Mono NF', monospace;">smoovtask</span>
+		<body hx-ext="sse" sse-connect="/events" class="h-screen flex flex-col overflow-hidden bg-background text-foreground">
+			<nav class="flex items-center justify-between px-4 pt-2 shrink-0">
+				<div class="flex items-center min-w-0">
+					<a class="uk-logo font-bold flex items-center gap-2 text-xl" href="/">
+						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full object-cover object-center"/>
+						<span class="uk-text-mono">smoovtask</span>
 					</a>
-					<ul class="uk-navbar-nav gap-0 ml-4">
-						<li>
+					<ul class="uk-tab ml-4 st-main-nav">
+						<li
+							if currentPath == "/" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/board"
 								hx-target="#content"
 								hx-push-url="/"
 								href="/"
-								if currentPath == "/" {
-									class="st-nav-active"
-								}
 							>
 								Board
 							</a>
 						</li>
-						<li>
+						<li
+							if currentPath == "/list" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/list"
 								hx-target="#content"
 								hx-push-url="/list"
 								href="/list"
-								if currentPath == "/list" {
-									class="st-nav-active"
-								}
 							>
-								List
+								Tickets
 							</a>
 						</li>
-						<li>
+						<li
+							if currentPath == "/critical-path" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/critical-path"
 								hx-target="#content"
 								hx-push-url="/critical-path"
 								href="/critical-path"
-								if currentPath == "/critical-path" {
-									class="st-nav-active"
-								}
 							>
 								Critical Path
 							</a>
 						</li>
-						<li>
+						<li
+							if currentPath == "/agents" {
+								class="uk-active"
+							}
+						>
+							<a
+								hx-get="/partials/agents"
+								hx-target="#content"
+								hx-push-url="/agents"
+								href="/agents"
+							>
+								Agents
+							</a>
+						</li>
+						<li
+							if currentPath == "/activity" {
+								class="uk-active"
+							}
+						>
 							<a
 								hx-get="/partials/activity"
 								hx-target="#content"
 								hx-push-url="/activity"
 								href="/activity"
-								if currentPath == "/activity" {
-									class="st-nav-active"
-								}
 							>
 								Activity
 							</a>
 						</li>
 					</ul>
 				</div>
-				<div class="uk-navbar-right">
-					<a class="uk-button uk-button-primary uk-button-small" href="/new">New Ticket</a>
+				<div class="flex items-center gap-2">
+					<button
+						id="st-audio-toggle"
+						class="st-audio-toggle"
+						type="button"
+						title="Toggle hook audio alerts"
+						onclick="stToggleAudioMute()"
+					>
+						<svg id="st-audio-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+						<svg id="st-audio-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+					</button>
+					<a class="uk-btn uk-btn-primary uk-btn-sm" href="/new" hx-get="/partials/form/new" hx-target="#ticket-modal-body" hx-push-url="false">New Ticket</a>
 				</div>
 			</nav>
-			<main class="uk-container uk-container-expand p-6 flex-1 overflow-y-auto min-h-0">
+			<main class="uk-container uk-container-expand p-4 sm:p-6 flex-1 overflow-y-auto min-h-0">
 				<div id="content">
 					{ children... }
 				</div>
 			</main>
+			<div id="ticket-modal" data-uk-modal>
+				<div class="uk-modal-dialog uk-margin-auto-vertical st-modal-ticket">
+					<button class="uk-modal-close absolute right-3 top-3 z-10" type="button" data-uk-close></button>
+					<div class="uk-modal-header st-modal-header" id="ticket-modal-header"></div>
+					<div class="uk-modal-body st-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
+				</div>
+			</div>
 			<script>
-				if (!window._stClickHandlerBound) {
-				window._stClickHandlerBound = true;
+				// Global function definitions (safe to re-declare on script re-evaluation).
+
+				// --- Audio alert system ---
+				var _stSoundMap = {
+					'hook.permission-request': { cat: 'deny', files: ['deny-1.wav', 'deny-2.wav'] },
+					'hook.session-start':      { cat: 'start', files: ['start-1.wav'] },
+					'hook.stop':               { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.session-end':        { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.task-completed':     { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.pre-tool':           { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
+					'hook.post-tool':          { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] }
+				};
+				var _stStallThresholdMs = 2 * 60 * 1000;
+				var _stStallSpeakCooldownMs = 30 * 1000;
+				var _stLastSoundByCategory = {};
+				var _stAudioUnlocked = false;
+				var _stLastStallSpeakAt = 0;
+
+				function stIsAudioMuted() {
+					return localStorage.getItem('st-audio-muted') === '1';
+				}
+				function stToggleAudioMute() {
+					var muted = !stIsAudioMuted();
+					localStorage.setItem('st-audio-muted', muted ? '1' : '0');
+					stSyncMuteIcon();
+					// Unlock audio on first interaction
+					if (!muted && !_stAudioUnlocked) _stAudioUnlocked = true;
+				}
+				function stSyncMuteIcon() {
+					var muted = stIsAudioMuted();
+					var iconOn = document.getElementById('st-audio-icon-on');
+					var iconOff = document.getElementById('st-audio-icon-off');
+					if (iconOn) iconOn.style.display = muted ? 'none' : '';
+					if (iconOff) iconOff.style.display = muted ? '' : 'none';
+				}
+				function stPlayHookSound(hookName) {
+					if (stIsAudioMuted()) return;
+					var entry = _stSoundMap[hookName];
+					if (!entry) return;
+					var now = Date.now();
+					if (_stLastSoundByCategory[entry.cat] && now - _stLastSoundByCategory[entry.cat] < 400) return;
+					_stLastSoundByCategory[entry.cat] = now;
+					var file = entry.files[Math.floor(Math.random() * entry.files.length)];
+					try {
+						var audio = new Audio('/static/sounds/' + file);
+						audio.volume = 0.4;
+						audio.play().catch(function() {});
+					} catch (_) {}
+				}
+
+				// --- Alert icon toggle ---
+				function stUpdateAlertIcons(runID, hookName, ticketID) {
+					var active = hookName === 'hook.permission-request';
+					var selector = '.st-alert-icon[data-run-id="' + runID + '"]';
+					if (ticketID) {
+						selector += ', .st-alert-icon[data-ticket-id="' + ticketID + '"]';
+					}
+					document.querySelectorAll(selector).forEach(function(el) {
+						el.classList.toggle('st-alert-active', active);
+					});
+				}
+
+				function stRunIDForTicket(ticketID) {
+					if (!ticketID) return '';
+					var dot = document.querySelector('.st-session-dot[data-ticket-id="' + ticketID + '"][data-run-id]');
+					if (!dot) return '';
+					return dot.getAttribute('data-run-id') || '';
+				}
+
+				function seedLastHookStateFromDOM() {
+					if (!window._stLastHookByRunID) {
+						window._stLastHookByRunID = {};
+					}
+					document.querySelectorAll('.st-session-dot[data-run-id][data-last-hook-ts-ms]').forEach(function(dot) {
+						var runID = dot.getAttribute('data-run-id') || '';
+						if (!runID) return;
+						var ts = Number(dot.getAttribute('data-last-hook-ts-ms') || '0');
+						if (!Number.isFinite(ts) || ts <= 0) return;
+						if (!window._stLastHookByRunID[runID] || ts > window._stLastHookByRunID[runID]) {
+							window._stLastHookByRunID[runID] = ts;
+						}
+					});
+				}
+
+				function stIsRunStalled(runID) {
+					if (!runID) return false;
+					var ts = window._stLastHookByRunID && window._stLastHookByRunID[runID];
+					if (!ts) return true;
+					return (Date.now() - ts) > _stStallThresholdMs;
+				}
+
+				function stSpeakStalledAgent() {
+					if (stIsAudioMuted()) return;
+					if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') return;
+					var now = Date.now();
+					if (_stLastStallSpeakAt && (now - _stLastStallSpeakAt) < _stStallSpeakCooldownMs) return;
+					_stLastStallSpeakAt = now;
+					try {
+						window.speechSynthesis.speak(new SpeechSynthesisUtterance('stalled agent'));
+					} catch (_) {}
+				}
+
+				function stUpdateStalledIndicators(runID) {
+					if (!window._stRunStalledState) {
+						window._stRunStalledState = {};
+					}
+					var shouldSpeak = false;
+					document.querySelectorAll('.st-stalled-icon[data-run-id]').forEach(function(el) {
+						var currentRunID = el.getAttribute('data-run-id') || '';
+						if (runID && currentRunID !== runID) return;
+						var stalled = stIsRunStalled(currentRunID);
+						el.classList.toggle('st-alert-active', stalled);
+						var previous = window._stRunStalledState[currentRunID];
+						if (typeof previous === 'boolean' && !previous && stalled) {
+							shouldSpeak = true;
+						}
+						window._stRunStalledState[currentRunID] = stalled;
+					});
+					if (shouldSpeak) {
+						stSpeakStalledAgent();
+					}
+				}
+
+				function toggleDone(btn) {
+					var col = btn.closest('.st-column');
+					col.classList.toggle('st-column-collapsed');
+					var count = btn.getAttribute('data-count');
+					if (col.classList.contains('st-column-collapsed')) {
+						btn.textContent = 'Show all (' + count + ')';
+					} else {
+						btn.textContent = 'Collapse';
+					}
+				}
+				function updateScrollIndicators() {
+					var wrapper = document.querySelector('.st-board-wrapper');
+					if (!wrapper) return;
+					var board = wrapper.querySelector('.st-board');
+					if (!board) return;
+					var sl = board.scrollLeft > 0;
+					var sr = board.scrollLeft + board.clientWidth < board.scrollWidth - 1;
+					wrapper.classList.toggle('scroll-left', sl);
+					wrapper.classList.toggle('scroll-right', sr);
+				}
+				function pulseSessionDots(runID, hookName, ticketID) {
+					if (!runID && ticketID) {
+						runID = stRunIDForTicket(ticketID);
+					}
+					if (!runID) return;
+					if (!window._stLastHookByRunID) {
+						window._stLastHookByRunID = {};
+					}
+					window._stLastHookByRunID[runID] = Date.now();
+					document.querySelectorAll('.st-session-dot[data-run-id="' + runID + '"]').forEach(function(dot) {
+						dot.setAttribute('data-last-hook-ts-ms', String(window._stLastHookByRunID[runID]));
+					});
+					document.querySelectorAll('.st-stalled-icon[data-run-id="' + runID + '"]').forEach(function(icon) {
+						icon.setAttribute('data-last-hook-ts-ms', String(window._stLastHookByRunID[runID]));
+					});
+					if (hookName) {
+						if (!window._stLastHookNameByRunID) window._stLastHookNameByRunID = {};
+						window._stLastHookNameByRunID[runID] = hookName;
+					}
+					updateDotActivityStates(runID);
+					stUpdateStalledIndicators(runID);
+					updateAssigneePillTooltips(runID);
+					if (hookName) {
+						stUpdateAlertIcons(runID, hookName, ticketID);
+						stPlayHookSound(hookName);
+					}
+					// Trigger a one-shot flash on each event.
+					document.querySelectorAll('.st-session-dot[data-run-id="' + runID + '"]').forEach(function(dot) {
+						dot.classList.remove('st-session-dot-flash');
+						void dot.offsetWidth; // reflow to restart animation
+						dot.classList.add('st-session-dot-flash');
+					});
+				}
+				function sessionDotStateClass(msAgo) {
+					if (msAgo <= 60 * 1000) return 'st-session-dot-hot';
+					if (msAgo <= 2 * 60 * 1000) return 'st-session-dot-warm';
+					return 'st-session-dot-cold';
+				}
+				function updateDotActivityStates(runID) {
+					document.querySelectorAll('.st-session-dot[data-run-id]').forEach(function(dot) {
+						var dotRunID = dot.getAttribute('data-run-id');
+						if (runID && dotRunID !== runID) return;
+						var ts = window._stLastHookByRunID && dotRunID ? window._stLastHookByRunID[dotRunID] : 0;
+						var msAgo = ts ? (Date.now() - ts) : Number.MAX_SAFE_INTEGER;
+						dot.classList.remove('st-session-dot-hot', 'st-session-dot-warm', 'st-session-dot-cold');
+						dot.classList.add(sessionDotStateClass(msAgo));
+					});
+				}
+				function formatHookAge(msAgo) {
+					if (msAgo < 1000) return 'just now';
+					if (msAgo < 60 * 1000) return Math.floor(msAgo / 1000) + 's ago';
+					if (msAgo < 60 * 60 * 1000) return Math.floor(msAgo / (60 * 1000)) + 'm ago';
+					return Math.floor(msAgo / (60 * 60 * 1000)) + 'h ago';
+				}
+				function buildSessionTooltip(sessionID, sourceLabel, runID) {
+					var source = sourceLabel || 'Unknown';
+					var session = sessionID || runID || 'unknown';
+					var lastHook = 'waiting for activity';
+					if (window._stLastHookByRunID && runID && window._stLastHookByRunID[runID]) {
+						var hookAge = formatHookAge(Date.now() - window._stLastHookByRunID[runID]);
+						var hookName = (window._stLastHookNameByRunID && window._stLastHookNameByRunID[runID]) || '';
+						lastHook = hookName ? hookName + ' (' + hookAge + ')' : hookAge;
+					}
+					return 'Session: ' + session + '\nSource: ' + source + '\nLast hook: ' + lastHook;
+				}
+				function updateAssigneePillTooltips(runID) {
+					document.querySelectorAll('.st-assignee-pill[data-run-id]').forEach(function(pill) {
+						if (runID && pill.getAttribute('data-run-id') !== runID) return;
+						var pillRunID = pill.getAttribute('data-run-id') || '';
+						var sessionID = pill.getAttribute('data-session-id') || '';
+						var sourceLabel = pill.getAttribute('data-source-label') || '';
+						var tooltip = buildSessionTooltip(sessionID, sourceLabel, pillRunID);
+						pill.setAttribute('title', tooltip);
+						pill.setAttribute('aria-label', tooltip.replace(/\n/g, ', '));
+					});
+				}
+				function syncAgentActivityStreams() {
+					if (!window._stAgentEventStream) {
+						window._stAgentEventStream = null;
+					}
+					var wanted = {};
+					document.querySelectorAll('.st-session-dot[data-run-id]').forEach(function(dot) {
+						var runID = dot.getAttribute('data-run-id');
+						if (runID) wanted[runID] = true;
+					});
+					window._stWantedRunIDs = wanted;
+					seedLastHookStateFromDOM();
+
+					if (Object.keys(wanted).length > 0 && !window._stAgentEventStream) {
+						var stream = new EventSource('/events/agent');
+						stream.addEventListener('ping', function(e) {
+							var payload = {};
+							if (e.data) {
+								try {
+									payload = JSON.parse(e.data);
+								} catch (_) {
+									return;
+								}
+							}
+							var activeRunIDs = window._stWantedRunIDs || {};
+							var runID = payload.run_id || '';
+							if (!runID || !activeRunIDs[runID]) {
+								runID = stRunIDForTicket(payload.ticket || '');
+							}
+							if (!runID || !activeRunIDs[runID]) return;
+							pulseSessionDots(runID, payload.hook || '', payload.ticket || '');
+						});
+						window._stAgentEventStream = stream;
+					}
+
+					if (Object.keys(wanted).length === 0 && window._stAgentEventStream) {
+						window._stAgentEventStream.close();
+						window._stAgentEventStream = null;
+					}
+
+					if (window._stLastHookByRunID) {
+						Object.keys(window._stLastHookByRunID).forEach(function(runID) {
+							if (wanted[runID]) return;
+							delete window._stLastHookByRunID[runID];
+							if (window._stLastHookNameByRunID) delete window._stLastHookNameByRunID[runID];
+							if (window._stRunStalledState) delete window._stRunStalledState[runID];
+						});
+					}
+					updateDotActivityStates();
+					stUpdateStalledIndicators();
+					updateAssigneePillTooltips();
+				}
+
+				// Guard: register all event listeners exactly once.
+				if (!window._stInitialized) {
+				window._stInitialized = true;
+
+				document.addEventListener('animationend', function(e) {
+					if (e.target.classList.contains('st-session-dot-flash')) {
+						e.target.classList.remove('st-session-dot-flash');
+					}
+				});
+
+				document.addEventListener('mouseover', function(e) {
+					var pill = e.target.closest('.st-assignee-pill[data-run-id]');
+					if (!pill) return;
+					updateAssigneePillTooltips(pill.getAttribute('data-run-id'));
+				});
+
+				var _ticketModalOpen = false;
+
+				// Close modal on form success (HX-Trigger: closeModal).
+				document.body.addEventListener('closeModal', function() {
+					UIkit.modal('#ticket-modal').hide();
+				});
+
+				// Click delegation: copy-to-clipboard and table row modal opens.
 				document.addEventListener('click', function(e) {
 					var copyTarget = e.target.closest('[data-copy-ticket-id]');
 					if (copyTarget) {
@@ -202,58 +576,62 @@ templ Layout(title string, currentPath string) {
 						}
 					}
 				});
-				}
-			</script>
-			<script>
-				function toggleDone(btn) {
-					var col = btn.closest('.st-column');
-					col.classList.toggle('st-column-collapsed');
-					var count = btn.getAttribute('data-count');
-					if (col.classList.contains('st-column-collapsed')) {
-						btn.textContent = 'Show all (' + count + ')';
-					} else {
-						btn.textContent = 'Collapse';
-					}
-				}
-				function updateScrollIndicators() {
-					var wrapper = document.querySelector('.st-board-wrapper');
-					if (!wrapper) return;
-					var board = wrapper.querySelector('.st-board');
-					if (!board) return;
-					var sl = board.scrollLeft > 0;
-					var sr = board.scrollLeft + board.clientWidth < board.scrollWidth - 1;
-					wrapper.classList.toggle('scroll-left', sl);
-					wrapper.classList.toggle('scroll-right', sr);
-				}
+
+				// Unlock audio on first user interaction (browser autoplay policy).
+				document.addEventListener('click', function() {
+					if (!_stAudioUnlocked) _stAudioUnlocked = true;
+				}, { once: true });
+
+				// Initial scroll indicator setup.
 				document.addEventListener('DOMContentLoaded', function() {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
+					syncAgentActivityStreams();
+					stSyncMuteIcon();
+					setInterval(function() {
+						updateDotActivityStates();
+						stUpdateStalledIndicators();
+					}, 5000);
 				});
+
+				// Consolidated htmx:afterSwap handler.
 				document.addEventListener('htmx:afterSwap', function(e) {
+					// Re-bind scroll indicators when board is swapped in.
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
-				});
-				// Scroll to top on content navigation (not SSE refresh).
-				document.addEventListener('htmx:afterSwap', function(e) {
+					syncAgentActivityStreams();
+
+					// Scroll to top on content navigation (not SSE refresh).
 					if (e.detail.target && e.detail.target.id === 'content') {
 						var main = e.detail.target.closest('main');
 						if (main) main.scrollTop = 0;
 					}
+
+					// Ticket modal management.
+					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
+						if (!_ticketModalOpen) {
+							UIkit.modal('#ticket-modal').show();
+							_ticketModalOpen = true;
+						}
+					}
 				});
+
 				// Update active nav link and page title on htmx navigation.
 				document.addEventListener('htmx:pushedIntoHistory', function(e) {
 					var path = e.detail.path || window.location.pathname;
-					document.querySelectorAll('.uk-navbar-nav a').forEach(function(a) {
+					document.querySelectorAll('.st-main-nav li').forEach(function(li) {
+						var a = li.querySelector('a[href]');
+						if (!a) return;
 						var linkPath = new URL(a.href, window.location.origin).pathname;
 						if (linkPath === path || (linkPath === '/' && path === '/')) {
-							a.classList.add('st-nav-active');
+							li.classList.add('uk-active');
 						} else {
-							a.classList.remove('st-nav-active');
+							li.classList.remove('uk-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/list': 'List', '/activity': 'Activity', '/critical-path': 'Critical Path'};
+					var titleMap = {'/': 'Board', '/list': 'Tickets', '/agents': 'Agents', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');
@@ -261,17 +639,15 @@ templ Layout(title string, currentPath string) {
 					}
 					if (title) document.title = title + ' — smoovtask';
 				});
+
 				// Handle browser back/forward.
 				window.addEventListener('popstate', function() {
-					// If ticket modal is open, close it and return.
 					var modalEl = document.getElementById('ticket-modal');
 					if (modalEl && _ticketModalOpen) {
-						_modalClosingFromHistory = true;
 						UIkit.modal(modalEl).hide();
-						return;
 					}
 					var path = window.location.pathname;
-					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
+					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/agents': '/partials/agents', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
 					var partial = partialMap[path];
 					if (!partial && path.startsWith('/ticket/')) {
 						partial = '/partials' + path;
@@ -280,52 +656,46 @@ templ Layout(title string, currentPath string) {
 						var url = partial;
 						if (window.location.search) url += window.location.search;
 						htmx.ajax('GET', url, {target: '#content', swap: 'innerHTML'});
-						// Update nav active state.
-						document.querySelectorAll('.uk-navbar-nav a').forEach(function(a) {
+						document.querySelectorAll('.st-main-nav li').forEach(function(li) {
+							var a = li.querySelector('a[href]');
+							if (!a) return;
 							var linkPath = new URL(a.href, window.location.origin).pathname;
 							if (linkPath === path) {
-								a.classList.add('st-nav-active');
+								li.classList.add('uk-active');
 							} else {
-								a.classList.remove('st-nav-active');
+								li.classList.remove('uk-active');
 							}
 						});
+						syncAgentActivityStreams();
 					}
 				});
-			</script>
-			<div id="ticket-modal" data-uk-modal>
-				<div class="uk-modal-dialog st-modal-ticket">
-					<button class="uk-modal-close absolute right-4 top-4" type="button" data-uk-close style="z-index: 1;"></button>
-					<div class="uk-modal-header" id="ticket-modal-header"></div>
-					<div class="uk-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
-				</div>
-			</div>
-			<script>
-				// Ticket modal management.
-				var _ticketModalOpen = false;
-				var _modalClosingFromHistory = false;
-				document.addEventListener('htmx:afterSwap', function(e) {
-					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
-						var url = e.detail.xhr ? e.detail.xhr.responseURL : '';
-						var match = url.match(/\/ticket\/(st_[A-Za-z0-9]+)/);
-						var id = match ? match[1] : '';
-						if (_ticketModalOpen) {
-							if (id) history.replaceState({ticketModal: true}, '', '/ticket/' + id);
-						} else {
-							UIkit.modal('#ticket-modal').show();
-							_ticketModalOpen = true;
-							if (id) history.pushState({ticketModal: true}, '', '/ticket/' + id);
-						}
-					}
-				});
+
+				// Modal hidden cleanup.
 				UIkit.util.on('#ticket-modal', 'hidden', function() {
 					_ticketModalOpen = false;
-					if (!_modalClosingFromHistory) {
-						history.back();
-					}
-					_modalClosingFromHistory = false;
 					document.getElementById('ticket-modal-header').innerHTML = '';
 					document.getElementById('ticket-modal-body').innerHTML = '';
 				});
+
+				window.addEventListener('beforeunload', function() {
+					if (window._stAgentEventStream) {
+						window._stAgentEventStream.close();
+						window._stAgentEventStream = null;
+					}
+					if (window._stLastHookByRunID) {
+						window._stLastHookByRunID = {};
+					}
+					if (window._stLastHookNameByRunID) {
+						window._stLastHookNameByRunID = {};
+					}
+					if (window._stWantedRunIDs) {
+						window._stWantedRunIDs = {};
+					}
+					if (window._stRunStalledState) {
+						window._stRunStalledState = {};
+					}
+				});
+				}
 			</script>
 		</body>
 	</html>

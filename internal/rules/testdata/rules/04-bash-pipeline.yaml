@@ -1,0 +1,19 @@
+name: bash-pipeline
+type: bash-pipeline
+config:
+  safe_sinks:
+    - head
+    - tail
+    - wc
+    - grep
+    - less
+    - cat
+    - jq
+    - sort
+    - uniq
+  gh_api_blocked_flags:
+    - "-X"
+    - "--method"
+    - "-f"
+    - "--field"
+    - "--raw-field"

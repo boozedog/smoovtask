@@ -89,10 +89,36 @@ func TestReview_NotInReviewStatus(t *testing.T) {
 
 func TestReview_TicketNotFound(t *testing.T) {
 	env := newTestEnv(t)
-	_ = env
 
 	_, err := env.runCmd(t, "--run-id", "clean-reviewer", "review", "--ticket", "st_zzzzzz")
 	if err == nil {
 		t.Fatal("expected error for missing ticket")
+	}
+}
+
+func TestReview_NoTicketSpecified(t *testing.T) {
+	env := newTestEnv(t)
+
+	_, err := env.runCmd(t, "--run-id", "clean-reviewer", "review")
+	if err == nil {
+		t.Fatal("expected error when no ticket specified")
+	}
+	if !strings.Contains(err.Error(), "no ticket specified") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "no ticket specified")
+	}
+}
+
+func TestReview_PositionalTicketID(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "review me by arg", ticket.StatusReview)
+
+	out, err := env.runCmd(t, "--run-id", "clean-reviewer", "review", tk.ID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Claimed "+tk.ID) {
+		t.Errorf("output = %q, want substring %q", out, "Claimed "+tk.ID)
 	}
 }

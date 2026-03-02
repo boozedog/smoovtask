@@ -130,7 +130,7 @@ func TestStatus_AutoUnblock(t *testing.T) {
 		t.Fatalf("save ticket A: %v", err)
 	}
 
-	// Move B: IN-PROGRESS → REVIEW → DONE (need two transitions)
+	// Move B: IN-PROGRESS → REVIEW → HUMAN-REVIEW → DONE
 	// Add a note (required before review)
 	env.addNoteEvent(t, tkB.ID)
 	// First go to REVIEW
@@ -138,6 +138,16 @@ func TestStatus_AutoUnblock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("review transition: %v", err)
 	}
+
+	// Add a review note and hand off to HUMAN-REVIEW.
+	env.addNoteEvent(t, tkB.ID)
+	_, err = env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "human-review")
+	if err != nil {
+		t.Fatalf("human-review transition: %v", err)
+	}
+
+	// Add final sign-off note before DONE.
+	env.addNoteEvent(t, tkB.ID)
 
 	// Then go to DONE
 	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "done")
@@ -170,5 +180,29 @@ func TestStatus_NoActiveTicket(t *testing.T) {
 	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "review")
 	if err == nil {
 		t.Fatal("expected error when no active ticket")
+	}
+}
+
+func TestStatus_MultipleActiveTickets(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk1 := env.createTicket(t, "active 1", ticket.StatusInProgress)
+	tk1.Assignee = "test-session-status"
+	if err := env.Store.Save(tk1); err != nil {
+		t.Fatalf("save ticket 1: %v", err)
+	}
+
+	tk2 := env.createTicket(t, "active 2", ticket.StatusRework)
+	tk2.Assignee = "test-session-status"
+	if err := env.Store.Save(tk2); err != nil {
+		t.Fatalf("save ticket 2: %v", err)
+	}
+
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "review")
+	if err == nil {
+		t.Fatal("expected error when run has multiple active tickets")
+	}
+	if !strings.Contains(err.Error(), "multiple active tickets") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "multiple active tickets")
 	}
 }

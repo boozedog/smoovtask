@@ -90,6 +90,22 @@ func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, er
 		// "all" or empty with explicit param — show everything.
 	}
 
+	// Backfill Source on events that have a RunID but no Source.
+	var needSource []string
+	for _, e := range events {
+		if e.RunID != "" && e.Source == "" {
+			needSource = append(needSource, e.RunID)
+		}
+	}
+	if len(needSource) > 0 {
+		sources := h.resolveRunSources(needSource)
+		for i := range events {
+			if events[i].RunID != "" && events[i].Source == "" {
+				events[i].Source = sources[events[i].RunID]
+			}
+		}
+	}
+
 	// Collect unique project names.
 	allTickets, _ := h.store.ListMeta(ticket.ListFilter{})
 	projects := uniqueProjects(allTickets)

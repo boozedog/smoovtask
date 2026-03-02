@@ -18,7 +18,7 @@ import (
 var isoTimestampRe = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})`)
 
 // eventH2Re matches rendered h2 tags containing event type names.
-var eventH2Re = regexp.MustCompile(`<h2>(Created|In Progress|Note|Review Requested|Done|Closed|Rework|Blocked|Backlog|Open)\b`)
+var eventH2Re = regexp.MustCompile(`<h2>(Created|In Progress|Note|Agent Review Requested|Human Review Requested|Review Claimed|Done|Closed|Rework|Blocked|Backlog|Open)\b`)
 
 // md is a shared goldmark instance configured with syntax highlighting and hard wraps.
 var md = goldmark.New(
@@ -36,16 +36,18 @@ var md = goldmark.New(
 
 // eventTypeClass maps event type names to CSS class suffixes.
 var eventTypeClass = map[string]string{
-	"Created":          "created",
-	"In Progress":      "in-progress",
-	"Note":             "note",
-	"Review Requested": "review",
-	"Done":             "done",
-	"Closed":           "done",
-	"Rework":           "rework",
-	"Blocked":          "blocked",
-	"Backlog":          "backlog",
-	"Open":             "open",
+	"Created":                "created",
+	"In Progress":            "in-progress",
+	"Note":                   "note",
+	"Agent Review Requested": "review",
+	"Human Review Requested": "review",
+	"Review Claimed":         "review",
+	"Done":                   "done",
+	"Closed":                 "done",
+	"Rework":                 "rework",
+	"Blocked":                "blocked",
+	"Backlog":                "backlog",
+	"Open":                   "open",
 }
 
 // Ticket renders the ticket detail page.

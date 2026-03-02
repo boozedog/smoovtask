@@ -20,6 +20,12 @@ type Watcher struct {
 	watcher *fsnotify.Watcher
 }
 
+type agentPing struct {
+	runID  string
+	hook   string
+	ticket string
+}
+
 // NewWatcher creates and starts a file watcher on the events directory.
 func NewWatcher(eventsDir string, broker *Broker) (*Watcher, error) {
 	fw, err := fsnotify.NewWatcher()
@@ -48,12 +54,13 @@ func (w *Watcher) Close() error {
 }
 
 func (w *Watcher) loop() {
-	// Debounce: collect file change notifications and flush at most once per second.
+	// Agent pings are broadcast immediately on each file event.
+	// Heavier refresh-work / refresh-activity events are debounced.
 	const debounce = time.Second
 	timer := time.NewTimer(debounce)
 	timer.Stop()
-	dirty := make(map[string]struct{})
 	offsets := make(map[string]int64)
+	var pendingWork, pendingActivity, timerRunning bool
 
 	for {
 		select {
@@ -65,19 +72,38 @@ func (w *Watcher) loop() {
 				continue
 			}
 			if ev.Has(fsnotify.Write) || ev.Has(fsnotify.Create) {
-				if len(dirty) == 0 {
-					timer.Reset(debounce)
+				work, activity, pings := readNewLines(ev.Name, offsets)
+
+				// Broadcast agent pings immediately — no debounce.
+				for _, ping := range pings {
+					data := map[string]any{"hook": ping.hook}
+					if ping.ticket != "" {
+						data["ticket"] = ping.ticket
+					}
+					w.broker.Broadcast(event.Event{
+						Event: "agent-ping",
+						RunID: ping.runID,
+						Data:  data,
+					})
 				}
-				dirty[ev.Name] = struct{}{}
+
+				// Accumulate refresh flags for the debounced batch.
+				pendingWork = pendingWork || work
+				pendingActivity = pendingActivity || activity
+				if (pendingWork || pendingActivity) && !timerRunning {
+					timer.Reset(debounce)
+					timerRunning = true
+				}
 			}
 		case <-timer.C:
-			workChanged, activityChanged := classifyDirtyFiles(dirty, offsets)
-			clear(dirty)
-			if workChanged {
+			timerRunning = false
+			if pendingWork {
 				w.broker.Broadcast(event.Event{Event: "refresh-work"})
+				pendingWork = false
 			}
-			if activityChanged {
+			if pendingActivity {
 				w.broker.Broadcast(event.Event{Event: "refresh-activity"})
+				pendingActivity = false
 			}
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
@@ -88,60 +114,67 @@ func (w *Watcher) loop() {
 	}
 }
 
-func classifyDirtyFiles(dirty map[string]struct{}, offsets map[string]int64) (workChanged, activityChanged bool) {
-	for path := range dirty {
-		currentOffset := offsets[path]
-		fileInfo, err := os.Stat(path)
-		if err != nil {
-			continue
-		}
-		if fileInfo.Size() < currentOffset {
-			currentOffset = 0
-		}
+// readNewLines reads new JSONL lines from path (past the tracked offset) and
+// classifies them. Agent pings are returned in order, deduplicated by run ID.
+func readNewLines(path string, offsets map[string]int64) (workChanged, activityChanged bool, agentPings []agentPing) {
+	runIDToPing := make(map[string]agentPing)
+	runIDOrder := make([]string, 0)
 
-		f, err := os.Open(path)
-		if err != nil {
-			continue
-		}
+	currentOffset := offsets[path]
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return workChanged, activityChanged, agentPings
+	}
+	if fileInfo.Size() < currentOffset {
+		currentOffset = 0
+	}
 
-		if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
-			_ = f.Close()
-			continue
-		}
+	f, err := os.Open(path)
+	if err != nil {
+		return workChanged, activityChanged, agentPings
+	}
+	defer f.Close()
 
-		reader := bufio.NewReader(f)
-		for {
-			line, err := reader.ReadBytes('\n')
-			if len(line) > 0 && line[len(line)-1] == '\n' {
-				currentOffset += int64(len(line))
-				line = line[:len(line)-1]
-				if len(line) == 0 {
-					if err == io.EOF {
-						break
-					}
-					continue
-				}
+	if _, err := f.Seek(currentOffset, io.SeekStart); err != nil {
+		return workChanged, activityChanged, agentPings
+	}
 
-				var ev event.Event
-				if json.Unmarshal(line, &ev) == nil {
-					activityChanged = true
-					if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
-						workChanged = true
-					}
-				}
-			}
-
-			if err != nil {
+	reader := bufio.NewReader(f)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 && line[len(line)-1] == '\n' {
+			currentOffset += int64(len(line))
+			line = line[:len(line)-1]
+			if len(line) == 0 {
 				if err == io.EOF {
 					break
 				}
-				break
+				continue
+			}
+
+			var ev event.Event
+			if json.Unmarshal(line, &ev) == nil {
+				activityChanged = true
+				if strings.HasPrefix(ev.Event, "hook.") && ev.RunID != "" {
+					if _, exists := runIDToPing[ev.RunID]; !exists {
+						runIDOrder = append(runIDOrder, ev.RunID)
+					}
+					runIDToPing[ev.RunID] = agentPing{runID: ev.RunID, hook: ev.Event, ticket: ev.Ticket}
+				}
+				if strings.HasPrefix(ev.Event, "ticket.") || strings.HasPrefix(ev.Event, "status.") {
+					workChanged = true
+				}
 			}
 		}
 
-		offsets[path] = currentOffset
-		_ = f.Close()
+		if err != nil {
+			break
+		}
 	}
 
-	return workChanged, activityChanged
+	offsets[path] = currentOffset
+	for _, runID := range runIDOrder {
+		agentPings = append(agentPings, runIDToPing[runID])
+	}
+	return workChanged, activityChanged, agentPings
 }

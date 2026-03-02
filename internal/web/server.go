@@ -76,10 +76,13 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /ticket/{id}/edit", h.EditTicket)
 	mux.HandleFunc("POST /ticket/{id}/edit", h.UpdateTicket)
 	mux.HandleFunc("GET /activity", h.Activity)
+	mux.HandleFunc("GET /agents", h.Agents)
 	mux.HandleFunc("GET /critical-path", h.CriticalPath)
 
 	// SSE endpoint.
 	mux.HandleFunc("GET /events", h.Events)
+	mux.HandleFunc("GET /events/agent", h.AgentEvents)
+	mux.HandleFunc("GET /events/agent/{runID}", h.AgentEvents)
 
 	// Partials for htmx.
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)
@@ -88,7 +91,10 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
+	mux.HandleFunc("GET /partials/agents", h.PartialAgents)
 	mux.HandleFunc("GET /partials/critical-path", h.PartialCriticalPath)
+	mux.HandleFunc("GET /partials/form/new", h.PartialNewTicket)
+	mux.HandleFunc("GET /partials/form/{id}/edit", h.PartialEditTicket)
 
 	s.srv = &http.Server{
 		Addr: fmt.Sprintf(":%d", s.port),
