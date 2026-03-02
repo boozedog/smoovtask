@@ -79,10 +79,8 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /agents", h.Agents)
 	mux.HandleFunc("GET /critical-path", h.CriticalPath)
 
-	// SSE endpoint.
+	// SSE endpoint — single unified stream to avoid HTTP/1.1 connection exhaustion.
 	mux.HandleFunc("GET /events", h.Events)
-	mux.HandleFunc("GET /events/agent", h.AgentEvents)
-	mux.HandleFunc("GET /events/agent/{runID}", h.AgentEvents)
 
 	// Partials for htmx.
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)

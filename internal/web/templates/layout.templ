@@ -461,10 +461,7 @@ templ Layout(title string, currentPath string) {
 						pill.setAttribute('aria-label', tooltip.replace(/\n/g, ', '));
 					});
 				}
-				function syncAgentActivityStreams() {
-					if (!window._stAgentEventStream) {
-						window._stAgentEventStream = null;
-					}
+				function syncAgentActivityState() {
 					var wanted = {};
 					document.querySelectorAll('.st-session-dot[data-run-id]').forEach(function(dot) {
 						var runID = dot.getAttribute('data-run-id');
@@ -472,33 +469,6 @@ templ Layout(title string, currentPath string) {
 					});
 					window._stWantedRunIDs = wanted;
 					seedLastHookStateFromDOM();
-
-					if (Object.keys(wanted).length > 0 && !window._stAgentEventStream) {
-						var stream = new EventSource('/events/agent');
-						stream.addEventListener('ping', function(e) {
-							var payload = {};
-							if (e.data) {
-								try {
-									payload = JSON.parse(e.data);
-								} catch (_) {
-									return;
-								}
-							}
-							var activeRunIDs = window._stWantedRunIDs || {};
-							var runID = payload.run_id || '';
-							if (!runID || !activeRunIDs[runID]) {
-								runID = stRunIDForTicket(payload.ticket || '');
-							}
-							if (!runID || !activeRunIDs[runID]) return;
-							pulseSessionDots(runID, payload.hook || '', payload.ticket || '');
-						});
-						window._stAgentEventStream = stream;
-					}
-
-					if (Object.keys(wanted).length === 0 && window._stAgentEventStream) {
-						window._stAgentEventStream.close();
-						window._stAgentEventStream = null;
-					}
 
 					if (window._stLastHookByRunID) {
 						Object.keys(window._stLastHookByRunID).forEach(function(runID) {
@@ -511,6 +481,23 @@ templ Layout(title string, currentPath string) {
 					updateDotActivityStates();
 					stUpdateStalledIndicators();
 					updateAssigneePillTooltips();
+				}
+				function handleAgentPing(e) {
+					var payload = {};
+					if (e.detail && e.detail.data) {
+						try {
+							payload = JSON.parse(e.detail.data);
+						} catch (_) {
+							return;
+						}
+					}
+					var activeRunIDs = window._stWantedRunIDs || {};
+					var runID = payload.run_id || '';
+					if (!runID || !activeRunIDs[runID]) {
+						runID = stRunIDForTicket(payload.ticket || '');
+					}
+					if (!runID || !activeRunIDs[runID]) return;
+					pulseSessionDots(runID, payload.hook || '', payload.ticket || '');
 				}
 
 				// Guard: register all event listeners exactly once.
@@ -527,6 +514,18 @@ templ Layout(title string, currentPath string) {
 					var pill = e.target.closest('.st-assignee-pill[data-run-id]');
 					if (!pill) return;
 					updateAssigneePillTooltips(pill.getAttribute('data-run-id'));
+				});
+
+				// Listen for agent-ping events on the unified SSE stream.
+				// The HTMX SSE extension stores the EventSource internally;
+				// htmx:sseOpen fires when the connection is (re)established.
+				document.body.addEventListener('htmx:sseOpen', function(e) {
+					var source = e.detail && e.detail.source;
+					if (!source || source._stPingBound) return;
+					source._stPingBound = true;
+					source.addEventListener('ping', function(evt) {
+						handleAgentPing({detail: evt});
+					});
 				});
 
 				var _ticketModalOpen = false;
@@ -587,7 +586,7 @@ templ Layout(title string, currentPath string) {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
-					syncAgentActivityStreams();
+					syncAgentActivityState();
 					stSyncMuteIcon();
 					setInterval(function() {
 						updateDotActivityStates();
@@ -601,7 +600,7 @@ templ Layout(title string, currentPath string) {
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
-					syncAgentActivityStreams();
+					syncAgentActivityState();
 
 					// Scroll to top on content navigation (not SSE refresh).
 					if (e.detail.target && e.detail.target.id === 'content') {
@@ -666,7 +665,7 @@ templ Layout(title string, currentPath string) {
 								li.classList.remove('uk-active');
 							}
 						});
-						syncAgentActivityStreams();
+						syncAgentActivityState();
 					}
 				});
 
@@ -678,10 +677,6 @@ templ Layout(title string, currentPath string) {
 				});
 
 				window.addEventListener('beforeunload', function() {
-					if (window._stAgentEventStream) {
-						window._stAgentEventStream.close();
-						window._stAgentEventStream = null;
-					}
 					if (window._stLastHookByRunID) {
 						window._stLastHookByRunID = {};
 					}
