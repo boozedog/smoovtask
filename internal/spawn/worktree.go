@@ -1,6 +1,7 @@
 package spawn
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -46,6 +47,48 @@ func CreateWorktree(repoRoot, ticketID string) (worktreePath, branch string, err
 	return worktreePath, branch, nil
 }
 
+// EnsureWorktree creates or reuses a ticket worktree.
+// If the worktree already exists, it is reused.
+// If the branch already exists, it is checked out in the worktree.
+func EnsureWorktree(repoRoot, ticketID, baseRef string) (worktreePath, branch string, created bool, err error) {
+	if strings.TrimSpace(baseRef) == "" {
+		baseRef = "HEAD"
+	}
+
+	worktreePath = WorktreePath(repoRoot, ticketID)
+	branch = BranchName(ticketID)
+
+	if _, statErr := os.Stat(worktreePath); statErr == nil {
+		return worktreePath, branch, false, nil
+	} else if !errors.Is(statErr, os.ErrNotExist) {
+		return "", "", false, fmt.Errorf("check worktree path %s: %w", worktreePath, statErr)
+	}
+
+	worktreesDir := filepath.Join(repoRoot, ".worktrees")
+	if mkErr := os.MkdirAll(worktreesDir, 0o755); mkErr != nil {
+		return "", "", false, fmt.Errorf("create .worktrees dir: %w", mkErr)
+	}
+
+	exists, existsErr := branchExists(repoRoot, branch)
+	if existsErr != nil {
+		return "", "", false, existsErr
+	}
+
+	var cmd *exec.Cmd
+	if exists {
+		cmd = exec.Command("git", "worktree", "add", worktreePath, branch)
+	} else {
+		cmd = exec.Command("git", "worktree", "add", "-b", branch, worktreePath, baseRef)
+	}
+	cmd.Dir = repoRoot
+	out, runErr := cmd.CombinedOutput()
+	if runErr != nil {
+		return "", "", false, fmt.Errorf("git worktree add: %s: %w", strings.TrimSpace(string(out)), runErr)
+	}
+
+	return worktreePath, branch, true, nil
+}
+
 // RepoRoot finds the git repository root from any path within it.
 func RepoRoot(dir string) (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
@@ -55,6 +98,30 @@ func RepoRoot(dir string) (string, error) {
 		return "", fmt.Errorf("not a git repository: %w", err)
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+// CurrentCommit returns the current HEAD commit hash for the provided directory.
+func CurrentCommit(dir string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git rev-parse HEAD: %w", err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func branchExists(repoRoot, branch string) (bool, error) {
+	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	cmd.Dir = repoRoot
+	err := cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("check branch %s: %w", branch, err)
 }
 
 // WorktreeRepoRoot returns the root of the main worktree (not a linked worktree).
