@@ -206,6 +206,58 @@ func TestHandlePreToolNoWarningForReadTools(t *testing.T) {
 	}
 }
 
+func TestHandlePreToolBashLogsCommand(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	input := &Input{
+		SessionID: "sess-bash",
+		CWD:       projectPath,
+		ToolName:  "Bash",
+		ToolInput: map[string]any{
+			"command": "echo hello",
+		},
+	}
+
+	if _, err := HandlePreTool(input); err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	ev := readTodayEvent(t, env.EventsDir)
+	assertEvent(t, ev, event.HookPreTool, "sess-bash", "test-project")
+
+	cmd, ok := ev.Data["command"]
+	if !ok {
+		t.Fatal("event data missing 'command' key for Bash tool")
+	}
+	if cmd != "echo hello" {
+		t.Errorf("event data command = %q, want %q", cmd, "echo hello")
+	}
+}
+
+func TestHandlePreToolNonBashNoCommand(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	input := &Input{
+		SessionID: "sess-read",
+		CWD:       projectPath,
+		ToolName:  "Read",
+		ToolInput: map[string]any{
+			"file_path": "/tmp/foo.go",
+		},
+	}
+
+	if _, err := HandlePreTool(input); err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	ev := readTodayEvent(t, env.EventsDir)
+	if _, ok := ev.Data["command"]; ok {
+		t.Error("non-Bash tool should not have 'command' in event data")
+	}
+}
+
 func TestHandlePreToolBlocksWriteWithoutRunID(t *testing.T) {
 	projectPath := t.TempDir()
 	setupTestEnv(t, projectPath)

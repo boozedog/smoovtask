@@ -22,8 +22,9 @@ type Input struct {
 	TaskPrompt string `json:"task_prompt"`
 
 	// PreToolUse / PostToolUse
-	ToolName  string         `json:"tool_name"`
-	ToolInput map[string]any `json:"tool_input"`
+	ToolName     string         `json:"tool_name"`
+	ToolInput    map[string]any `json:"tool_input"`
+	ToolResponse map[string]any `json:"tool_response"`
 
 	// Raw holds the full parsed JSON for any extra fields.
 	Raw map[string]any `json:"-"`

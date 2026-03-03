@@ -22,6 +22,15 @@ func HandlePostTool(input *Input) error {
 
 	proj := project.Detect(cfg, input.CWD)
 
+	data := map[string]any{
+		"tool": input.ToolName,
+	}
+	if input.ToolName == "Bash" {
+		if code, ok := input.ToolResponse["exit_code"]; ok {
+			data["exit_code"] = code
+		}
+	}
+
 	el := event.NewEventLog(eventsDir)
 	return el.Append(event.Event{
 		TS:      time.Now().UTC(),
@@ -31,8 +40,6 @@ func HandlePostTool(input *Input) error {
 		Actor:   "agent",
 		RunID:   input.SessionID,
 		Source:  input.Source,
-		Data: map[string]any{
-			"tool": input.ToolName,
-		},
+		Data:    data,
 	})
 }
