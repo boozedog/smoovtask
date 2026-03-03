@@ -122,7 +122,7 @@ func launchHeadless(ctx context.Context, cancel context.CancelFunc, el *event.Ev
 		return nil, err
 	}
 
-	cmd, err := backend.Start(ctx, worktreePath, prompt, logPath)
+	cmd, cleanup, err := backend.Start(ctx, worktreePath, prompt, logPath)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("start worker: %w", err)
@@ -150,6 +150,7 @@ func launchHeadless(ctx context.Context, cancel context.CancelFunc, el *event.Ev
 
 	waitFn := func() error {
 		defer cancel()
+		defer cleanup()
 		waitErr := cmd.Wait()
 		return logOutcome(el, tk, workerRunID, now, pid, cmd.ProcessState.ExitCode(), waitErr, ctx.Err())
 	}
@@ -203,7 +204,12 @@ func launchTmux(ctx context.Context, cancel context.CancelFunc, el *event.EventL
 	paneID := strings.TrimSpace(string(paneOut))
 
 	// Get the PID of the process running in the new pane
-	pid := tmuxPanePIDByPane(tmuxPath, paneID)
+	pid, err := tmuxPanePID(tmuxPath, paneID)
+	if err != nil {
+		cancel()
+		_ = exec.Command(tmuxPath, "kill-pane", "-t", paneID).Run()
+		return nil, fmt.Errorf("get tmux pane PID: %w", err)
+	}
 
 	now := time.Now().UTC()
 	_ = el.Append(event.Event{
@@ -309,14 +315,17 @@ func logOutcome(el *event.EventLog, tk *ticket.Ticket, runID string, started tim
 	return nil
 }
 
-// tmuxPanePIDByPane returns the PID of the process in a specific tmux pane.
-func tmuxPanePIDByPane(tmuxPath, paneID string) int {
+// tmuxPanePID returns the PID of the process in a specific tmux pane.
+func tmuxPanePID(tmuxPath, paneID string) (int, error) {
 	out, err := exec.Command(tmuxPath, "list-panes", "-t", paneID, "-F", "#{pane_pid}").Output()
 	if err != nil {
-		return 0
+		return 0, fmt.Errorf("list-panes for %s: %w", paneID, err)
 	}
-	pid, _ := strconv.Atoi(strings.TrimSpace(string(out)))
-	return pid
+	pid, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil || pid <= 0 {
+		return 0, fmt.Errorf("invalid pane PID %q for %s", strings.TrimSpace(string(out)), paneID)
+	}
+	return pid, nil
 }
 
 // Event type constants for spawn events.

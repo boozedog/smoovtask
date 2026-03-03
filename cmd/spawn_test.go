@@ -28,8 +28,8 @@ func TestSpawn_DryRun(t *testing.T) {
 	if !strings.Contains(out, "st note") {
 		t.Errorf("output = %q, want st note instructions", out)
 	}
-	if !strings.Contains(out, "st status done") {
-		t.Errorf("output = %q, want st status done instructions", out)
+	if !strings.Contains(out, "st status review") {
+		t.Errorf("output = %q, want st status review instructions", out)
 	}
 }
 

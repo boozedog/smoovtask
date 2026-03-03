@@ -104,9 +104,13 @@ func GetWorkerInfo(eventsDir, ticketID string) (*WorkerInfo, error) {
 }
 
 // isProcessAlive checks if a process with the given PID exists.
+// Returns false for invalid PIDs (0 or negative) to prevent signaling
+// the caller's process group via kill(0, 0).
 func isProcessAlive(pid int) bool {
-	err := syscall.Kill(pid, 0)
-	return err == nil
+	if pid <= 0 {
+		return false
+	}
+	return syscall.Kill(pid, 0) == nil
 }
 
 func stringFromData(data map[string]any, key string) string {
