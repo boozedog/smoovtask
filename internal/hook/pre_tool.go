@@ -63,8 +63,9 @@ func HandlePreTool(input *Input) (Output, error) {
 		return Output{
 			AdditionalContext: msg,
 			Decision: &Decision{
-				Behavior: "deny",
-				Reason:   msg,
+				HookEventName: "PreToolUse",
+				Behavior:      "deny",
+				Reason:        msg,
 			},
 		}, nil
 	}
@@ -83,11 +84,11 @@ func HandlePreTool(input *Input) (Output, error) {
 	switch result.Decision {
 	case rules.ActionAllow:
 		return Output{
-			Decision: &Decision{Behavior: "allow", Reason: result.Reason},
+			Decision: &Decision{HookEventName: "PreToolUse", Behavior: "allow", Reason: result.Reason},
 		}, nil
 	case rules.ActionDeny:
 		return Output{
-			Decision: &Decision{Behavior: "deny", Reason: result.Reason},
+			Decision: &Decision{HookEventName: "PreToolUse", Behavior: "deny", Reason: result.Reason},
 		}, nil
 	default:
 		return Output{}, nil
