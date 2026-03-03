@@ -551,40 +551,37 @@ func installClaudeHooks() error {
 		installed = append(installed, eventName)
 	}
 
-	settings["hooks"] = existingHooks
-
-	// Write settings back
-	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
-		return fmt.Errorf("create settings dir: %w", err)
-	}
-
-	out, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal settings: %w", err)
-	}
-
-	if err := os.WriteFile(settingsPath, append(out, '\n'), 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", settingsPath, err)
-	}
-
-	// Print summary
+	// Only write settings back if there are changes
 	if len(installed) > 0 {
+		settings["hooks"] = existingHooks
+
+		if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
+			return fmt.Errorf("create settings dir: %w", err)
+		}
+
+		out, err := json.MarshalIndent(settings, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal settings: %w", err)
+		}
+
+		if err := os.WriteFile(settingsPath, append(out, '\n'), 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", settingsPath, err)
+		}
+
 		fmt.Printf("Installed %d Claude hook(s):\n", len(installed))
 		for _, name := range installed {
 			fmt.Printf("  + %s\n", name)
 		}
-	}
-	if len(skipped) > 0 {
-		fmt.Printf("Already installed (%d Claude hook(s)):\n", len(skipped))
-		for _, name := range skipped {
-			fmt.Printf("  = %s\n", name)
+		if len(skipped) > 0 {
+			fmt.Printf("Already installed (%d Claude hook(s)):\n", len(skipped))
+			for _, name := range skipped {
+				fmt.Printf("  = %s\n", name)
+			}
 		}
+		fmt.Printf("\nSettings: %s\n", settingsPath)
+	} else {
+		fmt.Println("Claude hooks already installed, no changes needed.")
 	}
-	if len(installed) == 0 {
-		fmt.Println("All smoovtask Claude hooks already installed.")
-	}
-
-	fmt.Printf("\nSettings: %s\n", settingsPath)
 	return nil
 }
 

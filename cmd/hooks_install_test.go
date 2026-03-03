@@ -101,18 +101,34 @@ func TestHooksInstall_Idempotent(t *testing.T) {
 		t.Fatalf("first install: %v", err)
 	}
 
+	// Record file mod time before second install
+	settingsPath := filepath.Join(tmpHome, ".claude", "settings.json")
+	info, err := os.Stat(settingsPath)
+	if err != nil {
+		t.Fatalf("stat settings: %v", err)
+	}
+	modTimeBefore := info.ModTime()
+
 	// Install again
 	out, err := env.runCmd(t, "hooks", "install")
 	if err != nil {
 		t.Fatalf("second install: %v", err)
 	}
 
-	if !strings.Contains(out, "All smoovtask Claude hooks already installed") {
-		t.Errorf("output = %q, want substring %q", out, "All smoovtask Claude hooks already installed")
+	if !strings.Contains(out, "Claude hooks already installed, no changes needed") {
+		t.Errorf("output = %q, want substring %q", out, "Claude hooks already installed, no changes needed")
+	}
+
+	// Verify settings.json was not rewritten
+	info, err = os.Stat(settingsPath)
+	if err != nil {
+		t.Fatalf("stat settings after second install: %v", err)
+	}
+	if !info.ModTime().Equal(modTimeBefore) {
+		t.Error("settings.json was rewritten even though no changes were needed")
 	}
 
 	// Verify settings file hasn't duplicated hooks
-	settingsPath := filepath.Join(tmpHome, ".claude", "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
 		t.Fatalf("read settings: %v", err)
