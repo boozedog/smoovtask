@@ -1,3 +1,4 @@
+// Package identity manages run IDs and session identification for smoovtask agents.
 package identity
 
 // runIDOverride is set via SetRunID when --run-id flag is provided.

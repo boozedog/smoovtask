@@ -1,3 +1,4 @@
+// Package hook implements Claude Code hook handlers for context injection and event logging.
 package hook
 
 import (

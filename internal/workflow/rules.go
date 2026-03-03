@@ -1,3 +1,4 @@
+// Package workflow implements the ticket state machine and transition rules.
 package workflow
 
 import (

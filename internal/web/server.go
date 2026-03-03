@@ -1,3 +1,4 @@
+// Package web provides the smoovtask web UI server with SSE-based live updates.
 package web
 
 import (
