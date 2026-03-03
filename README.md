@@ -2,7 +2,7 @@
 
 AI agent workflow and ticketing system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), OpenCode, and PI. Command: `st`
 
-An opinionated workflow/ticketing system that sits around Claude Code agents, enforcing process and capturing everything in an Obsidian vault. Multiple Claude sessions can work the board simultaneously — picking up tickets, doing work, and submitting for review.
+An opinionated workflow/ticketing system that sits around AI coding agents, enforcing process and capturing everything in an Obsidian vault. Multiple agent sessions can work the board simultaneously — picking up tickets, doing work, and submitting for review.
 
 ## Quickstart
 
@@ -16,6 +16,7 @@ st init
 
 # 3. Install agent hooks/extensions
 st hooks install --agents both
+# or: st hooks install --agents opencode
 # or: st hooks install --agents pi
 
 # 4. Create a ticket
@@ -40,14 +41,16 @@ That's it. Agent sessions now see the ticket board on startup, and all activity 
 ### Statuses
 
 ```
-BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
-   ↑          ↑        ↑            ↓        │
-   │          │        └── REWORK ←─┘        │
-   └──────────┴────────────────────────────── ┘
+BACKLOG → OPEN → IN-PROGRESS → REVIEW → HUMAN-REVIEW → DONE
+   ↑          ↑        ↑           ↓          ↓           │
+   │          │        └── REWORK ←┴──────────┘           │
+   └──────────┴───────────────────────────────────────────┘
                   (any status → BACKLOG)
 
       BLOCKED ←── (any status)
       BLOCKED ──→ (snaps back to prior status)
+
+      CANCELLED ←── (any status except DONE)
 ```
 
 | Status | Meaning |
@@ -55,10 +58,12 @@ BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
 | BACKLOG | Identified but not yet scoped |
 | OPEN | Scoped and ready to be picked up |
 | IN-PROGRESS | Actively being worked on by an agent |
-| REVIEW | Submitted for review, awaiting a different agent or human |
+| REVIEW | Submitted for agentic review |
+| HUMAN-REVIEW | Agent review passed, awaiting human sign-off |
 | REWORK | Review rejected, needs changes |
 | DONE | Completed and accepted |
 | BLOCKED | Cannot proceed — depends on another ticket or human hold |
+| CANCELLED | Deprioritized or abandoned |
 
 ### Transition Rules
 
@@ -66,13 +71,16 @@ BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
 |------|-----|-----------|
 | BACKLOG | OPEN | Human or agent |
 | OPEN | IN-PROGRESS | Must have assignee (agent picks it up) |
-| IN-PROGRESS | REVIEW | Agent submits for review |
-| REVIEW | DONE | Reviewer must not have touched the ticket |
-| REVIEW | REWORK | Reviewer adds rejection reason |
+| IN-PROGRESS | REVIEW | Agent submits for review (note required) |
+| REVIEW | HUMAN-REVIEW | Reviewer passes agentic review (note required) |
+| REVIEW | REWORK | Reviewer adds rejection reason (note required) |
+| HUMAN-REVIEW | DONE | Human approves (note required) |
+| HUMAN-REVIEW | REWORK | Human rejects (note required) |
 | REWORK | IN-PROGRESS | Assignee picks it back up |
 | (any) | BACKLOG | Deprioritize — clears assignee, no snap-back |
 | (any) | BLOCKED | Requires a dependency or human hold reason |
 | BLOCKED | (prior) | Auto-unblocks when dependency resolves or human releases hold |
+| (any except DONE) | CANCELLED | Cancel — clears assignee |
 
 **Hard rules (agents cannot violate):**
 
@@ -80,6 +88,7 @@ BACKLOG → OPEN → IN-PROGRESS → REVIEW ──→ DONE
 - A ticket in IN-PROGRESS must have exactly one assignee
 - An agent cannot review a ticket it has touched in any capacity
 - REWORK must go through REVIEW again — no shortcuts to DONE
+- Notes are required before certain transitions (IN-PROGRESS → REVIEW, REVIEW → HUMAN-REVIEW/REWORK, HUMAN-REVIEW → DONE/REWORK)
 - Humans can override any rule via `st override`
 
 ### Review Eligibility
@@ -115,24 +124,31 @@ At session start, smoovtask scores available tickets by priority and status weig
 st init                                    Register current directory as a project
 st new <title> [--priority P0-P5]          Create a ticket (default: P3)
        [--title T]                         Title as flag (alternative to positional)
+       [--description D]                   Ticket description/body
        [--tags a,b]
        [--depends-on st_x,st_y]
 st list [--project X] [--status Y]         List tickets (auto-detects project from PWD)
+       [--all]                             Include DONE/CANCELLED tickets
 st show <ticket-id>                        Show full ticket detail (frontmatter + body)
 ```
 
 ### Agent Workflow
 
 ```
-st leader                                Start leader/orchestrator session in tmux
-st work                                  Start implementer session in tmux
-st review <ticket-id>                    Start reviewer session in tmux
-       [--cli claude|opencode|pi]        Override configured CLI backend for launcher mode
-st pick <ticket-id>                        Pick up a specific ticket (assigns to current session)
+st leader                                  Start leader/orchestrator session in tmux
+st work                                    Start implementer session in tmux
+st review <ticket-id>                      Start reviewer session in tmux (launcher mode)
+       [--cli claude|opencode|pi]          Override configured CLI backend
+st pick <ticket-id>                        Pick up a ticket (assigns to current session)
 st note <message>                          Append a note to the current ticket
 st status <status>                         Transition ticket status
                                            Aliases: review/submit, start/begin, done/complete
 st review <ticket-id> --run-id <run-id>    Claim a ticket for review (eligibility enforced)
+st handoff [ticket-id]                     Return claimed ticket to OPEN (clear assignee)
+st spawn <ticket-id>                       Launch background AI worker in isolated worktree
+       [--timeout 45m]                     Worker timeout (default 45m)
+       [--backend claude|opencode|pi]      Override backend
+       [--dry-run]                         Preview without launching
 st context                                 Print current session context as JSON
 ```
 
@@ -144,13 +160,30 @@ st hold <ticket-id> <reason>               Block a ticket with a human hold
 st unhold <ticket-id>                      Release a human hold
 st override <ticket-id> <status>           Force-set status (bypasses all rules)
 st close <ticket-id>                       Mark done (human shortcut, bypasses workflow)
+st cancel <ticket-id> [reason]             Cancel a ticket (clears assignee, unblocks dependents)
 ```
+
+### Web UI
+
+```
+st web [--port 8080]                       Start web dashboard (default port 8080)
+```
+
+The web UI provides a browser-based dashboard with live updates:
+
+- **Kanban board** (`/`) — tickets grouped by status columns
+- **List view** (`/list`) — filterable table by project and status
+- **Ticket detail** (`/ticket/{id}`) — rendered markdown body + metadata sidebar
+- **Activity feed** (`/activity`) — recent events with project/type filters
+- **Live updates** via SSE — changes appear instantly without page reload
+
+Built with templ templates, htmx + SSE extension, and Franken UI (dark theme).
 
 ### Hooks
 
 ```
 st hooks install [--agents ...]            Install Claude hooks and optional OpenCode/PI bridges
-st hook <event-type>                       Handle a Claude Code hook event (10 handlers)
+st hook <event-type>                       Handle a hook event (10 handlers)
 ```
 
 For OpenCode/PI integration, use:
@@ -176,26 +209,41 @@ st hooks install
 
 This adds smoovtask hooks to `~/.claude/settings.json`, and installs OpenCode/PI bridge files when requested, preserving existing settings.
 
+On install, smoovtask also seeds default rule files to `~/.smoovtask/rules/` for tool-use policy evaluation (bash allowlists, git safety, file protection).
+
 ### What Each Hook Does
 
 | Hook | Blocking | Behavior |
 |------|----------|----------|
 | `session-start` | Yes | Detects project from `cwd`, returns board summary as `additionalContext` |
-| `pre-tool` | No | Logs tool call to JSONL event log |
+| `pre-tool` | Yes | Evaluates rules (bash allowlist, git safety, file protection), logs tool call |
 | `post-tool` | No | Logs tool result to JSONL event log |
 | `subagent-start` | Yes | Injects ticket context into subagents via `additionalContext` |
 | `subagent-stop` | No | Logs subagent completion |
 | `task-completed` | No | Logs task completion (does not affect ticket status) |
 | `teammate-idle` | No | Logs teammate idle state for monitoring |
-| `permission-request` | Yes | Can auto-approve trusted tools when agent has active ticket |
+| `permission-request` | Yes | Evaluates rules for auto-approve/deny decisions |
 | `stop` | No | Logs session stop |
-| `session-end` | No | Logs session end, cleans up session state |
+| `session-end` | No | Logs session end |
 
-Only `session-start`, `subagent-start`, and `permission-request` are synchronous (blocking). Everything else runs async to avoid slowing down the agent.
+### Rules System
+
+smoovtask ships default rule files that are seeded to `~/.smoovtask/rules/` on `st hooks install`. Rules evaluate tool invocations and return allow/deny/ask decisions.
+
+**Default rulesets:**
+
+| Ruleset | Purpose |
+|---------|---------|
+| `bash-allowlist.yaml` | Whitelist safe commands (st, go test, make, npm test, etc.) |
+| `bash-pipeline.yaml` | Restrict shell pipes and redirects to safe sinks |
+| `file-protection.yaml` | Protect system files from modification |
+| `git-safety.yaml` | Enforce git safety rules |
+
+Rules use regex patterns with ReDoS protection and are evaluated by priority (highest first).
 
 ### Session Start Context
 
-When a Claude Code session starts, the `session-start` hook injects a board summary showing available tickets for the current project:
+When an agent session starts, the `session-start` hook injects a board summary showing available tickets for the current project:
 
 ```
 smoovtask — api-server — 3 OPEN tickets ready
@@ -213,14 +261,16 @@ When an orchestrator spins up agent teammates, the `subagent-start` hook automat
 
 ### Multi-Agent Work
 
-smoovtask is designed for multiple Claude sessions working simultaneously:
+smoovtask is designed for multiple agent sessions working simultaneously:
 
 1. Orchestrator reads the board via `st list`
-2. Spins up a team of worker agents, assigning one ticket each
+2. Spawns workers with `st spawn <ticket-id>` (creates isolated worktrees)
 3. Each worker runs `st pick`, does the work, runs `st status review`
 4. A separate session reviews completed tickets via `st review`
 
 The orchestrator's session ID is logged when it reads tickets, which disqualifies it from reviewing those tickets — ensuring independent review.
+
+Workers can be launched in tmux windows (visible panes) or headless (background processes). The `st spawn` command handles worktree creation, prompt building, and timeout management.
 
 ## Architecture
 
@@ -237,9 +287,19 @@ smoovtask/
 │   ├── workflow/               State machine, transition rules, review eligibility
 │   ├── project/                Project detection from PWD
 │   ├── identity/               Invocation identity (`--run-id` / `--human`)
-│   └── hook/                   Hook command handlers (10 event types)
-├── DESIGN.md                   Full design document
-├── NEXT_STEPS.md               Roadmap and future phases
+│   ├── hook/                   Hook command handlers (10 event types)
+│   ├── spawn/                  Multi-agent orchestration: worktrees, prompts, backends
+│   ├── guidance/               Centralized workflow instructions for context injection
+│   ├── rules/                  Tool-use policy evaluation (bash, git, file rules)
+│   │   └── defaults/           Embedded default rule YAML files
+│   └── web/                    Web UI server
+│       ├── handler/            HTTP route handlers (board, list, ticket, activity)
+│       ├── middleware/         CORS, rate limiting
+│       ├── sse/               Server-Sent Events broker and file watcher
+│       ├── static/            Embedded assets (FrankenUI, htmx, fonts)
+│       └── templates/         templ HTML templates
+├── docs/                       Documentation
+├── scripts/                    Vendor script for FrankenUI/htmx
 ├── justfile                    Build/test/lint commands
 ├── go.mod
 └── go.sum
@@ -252,8 +312,13 @@ Two locations with clean separation:
 ```
 ~/.smoovtask/                           Machine data + config
 ├── config.toml                          Global config, project registry
-└── events/                              JSONL event logs (daily rotation)
-    └── YYYY-MM-DD.jsonl
+├── events/                              JSONL event logs (daily rotation)
+│   └── YYYY-MM-DD.jsonl
+└── rules/                               Tool-use policy rules
+    ├── bash-allowlist.yaml
+    ├── bash-pipeline.yaml
+    ├── file-protection.yaml
+    └── git-safety.yaml
 
 ~/obsidian/smoovtask/                   Obsidian vault (configurable)
 └── tickets/
@@ -308,6 +373,9 @@ Append-only JSONL, rotated daily:
 [settings]
 vault_path = "~/obsidian/smoovtask"
 
+[agent]
+cli = "claude"    # or "opencode" or "pi"
+
 [projects.api-server]
 path = "/Users/david/projects/api-server"
 
@@ -323,17 +391,23 @@ path = "/Users/david/projects/smoovtask"
 - [just](https://github.com/casey/just) (command runner)
 - [gofumpt](https://github.com/mvdan/gofumpt) (formatter)
 - [golangci-lint](https://golangci-lint.run/) (linter)
+- [templ](https://templ.guide/) (Go HTML templating, for web UI)
+- [air](https://github.com/air-verse/air) (live reload, for web UI dev)
 
 ### Commands
 
 ```bash
-just build          # Build + install to GOPATH/bin
+just build          # templ generate + build + install to GOPATH/bin
+just install        # Quick install from local source (no templ)
 just test           # go test -v ./...
 just test-short     # go test ./... (non-verbose)
 just test-cover     # Tests with HTML coverage report
 just lint           # golangci-lint
 just fmt            # gofumpt (not gofmt)
 just vuln           # govulncheck
+just templ          # Generate templ templates only
+just web            # Run web UI dev server with air (live reload)
+just vendor         # Vendor FrankenUI/htmx/fonts from npm
 just release        # goreleaser snapshot build
 just clean          # Remove build artifacts
 ```
@@ -341,11 +415,3 @@ just clean          # Remove build artifacts
 ### Formatting
 
 This project uses **gofumpt** (stricter than gofmt). Always run `just fmt` before committing. Tabs for indentation (enforced).
-
-## Roadmap
-
-The core CLI is complete. Future phases (see [NEXT_STEPS.md](NEXT_STEPS.md)):
-
-- **TUI** (`st board`) — Terminal kanban board using bubbletea + lipgloss
-- **Web UI** (`st web`) — Embedded web server with htmx + SSE for real-time updates
-- **Plugin system** — Event-driven extensions (auto-approve, audio alerts, Slack notifications)

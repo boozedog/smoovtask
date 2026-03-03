@@ -1,51 +1,6 @@
-# smoovtask — Next Steps
+# smoovtask — Roadmap
 
-## What's Done (Phases 1–4)
-
-The core CLI and web UI are complete.
-
-### Commands (17 total)
-- `init`, `new`, `list`, `show`, `pick`, `note`, `status`, `review`
-- `assign`, `hold`, `unhold`, `close`, `override`, `context`
-- `hook <event>` (10 handlers), `hooks install`
-- `web` — browser-based dashboard
-
-### Internals
-- Workflow state machine with transition rules, review eligibility, dependency auto-blocking/unblocking
-- Markdown tickets with YAML frontmatter in Obsidian vault
-- JSONL event log with daily rotation and flock-based append
-- Project detection from PWD, session identity from env vars
-- Priority-scored batch selection in session-start hook
-
-### Phase 4: Web UI — `st web` (done)
-
-Browser dashboard with live updates. See [PHASE_4.md](PHASE_4.md) for full details.
-
-- **Kanban board** (`/`) — tickets grouped by status, live SSE updates
-- **List view** (`/list`) — filterable table by project and status
-- **Ticket detail** (`/ticket/{id}`) — goldmark-rendered markdown body + metadata sidebar
-- **Activity feed** (`/activity`) — recent events with project/type filters, live updates
-- **SSE streaming** (`/events`) — fsnotify watches JSONL dir, fan-out broker pushes to clients
-- **Tech**: templ templates, htmx + SSE extension, Franken UI (dark theme), goldmark, vendored via go:embed
-
-### Test Coverage
-| Package | Coverage |
-|---------|----------|
-| `cmd/` | 78% |
-| `internal/ticket/` | 85% |
-| `internal/event/` | 82% |
-| `internal/hook/` | 66% |
-| `internal/workflow/` | 96% |
-| `internal/identity/` | 100% |
-| `internal/project/` | 100% |
-| `internal/config/` | 35% |
-| `internal/web/handler/` | 13 tests (handlers, SSE broker, watcher) |
-
----
-
-## What's Left
-
-### Phase 5: TUI — `st board`
+## Phase 5: TUI — `st board`
 
 Terminal kanban board using bubbletea + lipgloss + bubbles.
 
@@ -66,7 +21,7 @@ Terminal kanban board using bubbletea + lipgloss + bubbles.
 
 **Estimated scope:** ~500–800 lines. Moderate complexity — bubbletea has a learning curve but the data layer is done.
 
-### Phase 6: Plugin System
+## Phase 6: Plugin System
 
 Extension mechanism for user-specific behaviors triggered by events.
 
@@ -97,7 +52,7 @@ tts_command = "say"
 
 **Estimated scope:** ~300–500 lines for core, ~100 lines per example plugin.
 
-### Smaller Items
+## Smaller Items
 
 | Item | Description | Scope |
 |------|-------------|-------|
