@@ -11,6 +11,13 @@ rules:
     action: allow
     message: "safe st workflow commands allowed"
 
+  - name: allow-git-readonly
+    match:
+      tool: Bash
+      command: ^git\s+(status|log|diff|show|branch|tag|stash\s+list|merge-base|rev-parse|rev-list|cat-file|ls-files|ls-tree|ls-remote|name-rev|describe|remote|config\s+--get|config\s+--list)\b
+    action: allow
+    message: "read-only git commands allowed"
+
   - name: allow-go-test
     match:
       tool: Bash

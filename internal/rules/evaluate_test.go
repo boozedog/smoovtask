@@ -607,6 +607,75 @@ func TestEvaluateStCommands(t *testing.T) {
 	}
 }
 
+func TestEvaluateGitReadonlyCommands(t *testing.T) {
+	// Load the embedded default rules to test the git readonly pattern.
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	allowed := []string{
+		"git status",
+		"git log --oneline -10",
+		"git diff HEAD~1",
+		"git diff",
+		"git show HEAD",
+		"git branch -a",
+		"git branch",
+		"git tag",
+		"git tag -l 'v*'",
+		"git stash list",
+		"git merge-base master feature",
+		"git merge-base --is-ancestor master 20260303",
+		"git rev-parse HEAD",
+		"git rev-list HEAD..origin/master",
+		"git cat-file -t HEAD",
+		"git ls-files",
+		"git ls-tree HEAD",
+		"git ls-remote origin",
+		"git name-rev HEAD",
+		"git describe --tags",
+		"git remote -v",
+		"git remote",
+		"git config --get user.name",
+		"git config --list",
+	}
+
+	notAllowed := []string{
+		"git push origin main",
+		"git commit -m 'test'",
+		"git checkout -b new-branch",
+		"git reset --hard HEAD~1",
+		"git rebase main",
+		"git cherry-pick abc123",
+		"git stash pop",
+		"git stash drop",
+	}
+
+	for _, cmd := range allowed {
+		t.Run("allow/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+
+	for _, cmd := range notAllowed {
+		t.Run("not-allowed/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			// These should either be denied (push/commit) or not matched (ask).
+			// They should NOT be allowed by the readonly rule.
+			if result != nil && result.Decision == ActionAllow && result.Rule == "allow-git-readonly" {
+				t.Errorf("expected non-allow for %q via allow-git-readonly, got allow", cmd)
+			}
+		})
+	}
+}
+
 func TestEvaluatePublicInvalidRulesReturnsNil(t *testing.T) {
 	// Create a temp dir with an invalid rule file
 	dir := t.TempDir()
