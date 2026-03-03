@@ -21,6 +21,9 @@ type Input struct {
 	// SubagentStart-specific
 	TaskPrompt string `json:"task_prompt"`
 
+	// UserPromptSubmit-specific
+	Prompt string `json:"prompt"`
+
 	// PreToolUse / PostToolUse
 	ToolName     string         `json:"tool_name"`
 	ToolInput    map[string]any `json:"tool_input"`

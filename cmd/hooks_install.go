@@ -455,6 +455,11 @@ func smoovtaskHooks() map[string][]hookGroup {
 				Hooks: []hookEntry{{Type: "command", Command: "st hook session-end", Async: true}},
 			},
 		},
+		"UserPromptSubmit": {
+			{
+				Hooks: []hookEntry{{Type: "command", Command: "st hook user-prompt-submit", Async: true}},
+			},
+		},
 	}
 }
 
