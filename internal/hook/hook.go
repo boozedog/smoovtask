@@ -44,8 +44,9 @@ type Output struct {
 
 // Decision represents a permission decision.
 type Decision struct {
-	Behavior string `json:"behavior,omitempty"` // "allow", "deny", "ask"
-	Reason   string `json:"reason,omitempty"`
+	HookEventName string `json:"hookEventName"`
+	Behavior      string `json:"permissionDecision,omitempty"`       // "allow", "deny", "ask"
+	Reason        string `json:"permissionDecisionReason,omitempty"` // shown to user or Claude
 }
 
 // ReadInput reads and parses hook input from stdin.

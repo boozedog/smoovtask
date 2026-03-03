@@ -137,8 +137,8 @@ export default async ({ client, directory }) => {
             }
           }
 
-		  if (result.hookSpecificOutput && result.hookSpecificOutput.behavior === 'deny') {
-			return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' };
+		  if (result.hookSpecificOutput && result.hookSpecificOutput.permissionDecision === 'deny') {
+			return { block: true, reason: result.hookSpecificOutput.permissionDecisionReason || 'Blocked by smoovtask' };
 		  }
         },
         after: async (input) => {
@@ -369,8 +369,8 @@ export default function (pi) {
     if (result && result.additionalContext) {
       ctx.ui.notify(result.additionalContext, 'warning');
     }
-    if (result && result.hookSpecificOutput && result.hookSpecificOutput.behavior === 'deny') {
-      return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' };
+    if (result && result.hookSpecificOutput && result.hookSpecificOutput.permissionDecision === 'deny') {
+      return { block: true, reason: result.hookSpecificOutput.permissionDecisionReason || 'Blocked by smoovtask' };
     }
   });
 

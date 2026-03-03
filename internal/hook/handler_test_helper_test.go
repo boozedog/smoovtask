@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -70,6 +71,16 @@ func quote(s string) string {
 // readTodayEvent reads the first event from today's JSONL file in eventsDir.
 func readTodayEvent(t *testing.T, eventsDir string) event.Event {
 	t.Helper()
+	events := readTodayEvents(t, eventsDir)
+	if len(events) == 0 {
+		t.Fatal("no events found")
+	}
+	return events[0]
+}
+
+// readTodayEvents reads all events from today's JSONL file in eventsDir.
+func readTodayEvents(t *testing.T, eventsDir string) []event.Event {
+	t.Helper()
 
 	filename := time.Now().UTC().Format("2006-01-02") + ".jsonl"
 	path := filepath.Join(eventsDir, filename)
@@ -79,11 +90,18 @@ func readTodayEvent(t *testing.T, eventsDir string) event.Event {
 		t.Fatalf("read events file %s: %v", path, err)
 	}
 
-	var ev event.Event
-	if err := json.Unmarshal(data, &ev); err != nil {
-		t.Fatalf("unmarshal event: %v (data: %s)", err, data)
+	var events []event.Event
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		if line == "" {
+			continue
+		}
+		var ev event.Event
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			t.Fatalf("unmarshal event: %v (data: %s)", err, line)
+		}
+		events = append(events, ev)
 	}
-	return ev
+	return events
 }
 
 // assertEvent verifies common event fields.
