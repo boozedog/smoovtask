@@ -5,4 +5,5 @@ coverage.out
 .env
 .todos/
 .st/
+.worktrees/
 st
