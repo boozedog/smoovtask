@@ -1,6 +1,8 @@
 package hook
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -281,5 +283,158 @@ func TestHandlePreToolBlocksWriteWithoutRunID(t *testing.T) {
 	}
 	if out.Decision == nil || out.Decision.Behavior != "deny" {
 		t.Fatalf("expected deny decision, got %#v", out.Decision)
+	}
+}
+
+func TestHandlePreToolDenyRule(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	rule := `name: test-deny
+priority: 100
+event: PreToolUse
+rules:
+  - name: deny-push
+    match:
+      tool: Bash
+      command: "git push"
+    action: deny
+    message: "git push is blocked"
+`
+	if err := os.WriteFile(filepath.Join(rulesDir, "01-test.yaml"), []byte(rule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	input := &Input{
+		SessionID: "sess-deny",
+		CWD:       projectPath,
+		ToolName:  "Bash",
+		ToolInput: map[string]any{"command": "git push origin main"},
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	if out.Decision == nil {
+		t.Fatal("expected a deny decision, got nil")
+	}
+	if out.Decision.Behavior != "deny" {
+		t.Errorf("expected behavior=deny, got %q", out.Decision.Behavior)
+	}
+	if out.Decision.Reason != "git push is blocked" {
+		t.Errorf("expected reason 'git push is blocked', got %q", out.Decision.Reason)
+	}
+}
+
+func TestHandlePreToolAllowRule(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	rule := `name: test-allow
+priority: 50
+event: PreToolUse
+rules:
+  - name: allow-git
+    match:
+      tool: Bash
+      command: "^git\\s+"
+    action: allow
+    message: "git commands allowed"
+`
+	if err := os.WriteFile(filepath.Join(rulesDir, "01-test.yaml"), []byte(rule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	input := &Input{
+		SessionID: "sess-allow",
+		CWD:       projectPath,
+		ToolName:  "Bash",
+		ToolInput: map[string]any{"command": "git status"},
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	if out.Decision == nil {
+		t.Fatal("expected an allow decision, got nil")
+	}
+	if out.Decision.Behavior != "allow" {
+		t.Errorf("expected behavior=allow, got %q", out.Decision.Behavior)
+	}
+}
+
+func TestHandlePreToolNoRulesPassthrough(t *testing.T) {
+	projectPath := t.TempDir()
+	setupTestEnv(t, projectPath)
+
+	input := &Input{
+		SessionID: "sess-norules",
+		CWD:       projectPath,
+		ToolName:  "Bash",
+		ToolInput: map[string]any{"command": "ls -la"},
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	if out.Decision != nil {
+		t.Errorf("expected nil decision (passthrough), got %+v", out.Decision)
+	}
+}
+
+func TestHandlePreToolTicketDenyTakesPriorityOverRuleAllow(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	// Create a rule that would allow Edit
+	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	rule := `name: test-allow-edit
+priority: 50
+event: PreToolUse
+rules:
+  - name: allow-edit
+    match:
+      tool: Edit
+    action: allow
+    message: "edit allowed"
+`
+	if err := os.WriteFile(filepath.Join(rulesDir, "01-test.yaml"), []byte(rule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// No ticket — should still be blocked despite allow rule
+	input := &Input{
+		SessionID: "sess-no-ticket",
+		CWD:       projectPath,
+		ToolName:  "Edit",
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	if out.Decision == nil || out.Decision.Behavior != "deny" {
+		t.Fatalf("expected deny (ticket check), got %#v", out.Decision)
+	}
+	if !strings.Contains(out.AdditionalContext, "BLOCKED") {
+		t.Error("expected BLOCKED message from ticket check")
 	}
 }

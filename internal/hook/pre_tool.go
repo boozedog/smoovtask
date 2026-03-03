@@ -7,6 +7,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/rules"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -68,7 +69,29 @@ func HandlePreTool(input *Input) (Output, error) {
 		}, nil
 	}
 
-	return Output{}, nil
+	// Evaluate auto-allow/deny rules.
+	rulesDir, err := cfg.RulesDir()
+	if err != nil {
+		return Output{}, nil
+	}
+
+	result := rules.Evaluate(rulesDir, "PreToolUse", input.ToolName, input.ToolInput)
+	if result == nil {
+		return Output{}, nil
+	}
+
+	switch result.Decision {
+	case rules.ActionAllow:
+		return Output{
+			Decision: &Decision{Behavior: "allow", Reason: result.Reason},
+		}, nil
+	case rules.ActionDeny:
+		return Output{
+			Decision: &Decision{Behavior: "deny", Reason: result.Reason},
+		}, nil
+	default:
+		return Output{}, nil
+	}
 }
 
 func missingTicketWriteBlockMessage(runID string) string {
