@@ -1,0 +1,26 @@
+name: git-safety
+description: Block dangerous git operations
+priority: 100
+event: PreToolUse
+
+rules:
+  - name: block-git-push
+    match:
+      tool: Bash
+      command: \bgit\s+push\b
+    action: deny
+    message: "git push is blocked — push manually after review"
+
+  - name: block-git-commit
+    match:
+      tool: Bash
+      command: \bgit\s+commit\b
+    action: deny
+    message: "git commit is blocked — commit manually after review"
+
+  - name: block-force-push
+    match:
+      tool: Bash
+      command: \bgit\s+push\s+.*--force
+    action: deny
+    message: "force push is never allowed"

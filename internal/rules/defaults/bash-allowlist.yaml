@@ -1,0 +1,54 @@
+name: bash-allowlist
+description: Common safe commands that are always allowed
+priority: 50
+event: PreToolUse
+
+rules:
+  - name: allow-st
+    match:
+      tool: Bash
+      command: ^st\s+(list|show|context|pick|new|note|status|review|handoff|work|hold|unhold)\b
+    action: allow
+    message: "safe st workflow commands allowed"
+
+  - name: allow-go-test
+    match:
+      tool: Bash
+      command: ^go\s+test\b
+    action: allow
+
+  - name: allow-go-build
+    match:
+      tool: Bash
+      command: ^go\s+build\b
+    action: allow
+
+  - name: allow-make
+    match:
+      tool: Bash
+      command: ^make\b
+    action: allow
+
+  - name: allow-npm-test
+    match:
+      tool: Bash
+      command: ^npm\s+test\b
+    action: allow
+
+  - name: allow-cargo-test
+    match:
+      tool: Bash
+      command: ^cargo\s+test\b
+    action: allow
+
+  - name: allow-rg
+    match:
+      tool: Bash
+      command: ^rg\b
+    action: allow
+
+  - name: allow-fd
+    match:
+      tool: Bash
+      command: ^fd\b
+    action: allow

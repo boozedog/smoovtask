@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/rules"
 	"github.com/spf13/cobra"
 )
 
@@ -477,6 +479,20 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 			}
 		}
 	}
+
+	// Seed default rule files if they don't already exist.
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	rulesDir, err := cfg.RulesDir()
+	if err != nil {
+		return fmt.Errorf("get rules dir: %w", err)
+	}
+	if err := rules.SeedDefaults(rulesDir); err != nil {
+		return fmt.Errorf("seed default rules: %w", err)
+	}
+
 	return nil
 }
 
