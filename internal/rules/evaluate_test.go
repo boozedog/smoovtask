@@ -547,6 +547,66 @@ func TestEvaluatePublicGitAllow(t *testing.T) {
 	}
 }
 
+func TestEvaluateStCommands(t *testing.T) {
+	// Load the embedded default rules to test the st allow pattern.
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	allowed := []string{
+		"st list --run-id abc123",
+		"st show st_CTaTM7 --run-id abc123",
+		"st context --run-id abc123",
+		"st pick st_CTaTM7 --run-id abc123",
+		"st new \"add feature\" -p P3 --run-id abc123",
+		"st note st_CTaTM7 \"updated tests\" --run-id abc123",
+		"st status review --run-id abc123",
+		"st review st_CTaTM7 --run-id abc123",
+		"st handoff st_CTaTM7 --run-id abc123",
+		"st work --run-id abc123",
+		"st hold st_CTaTM7 \"waiting on API\" --run-id abc123",
+		"st unhold st_CTaTM7 --run-id abc123",
+	}
+
+	blocked := []string{
+		"st hook session-start",
+		"st hooks install",
+		"st cancel st_CTaTM7 --run-id abc123",
+		"st assign st_CTaTM7 agent-1 --run-id abc123",
+		"st override st_CTaTM7 DONE --run-id abc123",
+		"st spawn st_CTaTM7 --run-id abc123",
+		"st leader --run-id abc123",
+		"st close st_CTaTM7 --run-id abc123",
+		"st web --run-id abc123",
+		"st init --run-id abc123",
+	}
+
+	for _, cmd := range allowed {
+		t.Run("allow/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+
+	for _, cmd := range blocked {
+		t.Run("blocked/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision == ActionAllow {
+				t.Errorf("expected non-allow for %q, got allow (rule: %s)", cmd, result.Rule)
+			}
+		})
+	}
+}
+
 func TestEvaluatePublicInvalidRulesReturnsNil(t *testing.T) {
 	// Create a temp dir with an invalid rule file
 	dir := t.TempDir()
