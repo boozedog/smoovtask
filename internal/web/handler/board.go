@@ -129,6 +129,12 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 				if columnTickets[i].Priority != columnTickets[j].Priority {
 					return columnTickets[i].Priority < columnTickets[j].Priority
 				}
+				// Within same priority, REWORK tickets sort to top.
+				iRework := columnTickets[i].Status == ticket.StatusRework
+				jRework := columnTickets[j].Status == ticket.StatusRework
+				if iRework != jRework {
+					return iRework
+				}
 				return columnTickets[i].Created.Before(columnTickets[j].Created)
 			})
 		}

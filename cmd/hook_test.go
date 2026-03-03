@@ -40,7 +40,7 @@ func TestRunHook_PIEventToolCallBlocked(t *testing.T) {
 		t.Fatalf("run hook: %v", err)
 	}
 
-	if !strings.Contains(out, "\"behavior\":\"deny\"") {
+	if !strings.Contains(out, "\"permissionDecision\":\"deny\"") {
 		t.Fatalf("output = %q, want deny decision", out)
 	}
 	if !strings.Contains(out, "st pick") || !strings.Contains(out, "--run-id run-pi-2") {

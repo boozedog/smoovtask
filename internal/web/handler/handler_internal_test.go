@@ -98,7 +98,7 @@ func TestResolveRunLastHookTimes(t *testing.T) {
 	}
 }
 
-func TestEventsSkipsAgentPing(t *testing.T) {
+func TestEventsStreamsAgentPingAsPing(t *testing.T) {
 	h := &Handler{broker: sse.NewBroker()}
 
 	req := httptest.NewRequest(http.MethodGet, "/events", nil)
@@ -114,7 +114,14 @@ func TestEventsSkipsAgentPing(t *testing.T) {
 	}()
 
 	time.Sleep(50 * time.Millisecond)
-	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_1"})
+	h.broker.Broadcast(event.Event{
+		Event: "agent-ping",
+		RunID: "ses_1",
+		Data: map[string]any{
+			"hook":   event.HookPreTool,
+			"ticket": "st_test01",
+		},
+	})
 	h.broker.Broadcast(event.Event{Event: "refresh-activity"})
 	time.Sleep(50 * time.Millisecond)
 	cancel()
@@ -122,124 +129,18 @@ func TestEventsSkipsAgentPing(t *testing.T) {
 
 	body := w.Body.String()
 	if strings.Contains(body, "event: agent-ping") {
-		t.Fatal("agent-ping should not be forwarded to global /events stream")
+		t.Fatal("raw agent-ping event name should not appear in stream")
+	}
+	if !strings.Contains(body, "event: ping") {
+		t.Fatal("expected agent-ping to be forwarded as 'event: ping'")
+	}
+	if !strings.Contains(body, `"run_id":"ses_1"`) {
+		t.Fatal("expected ping payload to include run_id")
+	}
+	if !strings.Contains(body, `"ticket":"st_test01"`) {
+		t.Fatal("expected ping payload to include ticket")
 	}
 	if !strings.Contains(body, "event: refresh-activity") {
-		t.Fatal("expected refresh-activity event in /events stream")
+		t.Fatal("expected refresh-activity event in stream")
 	}
-}
-
-func TestAgentEventsStreamsAllRunIDsWithoutPathFilter(t *testing.T) {
-	h := &Handler{broker: sse.NewBroker()}
-
-	req := httptest.NewRequest(http.MethodGet, "/events/agent", nil)
-	ctx, cancel := context.WithCancel(req.Context())
-	req = req.WithContext(ctx)
-	w := httptest.NewRecorder()
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		h.AgentEvents(w, req)
-	}()
-
-	time.Sleep(50 * time.Millisecond)
-	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_any"})
-	deadline := time.Now().Add(300 * time.Millisecond)
-	for time.Now().Before(deadline) {
-		body := w.Body.String()
-		if strings.Contains(body, "event: ping") && strings.Contains(body, `"run_id":"ses_any"`) {
-			cancel()
-			<-done
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	cancel()
-	<-done
-	t.Fatal("expected ping payload with run_id on unfiltered agent stream")
-}
-
-func TestAgentEventsIncludesTicketWhenPresent(t *testing.T) {
-	h := &Handler{broker: sse.NewBroker()}
-
-	req := httptest.NewRequest(http.MethodGet, "/events/agent", nil)
-	ctx, cancel := context.WithCancel(req.Context())
-	req = req.WithContext(ctx)
-	w := httptest.NewRecorder()
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		h.AgentEvents(w, req)
-	}()
-
-	time.Sleep(50 * time.Millisecond)
-	h.broker.Broadcast(event.Event{
-		Event: "agent-ping",
-		RunID: "ses_any",
-		Data: map[string]any{
-			"hook":   event.HookPreTool,
-			"ticket": "st_ping001",
-		},
-	})
-
-	deadline := time.Now().Add(300 * time.Millisecond)
-	for time.Now().Before(deadline) {
-		body := w.Body.String()
-		if strings.Contains(body, "event: ping") &&
-			strings.Contains(body, `"run_id":"ses_any"`) &&
-			strings.Contains(body, `"ticket":"st_ping001"`) {
-			cancel()
-			<-done
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	cancel()
-	<-done
-	t.Fatal("expected ping payload with ticket when broker event includes ticket")
-}
-
-func TestAgentEventsStreamsOnlyMatchingRunID(t *testing.T) {
-	h := &Handler{broker: sse.NewBroker()}
-
-	req := httptest.NewRequest(http.MethodGet, "/events/agent/ses_match", nil)
-	req.SetPathValue("runID", "ses_match")
-	ctx, cancel := context.WithCancel(req.Context())
-	req = req.WithContext(ctx)
-	w := httptest.NewRecorder()
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		h.AgentEvents(w, req)
-	}()
-
-	time.Sleep(50 * time.Millisecond)
-	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_other"})
-	time.Sleep(50 * time.Millisecond)
-	if strings.Contains(w.Body.String(), "event: ping") {
-		cancel()
-		<-done
-		t.Fatal("unexpected ping for non-matching run ID")
-	}
-
-	h.broker.Broadcast(event.Event{Event: "agent-ping", RunID: "ses_match"})
-	deadline := time.Now().Add(300 * time.Millisecond)
-	for time.Now().Before(deadline) {
-		body := w.Body.String()
-		if strings.Contains(body, "event: ping") && strings.Contains(body, `"run_id":"ses_match"`) {
-			cancel()
-			<-done
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	cancel()
-	<-done
-	t.Fatal("expected ping for matching run ID")
 }

@@ -101,18 +101,34 @@ func TestHooksInstall_Idempotent(t *testing.T) {
 		t.Fatalf("first install: %v", err)
 	}
 
+	// Record file mod time before second install
+	settingsPath := filepath.Join(tmpHome, ".claude", "settings.json")
+	info, err := os.Stat(settingsPath)
+	if err != nil {
+		t.Fatalf("stat settings: %v", err)
+	}
+	modTimeBefore := info.ModTime()
+
 	// Install again
 	out, err := env.runCmd(t, "hooks", "install")
 	if err != nil {
 		t.Fatalf("second install: %v", err)
 	}
 
-	if !strings.Contains(out, "All smoovtask Claude hooks already installed") {
-		t.Errorf("output = %q, want substring %q", out, "All smoovtask Claude hooks already installed")
+	if !strings.Contains(out, "Claude hooks already installed, no changes needed") {
+		t.Errorf("output = %q, want substring %q", out, "Claude hooks already installed, no changes needed")
+	}
+
+	// Verify settings.json was not rewritten
+	info, err = os.Stat(settingsPath)
+	if err != nil {
+		t.Fatalf("stat settings after second install: %v", err)
+	}
+	if !info.ModTime().Equal(modTimeBefore) {
+		t.Error("settings.json was rewritten even though no changes were needed")
 	}
 
 	// Verify settings file hasn't duplicated hooks
-	settingsPath := filepath.Join(tmpHome, ".claude", "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
 		t.Fatalf("read settings: %v", err)
@@ -287,10 +303,10 @@ func TestHookBridgesDoNotWrapContextTwice(t *testing.T) {
 	if !strings.Contains(piExtensionCode, "event.systemPrompt + '\\n\\n' + cachedContext") {
 		t.Fatal("pi extension should append cachedContext directly")
 	}
-	if !strings.Contains(opencodePluginCode, "result.hookSpecificOutput.behavior === 'deny'") {
+	if !strings.Contains(opencodePluginCode, "result.hookSpecificOutput.permissionDecision === 'deny'") {
 		t.Fatal("opencode plugin should block denied pre-tool decisions")
 	}
-	if !strings.Contains(opencodePluginCode, "return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' }") {
+	if !strings.Contains(opencodePluginCode, "return { block: true, reason: result.hookSpecificOutput.permissionDecisionReason || 'Blocked by smoovtask' }") {
 		t.Fatal("opencode plugin should return block payload on denied decision")
 	}
 	if !strings.Contains(opencodePluginCode, "tool.execute.before', 'tool.execute.after") {
@@ -329,7 +345,7 @@ func TestHookBridgesDoNotWrapContextTwice(t *testing.T) {
 	if !strings.Contains(opencodePluginCode, "partStatus === 'completed' || partStatus === 'done' || partStatus === 'success' || partStatus === 'failed' || partStatus === 'error' || partStatus === 'cancelled'") {
 		t.Fatal("opencode plugin should map terminal tool part statuses to post-tool")
 	}
-	if !strings.Contains(piExtensionCode, "result.hookSpecificOutput.behavior === 'deny'") {
+	if !strings.Contains(piExtensionCode, "result.hookSpecificOutput.permissionDecision === 'deny'") {
 		t.Fatal("pi extension should block denied pre-tool decisions")
 	}
 }

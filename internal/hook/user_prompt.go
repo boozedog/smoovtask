@@ -8,31 +8,29 @@ import (
 	"github.com/boozedog/smoovtask/internal/project"
 )
 
-// HandlePermissionRequest logs a permission request event.
-// Rule evaluation is handled by HandlePreTool; this handler only logs.
-func HandlePermissionRequest(input *Input) (Output, error) {
+// HandleUserPrompt logs a user prompt submission event.
+// This is async/log-only — it does not block the agent.
+func HandleUserPrompt(input *Input) error {
 	cfg, err := config.Load()
 	if err != nil {
-		return Output{}, nil
+		return nil
 	}
 
 	eventsDir, err := cfg.EventsDir()
 	if err != nil {
-		return Output{}, nil
+		return nil
 	}
 
 	proj := project.Detect(cfg, input.CWD)
 
 	el := event.NewEventLog(eventsDir)
-	_ = el.Append(event.Event{
+	return el.Append(event.Event{
 		TS:      time.Now().UTC(),
-		Event:   event.HookPermissionReq,
+		Event:   event.HookUserPrompt,
 		Ticket:  lookupActiveTicket(cfg, proj, input.SessionID),
 		Project: proj,
-		Actor:   "agent",
+		Actor:   "user",
 		RunID:   input.SessionID,
 		Source:  input.Source,
 	})
-
-	return Output{}, nil
 }

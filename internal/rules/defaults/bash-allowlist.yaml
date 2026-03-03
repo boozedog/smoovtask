@@ -1,0 +1,82 @@
+name: bash-allowlist
+description: Common safe commands that are always allowed
+priority: 50
+event: PreToolUse
+
+rules:
+  - name: allow-st
+    match:
+      tool: Bash
+      command: ^st\s+(list|show|context|pick|new|note|status|review|handoff|work|hold|unhold)\b
+    action: allow
+    message: "safe st workflow commands allowed"
+
+  - name: allow-git-readonly
+    match:
+      tool: Bash
+      command: ^git\s+(status|log|diff|show|branch|tag|stash\s+list|merge-base|rev-parse|rev-list|cat-file|ls-files|ls-tree|ls-remote|name-rev|describe|remote|config\s+--get|config\s+--list)\b
+    action: allow
+    message: "read-only git commands allowed"
+
+  - name: allow-go-test
+    match:
+      tool: Bash
+      command: ^go\s+test\b
+    action: allow
+
+  - name: allow-go-build
+    match:
+      tool: Bash
+      command: ^go\s+build\b
+    action: allow
+
+  - name: allow-make
+    match:
+      tool: Bash
+      command: ^make\b
+    action: allow
+
+  - name: allow-npm-test
+    match:
+      tool: Bash
+      command: ^npm\s+test\b
+    action: allow
+
+  - name: allow-cargo-test
+    match:
+      tool: Bash
+      command: ^cargo\s+test\b
+    action: allow
+
+  - name: allow-rg
+    match:
+      tool: Bash
+      command: ^rg\b
+    action: allow
+
+  - name: allow-fd
+    match:
+      tool: Bash
+      command: ^fd\b
+    action: allow
+
+  - name: allow-navigation
+    match:
+      tool: Bash
+      command: ^(cd|ls|pwd|which|type|true|test|\[)\b
+    action: allow
+    message: "safe navigation and inspection commands allowed"
+
+  - name: allow-readonly-bash
+    match:
+      tool: Bash
+      command: ^(grep|cat|head|tail|wc|sort|uniq|cut|tr|diff|find|echo|printf)\b
+    action: allow
+    message: "read-only bash commands allowed"
+
+  - name: allow-just
+    match:
+      tool: Bash
+      command: ^just\s+(fmt|lint|check|test|build|install)\b
+    action: allow
+    message: "safe just targets allowed"

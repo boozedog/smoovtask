@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -161,6 +163,111 @@ func TestNote_NoRunID(t *testing.T) {
 	_, err := env.runCmd(t, "note", "no session note")
 	if err == nil {
 		t.Fatal("expected error when no --run-id is provided")
+	}
+}
+
+func TestNote_FromFile(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "file note target", ticket.StatusInProgress)
+	tk.Assignee = "test-session-file"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	// Write note content to .st/notes/<run-id>.md
+	runID := "test-session-file"
+	noteDir := filepath.Join(".st", "notes")
+	if err := os.MkdirAll(noteDir, 0o755); err != nil {
+		t.Fatalf("create note dir: %v", err)
+	}
+	notePath := filepath.Join(noteDir, runID+".md")
+	noteContent := "## Progress\n- Did stuff with `backticks` and ```code blocks```\n"
+	if err := os.WriteFile(notePath, []byte(noteContent), 0o644); err != nil {
+		t.Fatalf("write note file: %v", err)
+	}
+
+	// Run st note with no message arg — should read from file
+	out, err := env.runCmd(t, "--run-id", runID, "note")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Note added to "+tk.ID) {
+		t.Errorf("output = %q, want substring %q", out, "Note added to "+tk.ID)
+	}
+
+	// Verify note appears in ticket body
+	updated, err := env.Store.Get(tk.ID)
+	if err != nil {
+		t.Fatalf("get ticket: %v", err)
+	}
+	if !strings.Contains(updated.Body, "Did stuff with") {
+		t.Errorf("body = %q, want note content in body", updated.Body)
+	}
+
+	// Verify the file was cleaned up
+	if _, err := os.Stat(notePath); !os.IsNotExist(err) {
+		t.Error("note file should have been deleted after reading")
+	}
+
+	// Verify event logged
+	events, err := event.QueryEvents(env.EventsDir, event.Query{TicketID: tk.ID})
+	if err != nil {
+		t.Fatalf("query events: %v", err)
+	}
+	found := false
+	for _, e := range events {
+		if e.Event == event.TicketNote {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("no ticket.note event logged")
+	}
+}
+
+func TestNote_FromFile_NoFile(t *testing.T) {
+	env := newTestEnv(t)
+	_ = env
+
+	// No note file exists — should error
+	_, err := env.runCmd(t, "--run-id", "test-session-nofile", "note")
+	if err == nil {
+		t.Fatal("expected error when no message and no note file")
+	}
+	if !strings.Contains(err.Error(), "no note file found") {
+		t.Errorf("error = %q, want 'no note file found'", err.Error())
+	}
+}
+
+func TestNote_FromFile_EmptyFile(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "empty note target", ticket.StatusInProgress)
+	tk.Assignee = "test-session-empty"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	// Write empty note file
+	runID := "test-session-empty"
+	noteDir := filepath.Join(".st", "notes")
+	if err := os.MkdirAll(noteDir, 0o755); err != nil {
+		t.Fatalf("create note dir: %v", err)
+	}
+	notePath := filepath.Join(noteDir, runID+".md")
+	if err := os.WriteFile(notePath, []byte("   \n  \n"), 0o644); err != nil {
+		t.Fatalf("write note file: %v", err)
+	}
+
+	_, err := env.runCmd(t, "--run-id", runID, "note")
+	if err == nil {
+		t.Fatal("expected error for empty note file")
+	}
+	if !strings.Contains(err.Error(), "empty") {
+		t.Errorf("error = %q, want 'empty'", err.Error())
 	}
 }
 

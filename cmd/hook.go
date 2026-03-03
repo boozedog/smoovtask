@@ -227,11 +227,14 @@ func runHook(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		if out.Decision != nil && out.Decision.Behavior == "deny" {
-			if out.Decision.Reason != "" {
-				return fmt.Errorf("%s", out.Decision.Reason)
+		if out.Decision != nil {
+			if out.Decision.Behavior == "deny" {
+				if out.Decision.Reason != "" {
+					return fmt.Errorf("%s", out.Decision.Reason)
+				}
+				return fmt.Errorf("tool call blocked by smoovtask")
 			}
-			return fmt.Errorf("tool call blocked by smoovtask")
+			return hook.WriteOutput(out)
 		}
 		if out.AdditionalContext != "" {
 			return hook.WriteOutput(out)
@@ -328,6 +331,18 @@ func runHook(_ *cobra.Command, args []string) error {
 		}
 		input.Source = source
 		return hook.HandleSessionEnd(input)
+
+	case "user-prompt-submit":
+		input, err := hook.ReadInput()
+		if err != nil {
+			return fmt.Errorf("read hook input: %w", err)
+		}
+		source := "claude"
+		if os.Getenv("OPENCODE_HOOK") == "1" {
+			source = "opencode"
+		}
+		input.Source = source
+		return hook.HandleUserPrompt(input)
 
 	default:
 		// Unknown hook events are silently ignored (don't break Claude Code)

@@ -1,0 +1,31 @@
+name: bash-pipeline
+description: Structural analysis for bash commands
+type: bash-pipeline
+
+config:
+  safe_sinks:
+    - head
+    - tail
+    - less
+    - more
+    - wc
+    - sort
+    - uniq
+    - cat
+    - grep
+    - rg
+    - awk
+    - sed
+    - cut
+    - tr
+    - jq
+    - yq
+
+  gh_api_blocked_flags:
+    - -X
+    - --method
+    - -f
+    - --raw-field
+    - --field
+    - -F
+    - --input

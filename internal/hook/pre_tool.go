@@ -7,6 +7,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/rules"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -35,6 +36,15 @@ func HandlePreTool(input *Input) (Output, error) {
 
 	ticketID := lookupActiveTicket(cfg, proj, input.SessionID)
 
+	data := map[string]any{
+		"tool": input.ToolName,
+	}
+	if input.ToolName == "Bash" {
+		if cmd, ok := input.ToolInput["command"]; ok {
+			data["command"] = cmd
+		}
+	}
+
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      time.Now().UTC(),
@@ -44,9 +54,7 @@ func HandlePreTool(input *Input) (Output, error) {
 		Actor:   "agent",
 		RunID:   input.SessionID,
 		Source:  input.Source,
-		Data: map[string]any{
-			"tool": input.ToolName,
-		},
+		Data:    data,
 	})
 
 	// Hard-block writing tools when no active ticket is assigned to the run.
@@ -55,13 +63,55 @@ func HandlePreTool(input *Input) (Output, error) {
 		return Output{
 			AdditionalContext: msg,
 			Decision: &Decision{
-				Behavior: "deny",
-				Reason:   msg,
+				HookEventName: "PreToolUse",
+				Behavior:      "deny",
+				Reason:        msg,
 			},
 		}, nil
 	}
 
-	return Output{}, nil
+	// Evaluate auto-allow/deny rules.
+	rulesDir, err := cfg.RulesDir()
+	if err != nil {
+		return Output{}, nil
+	}
+
+	result := rules.Evaluate(rulesDir, "PreToolUse", input.ToolName, input.ToolInput)
+	if result == nil {
+		return Output{}, nil
+	}
+
+	if result.Decision == rules.ActionAllow || result.Decision == rules.ActionDeny {
+		_ = el.Append(event.Event{
+			TS:      time.Now().UTC(),
+			Event:   event.HookRuleDecision,
+			Ticket:  ticketID,
+			Project: proj,
+			Actor:   "agent",
+			RunID:   input.SessionID,
+			Source:  input.Source,
+			Data: map[string]any{
+				"tool":     input.ToolName,
+				"decision": string(result.Decision),
+				"ruleset":  result.Ruleset,
+				"rule":     result.Rule,
+				"reason":   result.Reason,
+			},
+		})
+	}
+
+	switch result.Decision {
+	case rules.ActionAllow:
+		return Output{
+			Decision: &Decision{HookEventName: "PreToolUse", Behavior: "allow", Reason: result.Reason},
+		}, nil
+	case rules.ActionDeny:
+		return Output{
+			Decision: &Decision{HookEventName: "PreToolUse", Behavior: "deny", Reason: result.Reason},
+		}, nil
+	default:
+		return Output{}, nil
+	}
 }
 
 func missingTicketWriteBlockMessage(runID string) string {

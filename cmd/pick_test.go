@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -205,5 +208,44 @@ func TestPick_AgentRequiresRunID(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "run ID required") {
 		t.Errorf("error = %q, want run ID required", err.Error())
+	}
+}
+
+func TestPick_PrintsWorktreeSwitchCommandInGitRepo(t *testing.T) {
+	env := newTestEnv(t)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+
+	runGitCmd(t, wd, "init")
+	runGitCmd(t, wd, "config", "user.name", "Test User")
+	runGitCmd(t, wd, "config", "user.email", "test@example.com")
+
+	marker := filepath.Join(wd, "marker.txt")
+	if err := os.WriteFile(marker, []byte("marker\n"), 0o644); err != nil {
+		t.Fatalf("write marker: %v", err)
+	}
+	runGitCmd(t, wd, "add", "marker.txt")
+	runGitCmd(t, wd, "commit", "-m", "init")
+
+	tk := env.createTicket(t, "git worktree pick", ticket.StatusOpen)
+	out, err := env.runCmd(t, "--run-id", "test-session-worktree", "pick", tk.ID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	wantPath := filepath.Join(wd, ".worktrees", tk.ID)
+	if !strings.Contains(out, "Switch now: cd \""+wantPath+"\"") {
+		t.Fatalf("output = %q, want switch command for %q", out, wantPath)
+	}
+}
+
+func runGitCmd(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}
 }

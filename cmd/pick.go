@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
@@ -114,7 +116,22 @@ func runPick(_ *cobra.Command, args []string) error {
 		Data:    map[string]any{"assignee": tk.Assignee},
 	})
 
+	worktreePath, createdWorktree, err := ensureTicketWorktree(tk.ID)
+	if err != nil {
+		return err
+	}
+
 	fmt.Printf("Picked up %s: %s\n\n", tk.ID, tk.Title)
+	if worktreePath == "" {
+		fmt.Printf("Worktree convention: use `.worktrees/%s` (reuse existing tree when resuming).\n\n", tk.ID)
+	} else {
+		if createdWorktree {
+			fmt.Printf("Created ticket worktree: %s\n", worktreePath)
+		} else {
+			fmt.Printf("Reusing ticket worktree: %s\n", worktreePath)
+		}
+		fmt.Printf("Switch now: cd \"%s\"\n\n", worktreePath)
+	}
 
 	// Print ticket context
 	fmt.Printf("--- Ticket Metadata ---\n")
@@ -137,7 +154,32 @@ func runPick(_ *cobra.Command, args []string) error {
 	fmt.Printf("- Confirm acceptance criteria if they are missing or vague\n")
 	fmt.Printf("- Verify scope — ask what is in and out of scope if uncertain\n")
 	fmt.Printf("- Resolve ambiguity — don't guess at intent, ask\n")
+	fmt.Printf("- Do implementation work in the ticket worktree: `.worktrees/%s` (create if missing, reuse if present)\n", tk.ID)
 	fmt.Printf("\nOnly begin implementation once you fully understand what is expected.\n")
 	fmt.Print(guidance.LoggingImplementation)
 	return nil
+}
+
+func ensureTicketWorktree(ticketID string) (string, bool, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", false, fmt.Errorf("get working directory: %w", err)
+	}
+
+	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
+	if err != nil {
+		return "", false, nil
+	}
+
+	baseRef, err := spawn.CurrentCommit(cwd)
+	if err != nil {
+		return "", false, fmt.Errorf("resolve current commit: %w", err)
+	}
+
+	worktreePath, _, created, err := spawn.EnsureWorktree(repoRoot, ticketID, baseRef)
+	if err != nil {
+		return "", false, fmt.Errorf("ensure ticket worktree: %w", err)
+	}
+
+	return worktreePath, created, nil
 }

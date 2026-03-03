@@ -16,7 +16,8 @@ type Backend interface {
 	// Start launches the agent with the given prompt in the given working directory.
 	// It returns the started command (for PID tracking) without waiting for it to finish.
 	// If logPath is non-empty, stdout/stderr are written to that file.
-	Start(ctx context.Context, workdir, prompt, logPath string) (*exec.Cmd, error)
+	// The returned cleanup function must be called after the command exits to release resources.
+	Start(ctx context.Context, workdir, prompt, logPath string) (*exec.Cmd, func(), error)
 }
 
 // ClaudeBackend runs claude -p in non-interactive mode.
@@ -24,30 +25,35 @@ type ClaudeBackend struct{}
 
 func (b *ClaudeBackend) Name() string { return "claude" }
 
-func (b *ClaudeBackend) Start(ctx context.Context, workdir, prompt, logPath string) (*exec.Cmd, error) {
+func (b *ClaudeBackend) Start(ctx context.Context, workdir, prompt, logPath string) (*exec.Cmd, func(), error) {
 	claudePath, err := exec.LookPath("claude")
 	if err != nil {
-		return nil, fmt.Errorf("claude CLI not found in PATH: %w", err)
+		return nil, nil, fmt.Errorf("claude CLI not found in PATH: %w", err)
 	}
 
 	cmd := exec.CommandContext(ctx, claudePath, "-p", prompt)
 	cmd.Dir = workdir
 	cmd.Env = append(os.Environ(), "ST_ROLE=worker")
 
+	var cleanup func()
 	if logPath != "" {
 		f, err := os.Create(logPath)
 		if err != nil {
-			return nil, fmt.Errorf("create worker log %s: %w", logPath, err)
+			return nil, nil, fmt.Errorf("create worker log %s: %w", logPath, err)
 		}
 		cmd.Stdout = f
 		cmd.Stderr = f
+		cleanup = func() { f.Close() }
+	} else {
+		cleanup = func() {}
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("start claude process: %w", err)
+		cleanup()
+		return nil, nil, fmt.Errorf("start claude process: %w", err)
 	}
 
-	return cmd, nil
+	return cmd, cleanup, nil
 }
 
 // GetBackend returns a backend by name.

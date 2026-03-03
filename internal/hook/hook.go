@@ -21,9 +21,13 @@ type Input struct {
 	// SubagentStart-specific
 	TaskPrompt string `json:"task_prompt"`
 
+	// UserPromptSubmit-specific
+	Prompt string `json:"prompt"`
+
 	// PreToolUse / PostToolUse
-	ToolName  string         `json:"tool_name"`
-	ToolInput map[string]any `json:"tool_input"`
+	ToolName     string         `json:"tool_name"`
+	ToolInput    map[string]any `json:"tool_input"`
+	ToolResponse map[string]any `json:"tool_response"`
 
 	// Raw holds the full parsed JSON for any extra fields.
 	Raw map[string]any `json:"-"`
@@ -40,8 +44,9 @@ type Output struct {
 
 // Decision represents a permission decision.
 type Decision struct {
-	Behavior string `json:"behavior,omitempty"` // "allow", "deny", "ask"
-	Reason   string `json:"reason,omitempty"`
+	HookEventName string `json:"hookEventName"`
+	Behavior      string `json:"permissionDecision,omitempty"`       // "allow", "deny", "ask"
+	Reason        string `json:"permissionDecisionReason,omitempty"` // shown to user or Claude
 }
 
 // ReadInput reads and parses hook input from stdin.

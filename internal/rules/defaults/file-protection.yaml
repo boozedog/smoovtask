@@ -1,0 +1,23 @@
+name: file-protection
+description: Protect sensitive files from writes
+priority: 90
+event: PreToolUse
+
+rules:
+  - name: block-env-writes
+    match:
+      tool:
+        - Edit
+        - Write
+      file_path: \.env$
+    action: deny
+    message: ".env files must not be modified by tools"
+
+  - name: allow-claude-plans
+    match:
+      tool:
+        - Edit
+        - Write
+      file_path: \.claude/plans/
+    action: allow
+    message: "writing to .claude/plans is permitted"

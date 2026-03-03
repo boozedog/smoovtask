@@ -1,6 +1,6 @@
 # smoovtask
 
-AI agent workflow and ticketing system for Claude Code. Command: `st`
+AI agent workflow and ticketing system for Claude Code, OpenCode, and PI. Command: `st`
 
 ## Tech Stack
 

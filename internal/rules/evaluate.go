@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 )
@@ -45,8 +46,9 @@ func Evaluate(dir, event, toolName string, toolInput map[string]any) *EvalResult
 }
 
 // evaluate runs a request through all rulesets in priority order.
-// First deny -> immediate deny. First allow -> proceed (run bash pipeline if Bash).
-// No match -> ask (passthrough).
+// For Bash commands with compound operators (&&, ||, ;), splits and evaluates
+// each sub-command independently. First deny -> immediate deny. First allow ->
+// proceed (run bash pipeline if Bash). No match -> ask (passthrough).
 func evaluate(rulesets []*Ruleset, bash *BashPipeline, event, toolName string, toolInput map[string]any) *EvalResult {
 	command, filePath, url := extractFields(toolInput)
 
@@ -58,12 +60,75 @@ func evaluate(rulesets []*Ruleset, bash *BashPipeline, event, toolName string, t
 		}
 	}
 
+	// For Bash commands, split compound commands and evaluate each sub-command.
+	if toolName == "Bash" && command != "" {
+		parts := splitChainedCommands(command)
+		if len(parts) > 1 {
+			return evaluateCompound(rulesets, bash, event, parts, filePath, url, notificationType, command)
+		}
+	}
+
+	result := matchCommand(rulesets, event, toolName, command, filePath, url, notificationType)
+	if result.Decision == ActionAllow && toolName == "Bash" && bash != nil {
+		if deny, reason := bash.Check(command); deny {
+			return &EvalResult{
+				Decision: ActionDeny,
+				Reason:   reason,
+				Ruleset:  "bash-pipeline",
+				Rule:     "structural-analysis",
+			}
+		}
+	}
+	return result
+}
+
+// evaluateCompound handles compound Bash commands (joined by &&, ||, ;).
+// Each sub-command is matched independently against rules. If any sub-command
+// is denied, the whole command is denied. If all are allowed, the full command
+// is run through the bash pipeline for structural analysis.
+func evaluateCompound(rulesets []*Ruleset, bash *BashPipeline, event string, parts []string, filePath, url, notificationType, fullCommand string) *EvalResult {
+	var lastAllow *EvalResult
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		result := matchCommand(rulesets, event, "Bash", part, filePath, url, notificationType)
+		switch result.Decision {
+		case ActionDeny:
+			return result
+		case ActionAllow:
+			lastAllow = result
+		default:
+			return &EvalResult{
+				Decision: ActionAsk,
+				Reason:   fmt.Sprintf("sub-command not allowed: %s", part),
+			}
+		}
+	}
+	if lastAllow == nil {
+		return &EvalResult{Decision: ActionAsk, Reason: "no matching rule"}
+	}
+	// Run pipeline on the full command for structural analysis.
+	if bash != nil {
+		if deny, reason := bash.Check(fullCommand); deny {
+			return &EvalResult{
+				Decision: ActionDeny,
+				Reason:   reason,
+				Ruleset:  "bash-pipeline",
+				Rule:     "structural-analysis",
+			}
+		}
+	}
+	return lastAllow
+}
+
+// matchCommand finds the first matching rule for a single command/tool invocation.
+func matchCommand(rulesets []*Ruleset, event, toolName, command, filePath, url, notificationType string) *EvalResult {
 	for _, rs := range rulesets {
-		// Only evaluate rulesets matching the event type
 		if rs.Event != "" && normalizeEvent(rs.Event) != normalizeEvent(event) {
 			continue
 		}
-
 		for _, rule := range rs.Rules {
 			matched, err := matchRule(&rule, toolName, command, filePath, url, notificationType)
 			if err != nil {
@@ -73,45 +138,14 @@ func evaluate(rulesets []*Ruleset, bash *BashPipeline, event, toolName string, t
 			if !matched {
 				continue
 			}
-
-			switch rule.Action {
-			case ActionDeny:
-				return &EvalResult{
-					Decision: ActionDeny,
-					Reason:   rule.Message,
-					Ruleset:  rs.Name,
-					Rule:     rule.Name,
-				}
-			case ActionAllow:
-				// For Bash commands, additionally run structural analysis
-				if toolName == "Bash" && bash != nil {
-					if deny, reason := bash.Check(command); deny {
-						return &EvalResult{
-							Decision: ActionDeny,
-							Reason:   reason,
-							Ruleset:  "bash-pipeline",
-							Rule:     "structural-analysis",
-						}
-					}
-				}
-				return &EvalResult{
-					Decision: ActionAllow,
-					Reason:   rule.Message,
-					Ruleset:  rs.Name,
-					Rule:     rule.Name,
-				}
-			case ActionAsk:
-				return &EvalResult{
-					Decision: ActionAsk,
-					Reason:   rule.Message,
-					Ruleset:  rs.Name,
-					Rule:     rule.Name,
-				}
+			return &EvalResult{
+				Decision: rule.Action,
+				Reason:   rule.Message,
+				Ruleset:  rs.Name,
+				Rule:     rule.Name,
 			}
 		}
 	}
-
-	// No match — passthrough to Claude's permission system
 	return &EvalResult{
 		Decision: ActionAsk,
 		Reason:   "no matching rule",

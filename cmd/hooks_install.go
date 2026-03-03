@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/rules"
 	"github.com/spf13/cobra"
 )
 
@@ -135,8 +137,8 @@ export default async ({ client, directory }) => {
             }
           }
 
-		  if (result.hookSpecificOutput && result.hookSpecificOutput.behavior === 'deny') {
-			return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' };
+		  if (result.hookSpecificOutput && result.hookSpecificOutput.permissionDecision === 'deny') {
+			return { block: true, reason: result.hookSpecificOutput.permissionDecisionReason || 'Blocked by smoovtask' };
 		  }
         },
         after: async (input) => {
@@ -367,8 +369,8 @@ export default function (pi) {
     if (result && result.additionalContext) {
       ctx.ui.notify(result.additionalContext, 'warning');
     }
-    if (result && result.hookSpecificOutput && result.hookSpecificOutput.behavior === 'deny') {
-      return { block: true, reason: result.hookSpecificOutput.reason || 'Blocked by smoovtask' };
+    if (result && result.hookSpecificOutput && result.hookSpecificOutput.permissionDecision === 'deny') {
+      return { block: true, reason: result.hookSpecificOutput.permissionDecisionReason || 'Blocked by smoovtask' };
     }
   });
 
@@ -455,6 +457,11 @@ func smoovtaskHooks() map[string][]hookGroup {
 				Hooks: []hookEntry{{Type: "command", Command: "st hook session-end", Async: true}},
 			},
 		},
+		"UserPromptSubmit": {
+			{
+				Hooks: []hookEntry{{Type: "command", Command: "st hook user-prompt-submit", Async: true}},
+			},
+		},
 	}
 }
 
@@ -477,6 +484,20 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 			}
 		}
 	}
+
+	// Seed default rule files if they don't already exist.
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	rulesDir, err := cfg.RulesDir()
+	if err != nil {
+		return fmt.Errorf("get rules dir: %w", err)
+	}
+	if err := rules.SeedDefaults(rulesDir); err != nil {
+		return fmt.Errorf("seed default rules: %w", err)
+	}
+
 	return nil
 }
 
@@ -535,40 +556,37 @@ func installClaudeHooks() error {
 		installed = append(installed, eventName)
 	}
 
-	settings["hooks"] = existingHooks
-
-	// Write settings back
-	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
-		return fmt.Errorf("create settings dir: %w", err)
-	}
-
-	out, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal settings: %w", err)
-	}
-
-	if err := os.WriteFile(settingsPath, append(out, '\n'), 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", settingsPath, err)
-	}
-
-	// Print summary
+	// Only write settings back if there are changes
 	if len(installed) > 0 {
+		settings["hooks"] = existingHooks
+
+		if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
+			return fmt.Errorf("create settings dir: %w", err)
+		}
+
+		out, err := json.MarshalIndent(settings, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal settings: %w", err)
+		}
+
+		if err := os.WriteFile(settingsPath, append(out, '\n'), 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", settingsPath, err)
+		}
+
 		fmt.Printf("Installed %d Claude hook(s):\n", len(installed))
 		for _, name := range installed {
 			fmt.Printf("  + %s\n", name)
 		}
-	}
-	if len(skipped) > 0 {
-		fmt.Printf("Already installed (%d Claude hook(s)):\n", len(skipped))
-		for _, name := range skipped {
-			fmt.Printf("  = %s\n", name)
+		if len(skipped) > 0 {
+			fmt.Printf("Already installed (%d Claude hook(s)):\n", len(skipped))
+			for _, name := range skipped {
+				fmt.Printf("  = %s\n", name)
+			}
 		}
+		fmt.Printf("\nSettings: %s\n", settingsPath)
+	} else {
+		fmt.Println("Claude hooks already installed, no changes needed.")
 	}
-	if len(installed) == 0 {
-		fmt.Println("All smoovtask Claude hooks already installed.")
-	}
-
-	fmt.Printf("\nSettings: %s\n", settingsPath)
 	return nil
 }
 
