@@ -72,7 +72,7 @@ func TestHandleSubagentStartOpenTicket(t *testing.T) {
 		t.Error("missing status in context")
 	}
 	if !strings.Contains(ctx, "st note --ticket st_open01") {
-		t.Error("missing st note --ticket instruction")
+		t.Error("missing st note --ticket instruction in context: " + ctx)
 	}
 	// Should NOT contain workflow directives
 	if strings.Contains(ctx, "REQUIRED") {
@@ -121,7 +121,7 @@ func TestHandleSubagentStartReviewTicket(t *testing.T) {
 		t.Error("missing status in context")
 	}
 	if !strings.Contains(ctx, "st note --ticket st_revi01") {
-		t.Error("missing st note --ticket instruction")
+		t.Error("missing st note --ticket instruction in context: " + ctx)
 	}
 	// Should NOT contain workflow directives
 	if strings.Contains(ctx, "REQUIRED") {

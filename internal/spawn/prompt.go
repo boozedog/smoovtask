@@ -28,7 +28,7 @@ func BuildPrompt(tk *ticket.Ticket, runID string) string {
 	b.WriteString("- Work in the current directory (a git worktree of the main repo)\n")
 	b.WriteString("- Make your changes and commit them with simple, short commit messages\n")
 	b.WriteString("- Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no co-authors, no elaborate formatting\n")
-	fmt.Fprintf(&b, "- Use `st note --ticket %s --run-id %s \"message\"` to log progress frequently\n", tk.ID, runID)
+	fmt.Fprintf(&b, "- To log progress: write your note to `.st/notes/%s.md` using the Write tool, then run `st note --ticket %s --run-id %s`\n", runID, tk.ID, runID)
 	fmt.Fprintf(&b, "- When done, run `st status review --ticket %s --run-id %s` to submit for review, then run /exit to end the session\n", tk.ID, runID)
 	fmt.Fprintf(&b, "- If you get stuck, run `st status blocked --ticket %s --run-id %s` and add a note explaining why\n", tk.ID, runID)
 	b.WriteString("- Do not push to remote. Do not create PRs. Just commit locally.\n")
