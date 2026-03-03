@@ -59,3 +59,17 @@ rules:
       tool: Bash
       command: ^fd\b
     action: allow
+
+  - name: allow-navigation
+    match:
+      tool: Bash
+      command: ^(cd|ls|pwd|which|type|true|test|\[)\b
+    action: allow
+    message: "safe navigation and inspection commands allowed"
+
+  - name: allow-just
+    match:
+      tool: Bash
+      command: ^just\s+(fmt|lint|check|test|build|install)\b
+    action: allow
+    message: "safe just targets allowed"

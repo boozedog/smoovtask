@@ -1,0 +1,23 @@
+name: readonly-tools
+description: Read-only tools that are always safe to allow
+priority: 40
+event: PreToolUse
+
+rules:
+  - name: allow-read
+    match:
+      tool: Read
+    action: allow
+    message: "read-only file access allowed"
+
+  - name: allow-glob
+    match:
+      tool: Glob
+    action: allow
+    message: "file search allowed"
+
+  - name: allow-grep
+    match:
+      tool: Grep
+    action: allow
+    message: "content search allowed"

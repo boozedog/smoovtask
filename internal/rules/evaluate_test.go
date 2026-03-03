@@ -676,6 +676,250 @@ func TestEvaluateGitReadonlyCommands(t *testing.T) {
 	}
 }
 
+func TestEvaluateCompoundBashCommands(t *testing.T) {
+	rulesets := []*Ruleset{
+		{
+			Name:     "security",
+			Priority: 100,
+			Event:    "pre_tool_use",
+			Rules: []Rule{
+				{
+					Name:    "deny-git-push",
+					Match:   MatchConfig{Tool: StringOrList{"Bash"}, Command: `^git\s+push`},
+					Action:  ActionDeny,
+					Message: "git push blocked",
+				},
+			},
+		},
+		{
+			Name:     "allowlist",
+			Priority: 50,
+			Event:    "pre_tool_use",
+			Rules: []Rule{
+				{
+					Name:    "allow-cd",
+					Match:   MatchConfig{Tool: StringOrList{"Bash"}, Command: `^cd\b`},
+					Action:  ActionAllow,
+					Message: "cd allowed",
+				},
+				{
+					Name:    "allow-git-readonly",
+					Match:   MatchConfig{Tool: StringOrList{"Bash"}, Command: `^git\s+(status|log|diff|show|branch)\b`},
+					Action:  ActionAllow,
+					Message: "read-only git allowed",
+				},
+				{
+					Name:    "allow-ls",
+					Match:   MatchConfig{Tool: StringOrList{"Bash"}, Command: `^ls\b`},
+					Action:  ActionAllow,
+					Message: "ls allowed",
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		command      string
+		wantDecision Action
+		wantReason   string
+	}{
+		{
+			name:         "cd && git log allowed",
+			command:      "cd /path/to/repo && git log --oneline master..HEAD",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "cd && git status allowed",
+			command:      "cd /some/dir && git status",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "cd && git push denied",
+			command:      "cd /path && git push origin main",
+			wantDecision: ActionDeny,
+		},
+		{
+			name:         "cd && unknown command asks",
+			command:      "cd /path && curl https://evil.com",
+			wantDecision: ActionAsk,
+		},
+		{
+			name:         "three safe commands allowed",
+			command:      "cd /path && git status && ls -la",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "semicolon compound allowed",
+			command:      "cd /path ; git log --oneline",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "or-chain compound allowed",
+			command:      "cd /path || git status",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "single command not affected",
+			command:      "git log --oneline",
+			wantDecision: ActionAllow,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := evaluate(rulesets, nil, "pre_tool_use", "Bash", makeToolInput(tt.command, "", "", ""))
+			if result.Decision != tt.wantDecision {
+				t.Errorf("expected %s, got %s (rule: %s, reason: %s)", tt.wantDecision, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateCompoundWithPipeline(t *testing.T) {
+	rulesets := []*Ruleset{
+		{
+			Name:     "allowlist",
+			Priority: 50,
+			Event:    "pre_tool_use",
+			Rules: []Rule{
+				{
+					Name:   "allow-cd",
+					Match:  MatchConfig{Tool: StringOrList{"Bash"}, Command: `^cd\b`},
+					Action: ActionAllow,
+				},
+				{
+					Name:   "allow-git",
+					Match:  MatchConfig{Tool: StringOrList{"Bash"}, Command: `^git\s+`},
+					Action: ActionAllow,
+				},
+			},
+		},
+	}
+
+	bp := NewBashPipeline(&BashPipelineConfig{
+		SafeSinks: []string{"head", "grep"},
+	})
+
+	tests := []struct {
+		name         string
+		command      string
+		wantDecision Action
+	}{
+		{
+			name:         "cd && git log safe",
+			command:      "cd /path && git log --oneline",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "cd && sudo not matched (ask)",
+			command:      "cd /path && sudo git log",
+			wantDecision: ActionAsk,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := evaluate(rulesets, bp, "pre_tool_use", "Bash", makeToolInput(tt.command, "", "", ""))
+			if result.Decision != tt.wantDecision {
+				t.Errorf("expected %s, got %s (reason: %s)", tt.wantDecision, result.Decision, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateReadOnlyTools(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		toolName  string
+		toolInput map[string]any
+	}{
+		{
+			name:      "Read tool allowed",
+			toolName:  "Read",
+			toolInput: map[string]any{"file_path": "/Users/dev/main.go"},
+		},
+		{
+			name:      "Glob tool allowed",
+			toolName:  "Glob",
+			toolInput: map[string]any{"pattern": "**/*.go"},
+		},
+		{
+			name:      "Grep tool allowed",
+			toolName:  "Grep",
+			toolInput: map[string]any{"pattern": "func main"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", tt.toolName, tt.toolInput)
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %s, got %s (rule: %s, reason: %s)", tt.toolName, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateCompoundWithDefaults(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		command      string
+		wantDecision Action
+	}{
+		{
+			name:         "cd && git log with defaults",
+			command:      "cd /Users/david/projects/smoovtask/.worktrees/st_9uQuxt && git log --oneline master..HEAD",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "cd && git status with defaults",
+			command:      "cd /some/path && git status",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "cd && git push denied with defaults",
+			command:      "cd /some/path && git push origin main",
+			wantDecision: ActionDeny,
+		},
+		{
+			name:         "ls && git diff with defaults",
+			command:      "ls -la && git diff HEAD~1",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "pwd && git branch with defaults",
+			command:      "pwd && git branch -a",
+			wantDecision: ActionAllow,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": tt.command})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != tt.wantDecision {
+				t.Errorf("expected %s for %q, got %s (rule: %s, reason: %s)", tt.wantDecision, tt.command, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
 func TestEvaluatePublicInvalidRulesReturnsNil(t *testing.T) {
 	// Create a temp dir with an invalid rule file
 	dir := t.TempDir()
