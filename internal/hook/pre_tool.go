@@ -81,6 +81,25 @@ func HandlePreTool(input *Input) (Output, error) {
 		return Output{}, nil
 	}
 
+	if result.Decision == rules.ActionAllow || result.Decision == rules.ActionDeny {
+		_ = el.Append(event.Event{
+			TS:      time.Now().UTC(),
+			Event:   event.HookRuleDecision,
+			Ticket:  ticketID,
+			Project: proj,
+			Actor:   "agent",
+			RunID:   input.SessionID,
+			Source:  input.Source,
+			Data: map[string]any{
+				"tool":     input.ToolName,
+				"decision": string(result.Decision),
+				"ruleset":  result.Ruleset,
+				"rule":     result.Rule,
+				"reason":   result.Reason,
+			},
+		})
+	}
+
 	switch result.Decision {
 	case rules.ActionAllow:
 		return Output{

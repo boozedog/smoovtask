@@ -396,6 +396,60 @@ func TestHandlePreToolNoRulesPassthrough(t *testing.T) {
 	}
 }
 
+func TestHandlePreToolAllowRuleLogsDecision(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	rule := `name: test-allow
+priority: 50
+event: PreToolUse
+rules:
+  - name: allow-st
+    match:
+      tool: Bash
+      command: "^st\\s+"
+    action: allow
+    message: "st commands allowed"
+`
+	if err := os.WriteFile(filepath.Join(rulesDir, "01-test.yaml"), []byte(rule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	input := &Input{
+		SessionID: "sess-decision-log",
+		CWD:       projectPath,
+		ToolName:  "Bash",
+		ToolInput: map[string]any{"command": "st status review"},
+	}
+
+	if _, err := HandlePreTool(input); err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	events := readTodayEvents(t, env.EventsDir)
+	if len(events) < 2 {
+		t.Fatalf("expected at least 2 events (pre-tool + decision), got %d", len(events))
+	}
+
+	decision := events[1]
+	if decision.Event != event.HookRuleDecision {
+		t.Errorf("event type = %q, want %q", decision.Event, event.HookRuleDecision)
+	}
+	if decision.Data["decision"] != "allow" {
+		t.Errorf("decision = %v, want allow", decision.Data["decision"])
+	}
+	if decision.Data["ruleset"] != "test-allow" {
+		t.Errorf("ruleset = %v, want test-allow", decision.Data["ruleset"])
+	}
+	if decision.Data["rule"] != "allow-st" {
+		t.Errorf("rule = %v, want allow-st", decision.Data["rule"])
+	}
+}
+
 func TestHandlePreToolTicketDenyTakesPriorityOverRuleAllow(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
