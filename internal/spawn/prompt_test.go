@@ -31,6 +31,9 @@ func TestBuildPrompt(t *testing.T) {
 	}
 
 	// Should contain st CLI instructions with run ID
+	if !strings.Contains(prompt, ".st/notes/spawn-test123.md") {
+		t.Error("prompt should contain file-based note path with run ID")
+	}
 	if !strings.Contains(prompt, "st note --ticket st_abc123 --run-id spawn-test123") {
 		t.Error("prompt should contain st note command with ticket ID and run ID")
 	}

@@ -94,6 +94,11 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil
 }
 
+// noteGuidance tells agents how to write notes using the file-based drop approach.
+// Agents write their note content to .st/notes/<run-id>.md using the Write tool
+// (which avoids shell escaping issues), then run `st note` to append it.
+const noteGuidance = "- To add notes: use the Write tool to write your note content to `.st/notes/<run-id>.md`, then run `st note --run-id <run-id>` (no message arg needed — it reads from the file)\n"
+
 const quickRefGeneric = "## Review Semantics\n" +
 	"`st status review` moves work to `REVIEW` (agentic review queue), and `st status human-review` moves it to `HUMAN-REVIEW` (human sign-off queue).\n" +
 	"Use `st review` only for claiming agent-review tickets.\n\n" +
@@ -111,7 +116,7 @@ const quickRefGeneric = "## Review Semantics\n" +
 	"- `st status done --run-id <run-id>`         mark done after human review\n" +
 	"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
 	"## Always\n" +
-	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Progress\n- Updated startup guidance\nEOF\n)\" --run-id <run-id>`\n" +
+	noteGuidance +
 	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
 	"- `st context --run-id <run-id>`            check current session context\n\n" +
 	"Run `st --help` for more.\n"
@@ -121,7 +126,7 @@ const quickRefLeader = "## Leader\n" +
 	"- Launch reviewers with `st review <ticket-id>`\n" +
 	"- Launch background workers with `st spawn <ticket-id> --run-id <run-id>`\n" +
 	"- Monitor work with `st list --run-id <run-id>` and inspect details via `st show <ticket-id>`\n" +
-	"- Track orchestration decisions using `st note " + "\"$(cat <<'EOF'\n## Coordination\n- Assigned workers\nEOF\n)\"" + " --run-id <run-id>`\n\n" +
+	noteGuidance +
 	"Run `st --help` for more.\n"
 
 const quickRefImplementer = "## Implementing\n" +
@@ -132,7 +137,7 @@ const quickRefImplementer = "## Implementing\n" +
 	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
 	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
 	"## Always\n" +
-	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Progress\n- Updated startup guidance\nEOF\n)\" --run-id <run-id>`\n" +
+	noteGuidance +
 	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
 	"- `st context --run-id <run-id>`            check current session context\n\n" +
 	"Run `st --help` for more.\n"
@@ -142,13 +147,13 @@ const quickRefReviewer = "## Reviewing\n" +
 	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
 	"- `st status rework --run-id <run-id>`       send back for changes\n\n" +
 	"## Always\n" +
-	"- Use heredoc for all notes content: `st note \"$(cat <<'EOF'\n## Review Findings\n- Checked behavior against requirements\nEOF\n)\" --run-id <run-id>`\n" +
+	noteGuidance +
 	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
 	"- `st context --run-id <run-id>`            check current session context\n\n" +
 	"Run `st --help` for more.\n"
 
 const quickRefWorker = "## Worker\n" +
-	"- Use heredoc notes: `st note \"$(cat <<'EOF'\n## Worker Progress\n- Implemented assigned changes\nEOF\n)\" --run-id <run-id>`\n" +
+	noteGuidance +
 	"- Update status with `st status <status> --run-id <run-id>`\n" +
 	"- Check context with `st context --run-id <run-id>`\n\n" +
 	"Run `st --help` for more.\n"

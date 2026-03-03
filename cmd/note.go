@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,10 +15,15 @@ import (
 )
 
 var noteCmd = &cobra.Command{
-	Use:   "note [ticket-id] <message>",
+	Use:   "note [ticket-id] [message]",
 	Short: "Append a note to the current ticket",
-	Args:  cobra.RangeArgs(1, 2),
-	RunE:  runNote,
+	Long: `Append a note to the current ticket.
+
+The message can be provided as a positional argument, or via a drop file at
+.st/notes/<run-id>.md. When no message argument is given, st note looks for
+the drop file, reads its content, and deletes it after appending.`,
+	Args: cobra.RangeArgs(0, 2),
+	RunE: runNote,
 }
 
 var noteTicket string
@@ -26,21 +33,54 @@ func init() {
 	rootCmd.AddCommand(noteCmd)
 }
 
+// noteFilePath returns the path to the drop file for file-based note input.
+// The file is at .st/notes/<run-id>.md relative to the current working directory.
+func noteFilePath(runID string) string {
+	return filepath.Join(".st", "notes", runID+".md")
+}
+
+// readNoteFile reads and removes the drop file, returning its content.
+func readNoteFile(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	// Remove the file after reading — best effort, don't fail the note.
+	_ = os.Remove(path)
+	return string(data), nil
+}
+
 func runNote(_ *cobra.Command, args []string) error {
-	// Support both: st note <message> and st note <ticket-id> <message>
+	// Support: st note <message>, st note <ticket-id> <message>, or st note (file-based)
 	var message string
 	ticketFlag := noteTicket
-	if len(args) == 2 {
+	switch len(args) {
+	case 2:
 		if ticketFlag == "" {
 			ticketFlag = args[0]
 		}
 		message = args[1]
-	} else {
+	case 1:
 		// Single arg — if --ticket is not set and arg looks like a ticket ID, error helpfully
 		if ticketFlag == "" && ticket.LooksLikeTicketID(args[0]) {
 			return fmt.Errorf("argument %q looks like a ticket ID — did you mean: st note %s \"<message>\"?", args[0], args[0])
 		}
 		message = args[0]
+	case 0:
+		// No args — try reading from drop file
+		runID := identity.RunID()
+		if runID == "" {
+			return fmt.Errorf("--run-id is required when using file-based notes (no message argument provided)")
+		}
+		path := noteFilePath(runID)
+		content, err := readNoteFile(path)
+		if err != nil {
+			return fmt.Errorf("no message argument and no note file found at %s", path)
+		}
+		message = strings.TrimSpace(content)
+		if message == "" {
+			return fmt.Errorf("note file %s is empty", path)
+		}
 	}
 
 	cfg, err := config.Load()
