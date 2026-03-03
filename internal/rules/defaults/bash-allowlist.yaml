@@ -67,6 +67,13 @@ rules:
     action: allow
     message: "safe navigation and inspection commands allowed"
 
+  - name: allow-readonly-bash
+    match:
+      tool: Bash
+      command: ^(grep|cat|head|tail|wc|sort|uniq|cut|tr|diff|find|echo|printf)\b
+    action: allow
+    message: "read-only bash commands allowed"
+
   - name: allow-just
     match:
       tool: Bash
