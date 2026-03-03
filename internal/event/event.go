@@ -31,6 +31,7 @@ const (
 	HookTeammateIdle  = "hook.teammate-idle"
 	HookPermissionReq = "hook.permission-request"
 	HookSessionEnd    = "hook.session-end"
+	HookUserPrompt    = "hook.user-prompt"
 )
 
 // Event represents a single event in the system log.
