@@ -65,7 +65,7 @@ templ AgentsContent(data AgentsData) {
 }
 
 templ AgentCard(agent AgentInfo) {
-	<div class="uk-card uk-card-body flex flex-col gap-3">
+	<div class="card card-body bg-base-200 flex flex-col gap-3">
 		<div class="flex items-center gap-2">
 			@StalledIcon(agent.RunID, agent.Ticket, agent.LastEventTS.UnixMilli(), agent.Stalled)
 			<span class={ heatDotClass(agent.HeatState) } data-run-id={ agent.RunID } data-last-hook-ts-ms={ fmt.Sprintf("%d", agent.LastEventTS.UnixMilli()) }></span>
