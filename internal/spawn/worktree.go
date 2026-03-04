@@ -22,7 +22,8 @@ func BranchName(ticketID string) string {
 
 // CreateWorktree creates a git worktree for a ticket.
 // It creates the worktree at .worktrees/<ticket-id> with branch st/<ticket-id>.
-func CreateWorktree(repoRoot, ticketID string) (worktreePath, branch string, err error) {
+// If baseRef is non-empty, the new branch starts from that ref instead of HEAD.
+func CreateWorktree(repoRoot, ticketID, baseRef string) (worktreePath, branch string, err error) {
 	worktreePath = WorktreePath(repoRoot, ticketID)
 	branch = BranchName(ticketID)
 
@@ -38,7 +39,11 @@ func CreateWorktree(repoRoot, ticketID string) (worktreePath, branch string, err
 	}
 
 	// Create worktree with new branch
-	cmd := exec.Command("git", "worktree", "add", "-b", branch, worktreePath)
+	args := []string{"worktree", "add", "-b", branch, worktreePath}
+	if strings.TrimSpace(baseRef) != "" {
+		args = append(args, baseRef)
+	}
+	cmd := exec.Command("git", args...)
 	cmd.Dir = repoRoot
 	out, err := cmd.CombinedOutput()
 	if err != nil {

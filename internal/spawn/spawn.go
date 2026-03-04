@@ -21,6 +21,7 @@ type Options struct {
 	Backend  string
 	Timeout  time.Duration
 	RunID    string // run ID for the spawned worker (generated if empty)
+	BaseRef  string // git ref to branch from (default: HEAD of main repo)
 }
 
 // Result contains the outcome of a spawn operation.
@@ -75,7 +76,7 @@ func Run(opts Options) (*Result, error) {
 	}
 
 	// Create worktree
-	worktreePath, branch, err := CreateWorktree(repoRoot, tk.ID)
+	worktreePath, branch, err := CreateWorktree(repoRoot, tk.ID, opts.BaseRef)
 	if err != nil {
 		return nil, fmt.Errorf("create worktree: %w", err)
 	}
