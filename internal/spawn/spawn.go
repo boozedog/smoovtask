@@ -65,6 +65,11 @@ func Run(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("get ticket: %w", err)
 	}
 
+	// Validate backend early, before creating worktree or tmux pane
+	if _, err := GetBackend(opts.Backend); err != nil {
+		return nil, err
+	}
+
 	// Find repo root — handle being in a worktree already
 	cwd, err := os.Getwd()
 	if err != nil {
