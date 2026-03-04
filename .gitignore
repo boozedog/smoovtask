@@ -7,3 +7,4 @@ coverage.out
 .st/
 .worktrees/
 /st.worker-prompt
+.worker-prompt
