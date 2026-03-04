@@ -10,6 +10,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
 )
@@ -33,10 +34,18 @@ func init() {
 	rootCmd.AddCommand(noteCmd)
 }
 
-// noteFilePath returns the path to the drop file for file-based note input.
-// The file is at .st/notes/<run-id>.md relative to the current working directory.
-func noteFilePath(runID string) string {
-	return filepath.Join(".st", "notes", runID+".md")
+// noteFilePath returns the absolute path to the drop file for file-based note input.
+// The file is at .st/notes/<run-id>.md under the main repo root (not a worktree).
+func noteFilePath(runID string) (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get working directory: %w", err)
+	}
+	root, err := spawn.WorktreeRepoRoot(cwd)
+	if err != nil {
+		return "", fmt.Errorf("st note requires a git repository: %w", err)
+	}
+	return filepath.Join(root, ".st", "notes", runID+".md"), nil
 }
 
 // readNoteFile reads and removes the drop file, returning its content.
@@ -72,7 +81,10 @@ func runNote(_ *cobra.Command, args []string) error {
 		if runID == "" {
 			return fmt.Errorf("--run-id is required when using file-based notes (no message argument provided)")
 		}
-		path := noteFilePath(runID)
+		path, err := noteFilePath(runID)
+		if err != nil {
+			return err
+		}
 		content, err := readNoteFile(path)
 		if err != nil {
 			return fmt.Errorf("no message argument and no note file found at %s", path)

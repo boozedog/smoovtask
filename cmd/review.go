@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
@@ -141,6 +143,14 @@ func claimReview(ticketID string) error {
 	fmt.Printf("      runtime issues), ask the user to confirm the fix works before approving\n")
 	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
 	fmt.Printf("\nReminder: `st note` is required before handing off (`st status human-review`) or rejecting (`st status rework`).\n")
-	fmt.Print(guidance.LoggingReview)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
+	if err != nil {
+		return fmt.Errorf("find repo root: %w", err)
+	}
+	fmt.Print(guidance.LoggingReview(guidance.NotesDir(repoRoot)))
 	return nil
 }

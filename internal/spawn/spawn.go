@@ -87,7 +87,7 @@ func Run(opts Options) (*Result, error) {
 	}
 
 	// Build prompt
-	prompt := BuildPrompt(tk, workerRunID)
+	prompt := BuildPrompt(tk, workerRunID, repoRoot)
 
 	// Set up timeout context
 	ctx := context.Background()

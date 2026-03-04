@@ -3,6 +3,7 @@ package cmd
 import (
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -67,6 +68,20 @@ func newTestEnv(t *testing.T) *testEnv {
 	t.Cleanup(func() {
 		_ = os.Chdir(origDir)
 	})
+
+	// Initialize a git repo so commands that resolve the repo root work.
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.email", "test@test.com"},
+		{"config", "user.name", "Test"},
+		{"commit", "--allow-empty", "-m", "init"},
+	} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = baseDir
+		if out, gitErr := cmd.CombinedOutput(); gitErr != nil {
+			t.Fatalf("git %v: %s: %v", args, out, gitErr)
+		}
+	}
 
 	cfg, err := config.Load()
 	if err != nil {
