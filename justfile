@@ -45,7 +45,7 @@ release:
 web:
     air
 
-# Vendor FrankenUI, htmx, and context docs from npm
+# Vendor DaisyUI, Tailwind CSS, and htmx from npm
 vendor *args:
     ./scripts/vendor.sh {{args}}
 

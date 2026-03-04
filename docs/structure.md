@@ -16,5 +16,5 @@
   - `handler/` — HTTP route handlers (board, list, ticket detail, activity feed, agents, critical path)
   - `middleware/` — CORS, rate limiting
   - `sse/` — Server-Sent Events broker and fsnotify file watcher
-  - `static/` — Embedded assets (FrankenUI CSS/JS, htmx, fonts) via go:embed
+  - `static/` — Embedded assets (DaisyUI CSS, Tailwind CSS, htmx, fonts) via go:embed
   - `templates/` — templ Go HTML templates (layout, board, list, ticket, activity, components, forms)

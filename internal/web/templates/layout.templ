@@ -2,17 +2,27 @@ package templates
 
 templ Layout(title string, currentPath string) {
 	<!DOCTYPE html>
-	<html lang="en" class="dark uk-theme-orange">
+	<html lang="en" data-theme="sunset">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } — smoovtask</title>
-			<link rel="stylesheet" href="/static/frankenui.min.css"/>
-			<link rel="stylesheet" href="/static/utilities.min.css"/>
-			<script src="/static/frankenui.min.js"></script>
+			<link rel="stylesheet" href="/static/daisyui.css"/>
+			<link rel="stylesheet" href="/static/daisyui-themes.css"/>
+			<script src="/static/tailwindcss-browser.js"></script>
 			<script src="/static/htmx.min.js"></script>
 			<script src="/static/htmx-sse.min.js"></script>
 			<style>
+				/* Bridge CSS variables: map old FrankenUI var names to DaisyUI sunset theme.
+				   These allow existing hsl(var(--name)) references to keep working
+				   until component migration tickets update them. */
+				[data-theme="sunset"] {
+					--background: 220 20% 10%;
+					--foreground: 220 10% 65%;
+					--card: 220 20% 12%;
+					--border: 220 15% 20%;
+					--primary: 25 70% 55%;
+				}
 				@font-face { font-family: 'Inter'; src: url('/static/Inter.woff2') format('woff2'); font-weight: 400 700; font-style: normal; font-display: swap; }
 				@font-face { font-family: 'Maple Mono NF'; src: url('/static/MapleMonoNL-NF-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
 				@font-face { font-family: 'Maple Mono NF'; src: url('/static/MapleMonoNL-NF-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
