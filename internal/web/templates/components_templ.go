@@ -16,7 +16,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "uk-badge uk-rounded st-priority-" + strings.ToLower(string(p))
+	return "badge st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -30,13 +30,13 @@ func statusBadgeClass(s ticket.Status) string {
 	case ticket.StatusCancelled:
 		return "st-status-badge-cancelled"
 	case ticket.StatusBlocked, ticket.StatusRework:
-		return "uk-badge-destructive"
+		return "badge-error"
 	case ticket.StatusInProgress, ticket.StatusReview:
-		return "uk-badge-primary"
+		return "badge-primary"
 	case ticket.StatusHumanReview:
-		return "uk-badge-secondary"
+		return "badge-ghost"
 	default:
-		return "uk-badge-secondary"
+		return "badge-ghost"
 	}
 }
 
@@ -59,9 +59,9 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 
 func workflowBadgeClass(s ticket.Status) string {
 	if s == ticket.StatusRework {
-		return "uk-badge uk-rounded uk-badge-destructive"
+		return "badge badge-error"
 	}
-	return "uk-badge uk-rounded uk-badge-secondary"
+	return "badge badge-ghost"
 }
 
 func workflowBadgeLabel(s ticket.Status) string {
@@ -310,7 +310,7 @@ func StatusBadge(s ticket.Status) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var12 = []any{"uk-badge uk-rounded " + statusBadgeClass(s)}
+		var templ_7745c5c3_Var12 = []any{"badge " + statusBadgeClass(s)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -470,7 +470,7 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 			return templ_7745c5c3_Err
 		}
 		if tk.Status == ticket.StatusHumanReview {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"uk-badge uk-rounded uk-badge-secondary st-card-corner-badge\">Human</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge badge-ghost st-card-corner-badge\">Human</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

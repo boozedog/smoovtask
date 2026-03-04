@@ -67,17 +67,17 @@ templ TicketHeader(data TicketData) {
 			<h1 class="st-ticket-header-title font-bold text-2xl break-words mb-0">
 			{ data.Ticket.Title }
 			</h1>
-			<a href={ templ.SafeURL("/ticket/" + data.Ticket.ID + "/edit") } hx-get={ "/partials/form/" + data.Ticket.ID + "/edit" } hx-target="#ticket-modal-body" hx-push-url="false" class="uk-btn uk-btn-default uk-btn-sm shrink-0 st-ticket-header-edit">Edit</a>
+			<a href={ templ.SafeURL("/ticket/" + data.Ticket.ID + "/edit") } hx-get={ "/partials/form/" + data.Ticket.ID + "/edit" } hx-target="#ticket-modal-body" hx-push-url="false" class="btn btn-ghost btn-sm shrink-0 st-ticket-header-edit">Edit</a>
 		</div>
 		<div class="st-ticket-header-meta flex gap-2 items-center flex-wrap text-sm">
-			<span data-copy-ticket-id={ data.Ticket.ID } title="Click to copy ticket ID" class="uk-badge uk-rounded st-copy-ticket-id">{ data.Ticket.ID } <uk-icon class="opacity-50 ml-1" icon="copy"></uk-icon></span>
+			<span data-copy-ticket-id={ data.Ticket.ID } title="Click to copy ticket ID" class="badge st-copy-ticket-id"><span>{ data.Ticket.ID }</span> <svg class="opacity-50 ml-1 inline-block" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
 			@StatusBadge(data.Ticket.Status)
 			@PriorityBadge(data.Ticket.Priority)
 			<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 			<span>{ data.Ticket.Project }</span>
 			if data.Ticket.Assignee != "" {
 				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
-				<span title={ data.Ticket.Assignee } class="st-assignee-pill st-assignee-pill-md uk-rounded uk-text-sm" style={ "--st-assignee-bg: " + assigneePillGray + "; color: " + assigneePillText + ";" }>{ shortAssignee(data.Ticket.Assignee) }</span>
+				<span title={ data.Ticket.Assignee } class="st-assignee-pill st-assignee-pill-md rounded-full text-sm" style={ "--st-assignee-bg: " + assigneePillGray + "; color: " + assigneePillText + ";" }>{ shortAssignee(data.Ticket.Assignee) }</span>
 			}
 			<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 			<time title={ data.Ticket.Created.Format("2006-01-02 15:04:05 MST") } class="opacity-60">{ relativeTime(data.Ticket.Created) }</time>
@@ -86,7 +86,7 @@ templ TicketHeader(data TicketData) {
 			if len(data.Ticket.Tags) > 0 {
 				<span class="w-px h-4 bg-[hsl(var(--border))]"></span>
 				for _, tag := range data.Ticket.Tags {
-					<span class="uk-badge uk-badge-secondary uk-rounded">{ tag }</span>
+					<span class="badge badge-ghost">{ tag }</span>
 				}
 			}
 			if len(data.Ticket.DependsOn) > 0 {
@@ -128,7 +128,7 @@ templ TicketModalPartial(data TicketData) {
 			@TicketBodyOnly(data)
 		</div>
 	</div>
-	<div class="uk-modal-header st-modal-header" id="ticket-modal-header" hx-swap-oob="true">
+	<div class="st-modal-header" id="ticket-modal-header" hx-swap-oob="true">
 		@TicketHeader(data)
 	</div>
 }

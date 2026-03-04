@@ -8,7 +8,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "uk-badge uk-rounded st-priority-" + strings.ToLower(string(p))
+	return "badge st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -22,13 +22,13 @@ func statusBadgeClass(s ticket.Status) string {
 	case ticket.StatusCancelled:
 		return "st-status-badge-cancelled"
 	case ticket.StatusBlocked, ticket.StatusRework:
-		return "uk-badge-destructive"
+		return "badge-error"
 	case ticket.StatusInProgress, ticket.StatusReview:
-		return "uk-badge-primary"
+		return "badge-primary"
 	case ticket.StatusHumanReview:
-		return "uk-badge-secondary"
+		return "badge-ghost"
 	default:
-		return "uk-badge-secondary"
+		return "badge-ghost"
 	}
 }
 
@@ -51,9 +51,9 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 
 func workflowBadgeClass(s ticket.Status) string {
 	if s == ticket.StatusRework {
-		return "uk-badge uk-rounded uk-badge-destructive"
+		return "badge badge-error"
 	}
-	return "uk-badge uk-rounded uk-badge-secondary"
+	return "badge badge-ghost"
 }
 
 func workflowBadgeLabel(s ticket.Status) string {
@@ -146,7 +146,7 @@ templ PriorityBadge(p ticket.Priority) {
 }
 
 templ StatusBadge(s ticket.Status) {
-	<span class={ "uk-badge uk-rounded " + statusBadgeClass(s) }>
+	<span class={ "badge " + statusBadgeClass(s) }>
 		{ statusLabel(s) }
 	</span>
 }
@@ -170,7 +170,7 @@ templ SourceBadge(source string) {
 templ TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs int64) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-card uk-card-body st-ticket-card">
 		if tk.Status == ticket.StatusHumanReview {
-			<span class="uk-badge uk-rounded uk-badge-secondary st-card-corner-badge">Human</span>
+			<span class="badge badge-ghost st-card-corner-badge">Human</span>
 		}
 		<div class="st-card-project uk-text-meta opacity-50">{ tk.Project }</div>
 		<div class="uk-card-title st-card-title">{ tk.Title }</div>
