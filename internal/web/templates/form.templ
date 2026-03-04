@@ -46,86 +46,72 @@ templ TicketFormPage(data TicketFormData) {
 templ TicketFormContent(data TicketFormData) {
 	<div class="max-w-3xl mx-auto st-ticket-form-shell">
 		<div class="st-ticket-form-page-header">
-			<h1 class="uk-heading-divider">{ formTitle(data.Mode) }</h1>
+			<h1 class="text-2xl font-bold border-b border-base-content/20 pb-2">{ formTitle(data.Mode) }</h1>
 		</div>
 		if data.Error != "" {
-			<div class="uk-alert uk-alert-destructive uk-margin" data-uk-alert>
+			<div role="alert" class="alert alert-error my-4">
 				{ data.Error }
 			</div>
 		}
-		<form class="uk-form-stacked uk-grid-medium st-ticket-form st-ticket-form-page" data-uk-grid method="post" action={ formAction(data) }>
-			<div class="uk-width-1-1 st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="title">Title</label>
-				<div class="uk-form-controls">
-					<input id="title" name="title" class="uk-input st-ticket-form-input" value={ data.Values.Title } required/>
-				</div>
+		<form class="grid grid-cols-1 sm:grid-cols-4 gap-x-4 gap-y-0 st-ticket-form st-ticket-form-page" method="post" action={ formAction(data) }>
+			<div class="col-span-full st-ticket-form-field">
+				<label class="st-ticket-form-label" for="title">Title</label>
+				<input id="title" name="title" class="input w-full st-ticket-form-input" value={ data.Values.Title } required/>
 			</div>
 
-			<div class="uk-width-1-2@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="project">Project</label>
-				<div class="uk-form-controls">
-					<input id="project" name="project" class="uk-input st-ticket-form-input" value={ data.Values.Project } required/>
-				</div>
+			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="project">Project</label>
+				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } required/>
 			</div>
 
-			<div class="uk-width-1-4@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="status">Status</label>
-				<div class="uk-form-controls">
-					<select id="status" name="status" class="uk-select st-ticket-form-input">
-						<option value="BACKLOG" if data.Values.Status == string(ticket.StatusBacklog) { selected }>BACKLOG</option>
-						<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
-						<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
-						<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
-						<option value="HUMAN-REVIEW" if data.Values.Status == string(ticket.StatusHumanReview) { selected }>HUMAN-REVIEW</option>
-						<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
-						<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
-						<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>
-						<option value="CANCELLED" if data.Values.Status == string(ticket.StatusCancelled) { selected }>CANCELLED</option>
-					</select>
-				</div>
+			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="status">Status</label>
+				<select id="status" name="status" class="select w-full st-ticket-form-input">
+					<option value="BACKLOG" if data.Values.Status == string(ticket.StatusBacklog) { selected }>BACKLOG</option>
+					<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
+					<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
+					<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
+					<option value="HUMAN-REVIEW" if data.Values.Status == string(ticket.StatusHumanReview) { selected }>HUMAN-REVIEW</option>
+					<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
+					<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
+					<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>
+					<option value="CANCELLED" if data.Values.Status == string(ticket.StatusCancelled) { selected }>CANCELLED</option>
+				</select>
 			</div>
 
-			<div class="uk-width-1-4@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="priority">Priority</label>
-				<div class="uk-form-controls">
-					<select id="priority" name="priority" class="uk-select st-ticket-form-input">
-						<option value="P0" if data.Values.Priority == "P0" { selected }>P0</option>
-						<option value="P1" if data.Values.Priority == "P1" { selected }>P1</option>
-						<option value="P2" if data.Values.Priority == "P2" { selected }>P2</option>
-						<option value="P3" if data.Values.Priority == "P3" { selected }>P3</option>
-						<option value="P4" if data.Values.Priority == "P4" { selected }>P4</option>
-						<option value="P5" if data.Values.Priority == "P5" { selected }>P5</option>
-					</select>
-				</div>
+			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="priority">Priority</label>
+				<select id="priority" name="priority" class="select w-full st-ticket-form-input">
+					<option value="P0" if data.Values.Priority == "P0" { selected }>P0</option>
+					<option value="P1" if data.Values.Priority == "P1" { selected }>P1</option>
+					<option value="P2" if data.Values.Priority == "P2" { selected }>P2</option>
+					<option value="P3" if data.Values.Priority == "P3" { selected }>P3</option>
+					<option value="P4" if data.Values.Priority == "P4" { selected }>P4</option>
+					<option value="P5" if data.Values.Priority == "P5" { selected }>P5</option>
+				</select>
 			</div>
 
-			<div class="uk-width-1-2@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="depends-on">Depends On</label>
-				<div class="uk-form-controls">
-					<input id="depends-on" name="depends_on" class="uk-input st-ticket-form-input" value={ data.Values.DependsOn }/>
-					<p class="st-ticket-form-help">Comma-separated ticket IDs, e.g. st_A1,st_B2</p>
-				</div>
+			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="depends-on">Depends On</label>
+				<input id="depends-on" name="depends_on" class="input w-full st-ticket-form-input" value={ data.Values.DependsOn }/>
+				<p class="st-ticket-form-help">Comma-separated ticket IDs, e.g. st_A1,st_B2</p>
 			</div>
 
-			<div class="uk-width-1-2@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="tags">Tags</label>
-				<div class="uk-form-controls">
-					<input id="tags" name="tags" class="uk-input st-ticket-form-input" value={ data.Values.Tags }/>
-					<p class="st-ticket-form-help">Use short, comma-separated labels.</p>
-				</div>
+			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="tags">Tags</label>
+				<input id="tags" name="tags" class="input w-full st-ticket-form-input" value={ data.Values.Tags }/>
+				<p class="st-ticket-form-help">Use short, comma-separated labels.</p>
 			</div>
 
-			<div class="uk-width-1-1 st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="description">Description</label>
-				<div class="uk-form-controls">
-					<textarea id="description" name="description" class="uk-textarea st-ticket-form-input" rows="12">{ data.Values.Description }</textarea>
-					<p class="st-ticket-form-help">Markdown supported for acceptance criteria, implementation notes, and context.</p>
-				</div>
+			<div class="col-span-full st-ticket-form-field">
+				<label class="st-ticket-form-label" for="description">Description</label>
+				<textarea id="description" name="description" class="textarea w-full st-ticket-form-input" rows="12">{ data.Values.Description }</textarea>
+				<p class="st-ticket-form-help">Markdown supported for acceptance criteria, implementation notes, and context.</p>
 			</div>
 
-			<div class="uk-width-1-1 uk-flex uk-flex-between uk-margin-top">
-				<a href="/" class="uk-btn uk-btn-default">Cancel</a>
-				<button type="submit" class="uk-btn uk-btn-primary">
+			<div class="col-span-full flex justify-between mt-4">
+				<a href="/" class="btn btn-ghost">Cancel</a>
+				<button type="submit" class="btn btn-primary">
 					if data.Mode == "edit" {
 						Save Changes
 					} else {
@@ -139,83 +125,69 @@ templ TicketFormContent(data TicketFormData) {
 
 templ TicketFormModalPartial(data TicketFormData) {
 	<form
-		class="uk-form-stacked st-ticket-form st-ticket-form-modal"
+		class="st-ticket-form st-ticket-form-modal"
 		hx-post={ formAction(data) }
 		hx-target="#ticket-modal-body"
 		hx-swap="innerHTML"
 	>
 		if data.Error != "" {
-			<div class="uk-alert uk-alert-destructive uk-margin-small-bottom" data-uk-alert>
+			<div role="alert" class="alert alert-error mb-2">
 				{ data.Error }
 			</div>
 		}
-		<div class="uk-grid-medium st-ticket-form-grid" data-uk-grid>
-			<div class="uk-width-1-1 st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="title">Title</label>
-				<div class="uk-form-controls">
-					<input id="title" name="title" class="uk-input st-ticket-form-input" value={ data.Values.Title } required/>
-				</div>
+		<div class="grid grid-cols-1 sm:grid-cols-4 gap-x-4 gap-y-0 st-ticket-form-grid">
+			<div class="col-span-full st-ticket-form-field">
+				<label class="st-ticket-form-label" for="title">Title</label>
+				<input id="title" name="title" class="input w-full st-ticket-form-input" value={ data.Values.Title } required/>
 			</div>
-			<div class="uk-width-1-2@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="project">Project</label>
-				<div class="uk-form-controls">
-					<input id="project" name="project" class="uk-input st-ticket-form-input" value={ data.Values.Project } required/>
-				</div>
+			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="project">Project</label>
+				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } required/>
 			</div>
-			<div class="uk-width-1-4@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="status">Status</label>
-				<div class="uk-form-controls">
-					<select id="status" name="status" class="uk-select st-ticket-form-input">
-						<option value="BACKLOG" if data.Values.Status == string(ticket.StatusBacklog) { selected }>BACKLOG</option>
-						<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
-						<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
-						<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
-						<option value="HUMAN-REVIEW" if data.Values.Status == string(ticket.StatusHumanReview) { selected }>HUMAN-REVIEW</option>
-						<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
-						<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
-						<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>
-						<option value="CANCELLED" if data.Values.Status == string(ticket.StatusCancelled) { selected }>CANCELLED</option>
-					</select>
-				</div>
+			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="status">Status</label>
+				<select id="status" name="status" class="select w-full st-ticket-form-input">
+					<option value="BACKLOG" if data.Values.Status == string(ticket.StatusBacklog) { selected }>BACKLOG</option>
+					<option value="OPEN" if data.Values.Status == string(ticket.StatusOpen) { selected }>OPEN</option>
+					<option value="IN-PROGRESS" if data.Values.Status == string(ticket.StatusInProgress) { selected }>IN-PROGRESS</option>
+					<option value="REVIEW" if data.Values.Status == string(ticket.StatusReview) { selected }>REVIEW</option>
+					<option value="HUMAN-REVIEW" if data.Values.Status == string(ticket.StatusHumanReview) { selected }>HUMAN-REVIEW</option>
+					<option value="REWORK" if data.Values.Status == string(ticket.StatusRework) { selected }>REWORK</option>
+					<option value="BLOCKED" if data.Values.Status == string(ticket.StatusBlocked) { selected }>BLOCKED</option>
+					<option value="DONE" if data.Values.Status == string(ticket.StatusDone) { selected }>DONE</option>
+					<option value="CANCELLED" if data.Values.Status == string(ticket.StatusCancelled) { selected }>CANCELLED</option>
+				</select>
 			</div>
-			<div class="uk-width-1-4@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="priority">Priority</label>
-				<div class="uk-form-controls">
-					<select id="priority" name="priority" class="uk-select st-ticket-form-input">
-						<option value="P0" if data.Values.Priority == "P0" { selected }>P0</option>
-						<option value="P1" if data.Values.Priority == "P1" { selected }>P1</option>
-						<option value="P2" if data.Values.Priority == "P2" { selected }>P2</option>
-						<option value="P3" if data.Values.Priority == "P3" { selected }>P3</option>
-						<option value="P4" if data.Values.Priority == "P4" { selected }>P4</option>
-						<option value="P5" if data.Values.Priority == "P5" { selected }>P5</option>
-					</select>
-				</div>
+			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="priority">Priority</label>
+				<select id="priority" name="priority" class="select w-full st-ticket-form-input">
+					<option value="P0" if data.Values.Priority == "P0" { selected }>P0</option>
+					<option value="P1" if data.Values.Priority == "P1" { selected }>P1</option>
+					<option value="P2" if data.Values.Priority == "P2" { selected }>P2</option>
+					<option value="P3" if data.Values.Priority == "P3" { selected }>P3</option>
+					<option value="P4" if data.Values.Priority == "P4" { selected }>P4</option>
+					<option value="P5" if data.Values.Priority == "P5" { selected }>P5</option>
+				</select>
 			</div>
-			<div class="uk-width-1-2@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="depends-on">Depends On</label>
-				<div class="uk-form-controls">
-					<input id="depends-on" name="depends_on" class="uk-input st-ticket-form-input" value={ data.Values.DependsOn }/>
-					<p class="st-ticket-form-help">Comma-separated ticket IDs.</p>
-				</div>
+			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="depends-on">Depends On</label>
+				<input id="depends-on" name="depends_on" class="input w-full st-ticket-form-input" value={ data.Values.DependsOn }/>
+				<p class="st-ticket-form-help">Comma-separated ticket IDs.</p>
 			</div>
-			<div class="uk-width-1-2@s st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="tags">Tags</label>
-				<div class="uk-form-controls">
-					<input id="tags" name="tags" class="uk-input st-ticket-form-input" value={ data.Values.Tags }/>
-					<p class="st-ticket-form-help">Use short, comma-separated labels.</p>
-				</div>
+			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
+				<label class="st-ticket-form-label" for="tags">Tags</label>
+				<input id="tags" name="tags" class="input w-full st-ticket-form-input" value={ data.Values.Tags }/>
+				<p class="st-ticket-form-help">Use short, comma-separated labels.</p>
 			</div>
-			<div class="uk-width-1-1 st-ticket-form-field">
-				<label class="uk-form-label st-ticket-form-label" for="description">Description</label>
-				<div class="uk-form-controls">
-					<textarea id="description" name="description" class="uk-textarea st-ticket-form-input" rows="7">{ data.Values.Description }</textarea>
-					<p class="st-ticket-form-help">Markdown supported for richer context.</p>
-				</div>
+			<div class="col-span-full st-ticket-form-field">
+				<label class="st-ticket-form-label" for="description">Description</label>
+				<textarea id="description" name="description" class="textarea w-full st-ticket-form-input" rows="7">{ data.Values.Description }</textarea>
+				<p class="st-ticket-form-help">Markdown supported for richer context.</p>
 			</div>
 		</div>
-		<div class="uk-flex uk-flex-between uk-margin-medium-top st-ticket-form-actions">
-			<button type="button" class="uk-btn uk-btn-default uk-modal-close">Cancel</button>
-			<button type="submit" class="uk-btn uk-btn-primary">
+		<div class="flex justify-between mt-6 st-ticket-form-actions">
+			<button type="button" class="btn btn-ghost" onclick="document.getElementById('ticket-modal').close()">Cancel</button>
+			<button type="submit" class="btn btn-primary">
 				if data.Mode == "edit" {
 					Save Changes
 				} else {
@@ -224,7 +196,7 @@ templ TicketFormModalPartial(data TicketFormData) {
 			</button>
 		</div>
 	</form>
-	<div class="uk-modal-header st-modal-header" id="ticket-modal-header" hx-swap-oob="true">
+	<div class="st-modal-header" id="ticket-modal-header" hx-swap-oob="true">
 		<h2 class="font-bold text-xl">{ formTitle(data.Mode) }</h2>
 	</div>
 }
