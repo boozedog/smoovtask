@@ -353,7 +353,7 @@ func AgentCard(agent AgentInfo) templ.Component {
 			}
 		}
 		if len(agent.Events) > 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"border-t border-[hsl(var(--border))] pt-2 mt-1\"><div class=\"text-xs opacity-50 mb-1\">Recent activity</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"border-t border-[hsl(var(--st-border))] pt-2 mt-1\"><div class=\"text-xs opacity-50 mb-1\">Recent activity</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
