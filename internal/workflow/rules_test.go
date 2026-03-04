@@ -30,6 +30,9 @@ func TestRequiresNote(t *testing.T) {
 	if !RequiresNote(ticket.StatusReview, ticket.StatusHumanReview) {
 		t.Error("REVIEW → HUMAN-REVIEW should require note")
 	}
+	if !RequiresNote(ticket.StatusReview, ticket.StatusDone) {
+		t.Error("REVIEW → DONE should require note")
+	}
 	if !RequiresNote(ticket.StatusHumanReview, ticket.StatusDone) {
 		t.Error("HUMAN-REVIEW → DONE should require note")
 	}

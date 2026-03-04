@@ -142,7 +142,10 @@ func claimReview(ticketID string) error {
 	fmt.Printf("- [ ] If the fix cannot be fully verified through code review alone (e.g., UI behavior,\n")
 	fmt.Printf("      runtime issues), ask the user to confirm the fix works before approving\n")
 	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
-	fmt.Printf("\nReminder: `st note` is required before handing off (`st status human-review`) or rejecting (`st status rework`).\n")
+	fmt.Printf("\nReminder: `st note` is required before any disposition.\n")
+	fmt.Printf("- `st status done` — approve directly, only if you are absolutely certain you can fully verify correctness yourself\n")
+	fmt.Printf("- `st status human-review` — hand off to human review (default — use when in any doubt)\n")
+	fmt.Printf("- `st status rework` — send back for changes\n")
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)

@@ -122,9 +122,9 @@ func quickRefGeneric(notesDir string) string {
 		"## Reviewing\n" +
 		"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
 		"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
-		"- `st status human-review --run-id <run-id>` hand off to human review\n" +
-		"- `st status done --run-id <run-id>`         mark done after human review\n" +
-		"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
+		"- `st status done --run-id <run-id>`          approve directly (only if absolutely certain you can fully verify correctness yourself)\n" +
+		"- `st status human-review --run-id <run-id>`  hand off to human review (default — use when in any doubt)\n" +
+		"- `st status rework --run-id <run-id>`        send back for changes\n\n" +
 		"## Always\n" +
 		noteGuidance(notesDir) +
 		"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
@@ -161,8 +161,9 @@ func quickRefImplementer(notesDir string) string {
 func quickRefReviewer(notesDir string) string {
 	return "## Reviewing\n" +
 		"- Claim a ticket with `st review <ticket-id> --run-id <run-id>` (eligibility enforced)\n" +
-		"- `st status human-review --run-id <run-id>` hand off to human review\n" +
-		"- `st status rework --run-id <run-id>`       send back for changes\n\n" +
+		"- `st status done --run-id <run-id>`          approve directly (only if you are absolutely certain you can fully verify correctness yourself)\n" +
+		"- `st status human-review --run-id <run-id>`  hand off to human review (default — use when in any doubt)\n" +
+		"- `st status rework --run-id <run-id>`        send back for changes\n\n" +
 		"## Always\n" +
 		noteGuidance(notesDir) +
 		"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +

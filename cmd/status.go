@@ -119,7 +119,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 	heading := statusHeading(targetStatus)
 
 	var sectionFields map[string]string
-	if oldStatus == ticket.StatusHumanReview && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
+	if (oldStatus == ticket.StatusHumanReview || oldStatus == ticket.StatusReview) && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
 		reviewedBy := runID
 		if reviewedBy == "" {
 			reviewedBy = actor
