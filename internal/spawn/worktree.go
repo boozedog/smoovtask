@@ -3,6 +3,7 @@ package spawn
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,6 +44,8 @@ func CreateWorktree(repoRoot, ticketID string) (worktreePath, branch string, err
 	if err != nil {
 		return "", "", fmt.Errorf("git worktree add: %s: %w", strings.TrimSpace(string(out)), err)
 	}
+
+	miseTrust(worktreePath)
 
 	return worktreePath, branch, nil
 }
@@ -86,6 +89,8 @@ func EnsureWorktree(repoRoot, ticketID, baseRef string) (worktreePath, branch st
 		return "", "", false, fmt.Errorf("git worktree add: %s: %w", strings.TrimSpace(string(out)), runErr)
 	}
 
+	miseTrust(worktreePath)
+
 	return worktreePath, branch, true, nil
 }
 
@@ -122,6 +127,19 @@ func branchExists(repoRoot, branch string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("check branch %s: %w", branch, err)
+}
+
+// miseTrust runs "mise trust" in the given directory if a .mise.toml exists.
+// Failures are logged but not propagated — mise trust is best-effort.
+func miseTrust(dir string) {
+	if _, err := os.Stat(filepath.Join(dir, ".mise.toml")); err != nil {
+		return
+	}
+	cmd := exec.Command("mise", "trust")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		slog.Warn("mise trust failed", "dir", dir, "err", err, "output", strings.TrimSpace(string(out)))
+	}
 }
 
 // WorktreeRepoRoot returns the root of the main worktree (not a linked worktree).
