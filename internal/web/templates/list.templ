@@ -37,7 +37,7 @@ templ ListPartial(data ListData) {
 		<div class="mb-4 flex flex-wrap items-center gap-3">
 			<select
 				name="project"
-				class="uk-select uk-form-sm w-52 max-w-full"
+				class="select select-sm w-52 max-w-full"
 				hx-get="/partials/list-content"
 				hx-target="#list-content"
 				hx-swap="innerHTML"
@@ -57,7 +57,7 @@ templ ListPartial(data ListData) {
 			</select>
 			<select
 				name="status"
-				class="uk-select uk-form-sm w-52 max-w-full"
+				class="select select-sm w-52 max-w-full"
 				hx-get="/partials/list-content"
 				hx-target="#list-content"
 				hx-swap="innerHTML"
@@ -114,37 +114,37 @@ templ ListContent(data ListData) {
 			No tickets found.
 		</div>
 	} else {
-		<div class="uk-overflow-auto">
-			<table class="uk-table uk-table-sm uk-table-divider uk-table-hover uk-table-middle uk-table-responsive uk-table-responsive-stack">
+		<div class="overflow-x-auto">
+			<table class="table table-sm table-pin-rows">
 				<thead>
 					<tr>
 						<th class="w-24">
-							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "id") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+							<a href="#" class="no-underline text-current" hx-get={ sortHeaderURL(data.Filter, "id") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								ID{ sortIndicator(data.Filter, "id") }
 							</a>
 						</th>
 						<th>
-							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "title") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+							<a href="#" class="no-underline text-current" hx-get={ sortHeaderURL(data.Filter, "title") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								Title{ sortIndicator(data.Filter, "title") }
 							</a>
 						</th>
 						<th class="w-36">
-							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "status") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+							<a href="#" class="no-underline text-current" hx-get={ sortHeaderURL(data.Filter, "status") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								Status{ sortIndicator(data.Filter, "status") }
 							</a>
 						</th>
 						<th class="w-20">
-							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "priority") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+							<a href="#" class="no-underline text-current" hx-get={ sortHeaderURL(data.Filter, "priority") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								Priority{ sortIndicator(data.Filter, "priority") }
 							</a>
 						</th>
 						<th class="w-32">
-							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "project") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+							<a href="#" class="no-underline text-current" hx-get={ sortHeaderURL(data.Filter, "project") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								Project{ sortIndicator(data.Filter, "project") }
 							</a>
 						</th>
 						<th class="w-40">
-							<a href="#" class="uk-link-reset" hx-get={ sortHeaderURL(data.Filter, "updated") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
+							<a href="#" class="no-underline text-current" hx-get={ sortHeaderURL(data.Filter, "updated") } hx-target="#list-content" hx-swap="innerHTML" hx-include="[name='project'],[name='status']">
 								Updated{ sortIndicator(data.Filter, "updated") }
 							</a>
 						</th>
@@ -154,7 +154,7 @@ templ ListContent(data ListData) {
 					for _, tk := range data.Tickets {
 						<tr class="cursor-pointer" data-href={ fmt.Sprintf("/ticket/%s", tk.ID) } data-partial={ fmt.Sprintf("/partials/ticket/%s", tk.ID) }>
 							<td data-label="ID"><span>{ tk.ID }</span></td>
-							<td data-label="Title"><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="uk-link-reset">{ tk.Title }</a></td>
+							<td data-label="Title"><a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="no-underline text-current">{ tk.Title }</a></td>
 							<td data-label="Status">
 								@StatusBadge(tk.Status)
 							</td>
