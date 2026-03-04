@@ -1,3 +1,4 @@
+// Package ticket provides markdown-based ticket storage with YAML frontmatter.
 package ticket
 
 import "time"

@@ -1,3 +1,4 @@
+// Package project detects and resolves smoovtask project context from the working directory.
 package project
 
 import (

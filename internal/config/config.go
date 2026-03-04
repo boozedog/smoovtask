@@ -1,3 +1,4 @@
+// Package config handles reading and writing smoovtask configuration files.
 package config
 
 import (

@@ -1,3 +1,4 @@
+// Package handler implements HTTP handlers for the smoovtask web UI.
 package handler
 
 import (
