@@ -57,6 +57,20 @@ func newTestEnv(t *testing.T) *testEnv {
 	// Set SMOOVBRAIN_DIR so config.Load() and EventsDir() use our temp paths
 	t.Setenv("SMOOVBRAIN_DIR", configDir)
 
+	// Initialize a git repo so worktree checks work in tests.
+	for _, gitArgs := range [][]string{
+		{"init"},
+		{"config", "user.email", "test@test.com"},
+		{"config", "user.name", "Test"},
+		{"commit", "--allow-empty", "-m", "init"},
+	} {
+		cmd := exec.Command("git", gitArgs...)
+		cmd.Dir = baseDir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s: %v", gitArgs, out, err)
+		}
+	}
+
 	// Change to baseDir so project.Detect matches "testproject"
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -136,6 +150,30 @@ func (e *testEnv) addNoteEvent(t *testing.T, ticketID string) {
 		Actor:   "agent",
 		Data:    map[string]any{"message": "test note"},
 	})
+}
+
+// ensureCleanWorktree creates a git worktree at .worktrees/<ticketID> with a
+// clean working tree, so requireCleanWorktree passes during tests.
+func (e *testEnv) ensureCleanWorktree(t *testing.T, ticketID string) {
+	t.Helper()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get cwd: %v", err)
+	}
+
+	wtDir := filepath.Join(cwd, ".worktrees")
+	if err := os.MkdirAll(wtDir, 0o755); err != nil {
+		t.Fatalf("create .worktrees dir: %v", err)
+	}
+
+	branch := "st/" + ticketID
+	wtPath := filepath.Join(wtDir, ticketID)
+	cmd := exec.Command("git", "worktree", "add", "-b", branch, wtPath)
+	cmd.Dir = cwd
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git worktree add: %s: %v", out, err)
+	}
 }
 
 // runCmd executes a cobra command with the given args and captures stdout.

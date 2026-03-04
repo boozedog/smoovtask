@@ -117,7 +117,8 @@ func quickRefGeneric(notesDir string) string {
 		"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
 		"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
 		"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
-		"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
+		"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n" +
+		"- Always commit all changes in the ticket worktree before requesting review — `st status review` will reject uncommitted work\n\n" +
 		"## Reviewing\n" +
 		"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
 		"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
@@ -148,7 +149,8 @@ func quickRefImplementer(notesDir string) string {
 		"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
 		"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
 		"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
-		"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
+		"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n" +
+		"- Always commit all changes in the ticket worktree before requesting review — `st status review` will reject uncommitted work\n\n" +
 		"## Always\n" +
 		noteGuidance(notesDir) +
 		"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +

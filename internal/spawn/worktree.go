@@ -142,6 +142,18 @@ func miseTrust(dir string) {
 	}
 }
 
+// WorktreeIsClean returns true if the worktree at the given path has no
+// uncommitted changes (staged, unstaged, or untracked files).
+func WorktreeIsClean(worktreePath string) (bool, error) {
+	cmd := exec.Command("git", "status", "--porcelain")
+	cmd.Dir = worktreePath
+	out, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("git status in %s: %w", worktreePath, err)
+	}
+	return strings.TrimSpace(string(out)) == "", nil
+}
+
 // WorktreeRepoRoot returns the root of the main worktree (not a linked worktree).
 // If we're already in a worktree, this traverses up to find the main repo.
 func WorktreeRepoRoot(dir string) (string, error) {
