@@ -250,13 +250,9 @@ templ Layout(title string, currentPath string) {
 					'hook.session-start':      { cat: 'start', files: ['start-1.wav'] },
 					'hook.stop':               { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
 					'hook.session-end':        { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
-					'hook.task-completed':     { cat: 'complete', files: ['complete-1.wav', 'complete-2.wav'] },
+					'hook.task-completed':     { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
 					'hook.pre-tool':           { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
-					'hook.post-tool':          { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
-					'hook.subagent-stop':      { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
-					'hook.teammate-idle':      { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
-					'hook.rule-decision':      { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] },
-					'hook.user-prompt':        { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] }
+					'hook.post-tool':          { cat: 'event', files: ['event-4.wav', 'event-7.wav', 'event-9.wav'] }
 				};
 				var _stStallThresholdMs = 2 * 60 * 1000;
 				var _stStallSpeakCooldownMs = 30 * 1000;
