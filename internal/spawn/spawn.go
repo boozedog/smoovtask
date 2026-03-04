@@ -317,9 +317,9 @@ func logOutcome(el *event.EventLog, tk *ticket.Ticket, runID string, started tim
 
 // tmuxPanePID returns the PID of the process in a specific tmux pane.
 func tmuxPanePID(tmuxPath, paneID string) (int, error) {
-	out, err := exec.Command(tmuxPath, "list-panes", "-t", paneID, "-F", "#{pane_pid}").Output()
+	out, err := exec.Command(tmuxPath, "display-message", "-t", paneID, "-p", "#{pane_pid}").Output()
 	if err != nil {
-		return 0, fmt.Errorf("list-panes for %s: %w", paneID, err)
+		return 0, fmt.Errorf("display-message for %s: %w", paneID, err)
 	}
 	pid, err := strconv.Atoi(strings.TrimSpace(string(out)))
 	if err != nil || pid <= 0 {
