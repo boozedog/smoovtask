@@ -72,7 +72,7 @@ templ ActivityPartial(data ActivityData) {
 		<div class="mb-4 flex flex-wrap items-center gap-3">
 			<select
 				name="project"
-				class="uk-select uk-form-sm w-52 max-w-full"
+				class="select select-bordered select-sm w-52 max-w-full"
 				hx-get="/partials/activity-content"
 				hx-target="#activity-content"
 				hx-swap="innerHTML"
@@ -92,7 +92,7 @@ templ ActivityPartial(data ActivityData) {
 			</select>
 			<select
 				name="event_type"
-				class="uk-select uk-form-sm w-52 max-w-full"
+				class="select select-bordered select-sm w-52 max-w-full"
 				hx-get="/partials/activity-content"
 				hx-target="#activity-content"
 				hx-swap="innerHTML"
@@ -117,8 +117,8 @@ templ ActivityContent(data ActivityData) {
 			No events found.
 		</div>
 	} else {
-		<div class="uk-overflow-auto">
-			<table class="uk-table uk-table-sm uk-table-divider uk-table-hover uk-table-middle">
+		<div class="overflow-auto">
+			<table class="table table-sm">
 				<thead>
 					<tr>
 						<th class="w-40">Time</th>
