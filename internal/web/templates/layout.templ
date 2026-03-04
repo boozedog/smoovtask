@@ -27,7 +27,7 @@ templ Layout(title string, currentPath string) {
 				@font-face { font-family: 'Maple Mono NF'; src: url('/static/MapleMonoNL-NF-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
 				@font-face { font-family: 'Maple Mono NF'; src: url('/static/MapleMonoNL-NF-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 				body { font-family: 'Inter', sans-serif; }
-				code, pre, kbd, samp, .uk-text-mono { font-family: 'Maple Mono NF', monospace; }
+				code, pre, kbd, samp, .font-mono { font-family: 'Maple Mono NF', monospace; }
 				.st-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; height: 100%; }
 				.st-board-wrapper { height: 100%; }
 				.st-column { min-width: 200px; flex: 1; overflow-y: auto; }
@@ -148,82 +148,82 @@ templ Layout(title string, currentPath string) {
 		<body hx-ext="sse" sse-connect="/events" class="h-screen flex flex-col overflow-hidden bg-background text-foreground">
 			<nav class="flex items-center justify-between px-4 pt-2 shrink-0">
 				<div class="flex items-center min-w-0">
-					<a class="uk-logo font-bold flex items-center gap-2 text-xl" href="/">
+					<a class="font-bold flex items-center gap-2 text-xl" href="/">
 						<img src="/static/logo.png" alt="smoovtask" class="h-10 w-10 rounded-full object-cover object-center"/>
-						<span class="uk-text-mono">smoovtask</span>
+						<span class="font-mono">smoovtask</span>
 					</a>
-					<ul class="uk-tab ml-4 st-main-nav">
-						<li
+					<div role="tablist" class="tabs tabs-border ml-4 st-main-nav">
+						<a
+							role="tab"
 							if currentPath == "/" {
-								class="uk-active"
+								class="tab tab-active"
+							} else {
+								class="tab"
 							}
+							hx-get="/partials/board"
+							hx-target="#content"
+							hx-push-url="/"
+							href="/"
 						>
-							<a
-								hx-get="/partials/board"
-								hx-target="#content"
-								hx-push-url="/"
-								href="/"
-							>
-								Board
-							</a>
-						</li>
-						<li
+							Board
+						</a>
+						<a
+							role="tab"
 							if currentPath == "/list" {
-								class="uk-active"
+								class="tab tab-active"
+							} else {
+								class="tab"
 							}
+							hx-get="/partials/list"
+							hx-target="#content"
+							hx-push-url="/list"
+							href="/list"
 						>
-							<a
-								hx-get="/partials/list"
-								hx-target="#content"
-								hx-push-url="/list"
-								href="/list"
-							>
-								Tickets
-							</a>
-						</li>
-						<li
+							Tickets
+						</a>
+						<a
+							role="tab"
 							if currentPath == "/critical-path" {
-								class="uk-active"
+								class="tab tab-active"
+							} else {
+								class="tab"
 							}
+							hx-get="/partials/critical-path"
+							hx-target="#content"
+							hx-push-url="/critical-path"
+							href="/critical-path"
 						>
-							<a
-								hx-get="/partials/critical-path"
-								hx-target="#content"
-								hx-push-url="/critical-path"
-								href="/critical-path"
-							>
-								Critical Path
-							</a>
-						</li>
-						<li
+							Critical Path
+						</a>
+						<a
+							role="tab"
 							if currentPath == "/agents" {
-								class="uk-active"
+								class="tab tab-active"
+							} else {
+								class="tab"
 							}
+							hx-get="/partials/agents"
+							hx-target="#content"
+							hx-push-url="/agents"
+							href="/agents"
 						>
-							<a
-								hx-get="/partials/agents"
-								hx-target="#content"
-								hx-push-url="/agents"
-								href="/agents"
-							>
-								Agents
-							</a>
-						</li>
-						<li
+							Agents
+						</a>
+						<a
+							role="tab"
 							if currentPath == "/activity" {
-								class="uk-active"
+								class="tab tab-active"
+							} else {
+								class="tab"
 							}
+							hx-get="/partials/activity"
+							hx-target="#content"
+							hx-push-url="/activity"
+							href="/activity"
 						>
-							<a
-								hx-get="/partials/activity"
-								hx-target="#content"
-								hx-push-url="/activity"
-								href="/activity"
-							>
-								Activity
-							</a>
-						</li>
-					</ul>
+							Activity
+						</a>
+					</div>
 				</div>
 				<div class="flex items-center gap-2">
 					<button
@@ -236,21 +236,22 @@ templ Layout(title string, currentPath string) {
 						<svg id="st-audio-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
 						<svg id="st-audio-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
 					</button>
-					<a class="uk-btn uk-btn-primary uk-btn-sm" href="/new" hx-get="/partials/form/new" hx-target="#ticket-modal-body" hx-push-url="false">New Ticket</a>
+					<a class="btn btn-primary btn-sm" href="/new" hx-get="/partials/form/new" hx-target="#ticket-modal-body" hx-push-url="false">New Ticket</a>
 				</div>
 			</nav>
-			<main class="uk-container uk-container-expand p-4 sm:p-6 flex-1 overflow-y-auto min-h-0">
+			<main class="w-full p-4 sm:p-6 flex-1 overflow-y-auto min-h-0">
 				<div id="content">
 					{ children... }
 				</div>
 			</main>
-			<div id="ticket-modal" data-uk-modal>
-				<div class="uk-modal-dialog uk-margin-auto-vertical st-modal-ticket">
-					<button class="uk-modal-close absolute right-3 top-3 z-10" type="button" data-uk-close></button>
-					<div class="uk-modal-header st-modal-header" id="ticket-modal-header"></div>
-					<div class="uk-modal-body st-modal-body" data-uk-overflow-auto id="ticket-modal-body"></div>
+			<dialog id="ticket-modal" class="modal">
+				<div class="modal-box st-modal-ticket">
+					<button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3 z-10" type="button" onclick="document.getElementById('ticket-modal').close()">✕</button>
+					<div class="st-modal-header" id="ticket-modal-header"></div>
+					<div class="st-modal-body overflow-auto" id="ticket-modal-body"></div>
 				</div>
-			</div>
+				<form method="dialog" class="modal-backdrop"><button>close</button></form>
+			</dialog>
 			<script>
 				// Global function definitions (safe to re-declare on script re-evaluation).
 
@@ -542,7 +543,7 @@ templ Layout(title string, currentPath string) {
 
 				// Close modal on form success (HX-Trigger: closeModal).
 				document.body.addEventListener('closeModal', function() {
-					UIkit.modal('#ticket-modal').hide();
+					document.getElementById('ticket-modal').close();
 				});
 
 				// Click delegation: copy-to-clipboard and table row modal opens.
@@ -554,9 +555,11 @@ templ Layout(title string, currentPath string) {
 						var ticketID = copyTarget.getAttribute('data-copy-ticket-id');
 						if (!ticketID) return;
 						function copiedNotice() {
-							if (window.UIkit && UIkit.notification) {
-								UIkit.notification({message: 'Copied ' + ticketID, status: 'primary', pos: 'bottom-right', timeout: 1200});
-							}
+							var toast = document.createElement('div');
+							toast.className = 'toast toast-end z-50';
+							toast.innerHTML = '<div class="alert alert-info"><span>Copied ' + ticketID + '</span></div>';
+							document.body.appendChild(toast);
+							setTimeout(function() { toast.remove(); }, 1200);
 						}
 						if (navigator.clipboard && navigator.clipboard.writeText) {
 							navigator.clipboard.writeText(ticketID).then(copiedNotice);
@@ -621,7 +624,7 @@ templ Layout(title string, currentPath string) {
 					// Ticket modal management.
 					if (e.detail.target && (e.detail.target.id === 'ticket-modal-body' || e.detail.target.closest('#ticket-modal-body'))) {
 						if (!_ticketModalOpen) {
-							UIkit.modal('#ticket-modal').show();
+							document.getElementById('ticket-modal').showModal();
 							_ticketModalOpen = true;
 						}
 					}
@@ -630,14 +633,12 @@ templ Layout(title string, currentPath string) {
 				// Update active nav link and page title on htmx navigation.
 				document.addEventListener('htmx:pushedIntoHistory', function(e) {
 					var path = e.detail.path || window.location.pathname;
-					document.querySelectorAll('.st-main-nav li').forEach(function(li) {
-						var a = li.querySelector('a[href]');
-						if (!a) return;
-						var linkPath = new URL(a.href, window.location.origin).pathname;
+					document.querySelectorAll('.st-main-nav a.tab').forEach(function(tab) {
+						var linkPath = new URL(tab.href, window.location.origin).pathname;
 						if (linkPath === path || (linkPath === '/' && path === '/')) {
-							li.classList.add('uk-active');
+							tab.classList.add('tab-active');
 						} else {
-							li.classList.remove('uk-active');
+							tab.classList.remove('tab-active');
 						}
 					});
 					var titleMap = {'/': 'Board', '/list': 'Tickets', '/agents': 'Agents', '/activity': 'Activity', '/critical-path': 'Critical Path'};
@@ -653,7 +654,7 @@ templ Layout(title string, currentPath string) {
 				window.addEventListener('popstate', function() {
 					var modalEl = document.getElementById('ticket-modal');
 					if (modalEl && _ticketModalOpen) {
-						UIkit.modal(modalEl).hide();
+						modalEl.close();
 					}
 					var path = window.location.pathname;
 					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/agents': '/partials/agents', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
@@ -665,14 +666,12 @@ templ Layout(title string, currentPath string) {
 						var url = partial;
 						if (window.location.search) url += window.location.search;
 						htmx.ajax('GET', url, {target: '#content', swap: 'innerHTML'});
-						document.querySelectorAll('.st-main-nav li').forEach(function(li) {
-							var a = li.querySelector('a[href]');
-							if (!a) return;
-							var linkPath = new URL(a.href, window.location.origin).pathname;
+						document.querySelectorAll('.st-main-nav a.tab').forEach(function(tab) {
+							var linkPath = new URL(tab.href, window.location.origin).pathname;
 							if (linkPath === path) {
-								li.classList.add('uk-active');
+								tab.classList.add('tab-active');
 							} else {
-								li.classList.remove('uk-active');
+								tab.classList.remove('tab-active');
 							}
 						});
 						syncAgentActivityState();
@@ -680,7 +679,7 @@ templ Layout(title string, currentPath string) {
 				});
 
 				// Modal hidden cleanup.
-				UIkit.util.on('#ticket-modal', 'hidden', function() {
+				document.getElementById('ticket-modal').addEventListener('close', function() {
 					_ticketModalOpen = false;
 					document.getElementById('ticket-modal-header').innerHTML = '';
 					document.getElementById('ticket-modal-body').innerHTML = '';
