@@ -6,4 +6,4 @@ coverage.out
 .todos/
 .st/
 .worktrees/
-/st
+/st.worker-prompt
