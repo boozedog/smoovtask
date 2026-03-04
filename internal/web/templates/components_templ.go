@@ -16,7 +16,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "badge st-priority-" + strings.ToLower(string(p))
+	return "badge badge-xs st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -59,9 +59,9 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 
 func workflowBadgeClass(s ticket.Status) string {
 	if s == ticket.StatusRework {
-		return "badge badge-error"
+		return "badge badge-xs badge-error"
 	}
-	return "badge badge-secondary"
+	return "badge badge-xs badge-secondary"
 }
 
 func workflowBadgeLabel(s ticket.Status) string {
@@ -310,7 +310,7 @@ func StatusBadge(s ticket.Status) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var12 = []any{"badge " + statusBadgeClass(s)}
+		var templ_7745c5c3_Var12 = []any{"badge badge-xs " + statusBadgeClass(s)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -399,12 +399,12 @@ func SourceBadge(source string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else if source == "pi" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"text-sm opacity-70 font-mono uppercase\">pi</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"text-xs opacity-70 font-mono uppercase\">pi</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<span class=\"text-sm opacity-70 font-mono uppercase\">?</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<span class=\"text-xs opacity-70 font-mono uppercase\">?</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -465,17 +465,17 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" hx-target=\"#ticket-modal-body\" class=\"card card-body st-ticket-card\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" hx-target=\"#ticket-modal-body\" class=\"card card-xs bg-base-200 card-body st-ticket-card\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if tk.Status == ticket.StatusHumanReview {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge badge-secondary st-card-corner-badge\">Human</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge badge-xs badge-secondary st-card-corner-badge\">Human</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"st-card-project text-sm opacity-50\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"st-card-project text-xs opacity-50\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -546,7 +546,7 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"text-sm font-mono opacity-80\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"text-xs font-mono opacity-80\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
