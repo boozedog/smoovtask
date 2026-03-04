@@ -31,10 +31,10 @@ func TestStoreCreate(t *testing.T) {
 		t.Error("ticket ID should be set after Create")
 	}
 
-	// Verify file exists
-	path := filepath.Join(dir, tk.Filename())
+	// Verify file exists in nested path
+	path := store.ticketPath(tk)
 	if _, err := os.Stat(path); err != nil {
-		t.Errorf("ticket file not found: %v", err)
+		t.Errorf("ticket file not found at %s: %v", path, err)
 	}
 }
 

@@ -53,12 +53,12 @@ func Run(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return nil, fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk, err := store.Get(opts.TicketID)
 	if err != nil {
 		return nil, fmt.Errorf("get ticket: %w", err)

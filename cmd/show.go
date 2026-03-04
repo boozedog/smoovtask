@@ -38,12 +38,12 @@ func runShow(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk, err := store.Get(id)
 	if err != nil {
 		return fmt.Errorf("get ticket: %w", err)

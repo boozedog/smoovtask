@@ -32,7 +32,7 @@ func TestHandleSubagentStartOpenTicket(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
 
-	store := ticket.NewStore(env.ticketsDir(t))
+	store := ticket.NewStore(env.projectsDir(t))
 	tk := &ticket.Ticket{
 		ID:       "st_open01",
 		Title:    "Implement feature",
@@ -87,7 +87,7 @@ func TestHandleSubagentStartReviewTicket(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
 
-	store := ticket.NewStore(env.ticketsDir(t))
+	store := ticket.NewStore(env.projectsDir(t))
 	tk := &ticket.Ticket{
 		ID:       "st_revi01",
 		Title:    "Review this PR",

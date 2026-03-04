@@ -72,9 +72,13 @@ func TestGenerateIDNonexistentDir(t *testing.T) {
 func TestGenerateIDCollisionCheck(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create a file with a known ID
+	// Create a file with a known ID in a nested project structure.
+	nested := filepath.Join(dir, "proj", "tickets", "2026", "02")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	fname := "2026-02-25T10:00-st_abc123.md"
-	if err := os.WriteFile(filepath.Join(dir, fname), []byte("test"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(nested, fname), []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

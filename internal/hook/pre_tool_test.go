@@ -112,7 +112,7 @@ func TestHandlePreToolNoWarningWithActiveTicket(t *testing.T) {
 	env := setupTestEnv(t, projectPath)
 
 	// Create an in-progress ticket assigned to our session
-	store := ticket.NewStore(env.ticketsDir(t))
+	store := ticket.NewStore(env.projectsDir(t))
 	tk := &ticket.Ticket{
 		ID:       "st_active",
 		Title:    "Active ticket",
@@ -151,7 +151,7 @@ func TestHandlePreToolNoWarningWithReworkTicket(t *testing.T) {
 	env := setupTestEnv(t, projectPath)
 
 	// Create a REWORK ticket assigned to our session
-	store := ticket.NewStore(env.ticketsDir(t))
+	store := ticket.NewStore(env.projectsDir(t))
 	tk := &ticket.Ticket{
 		ID:       "st_rework",
 		Title:    "Rework ticket",

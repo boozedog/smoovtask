@@ -18,9 +18,9 @@ type Handler struct {
 }
 
 // New creates a new Handler.
-func New(ticketsDir, eventsDir string, broker *sse.Broker, project string) *Handler {
+func New(projectsDir, eventsDir string, broker *sse.Broker, project string) *Handler {
 	return &Handler{
-		store:     ticket.NewStore(ticketsDir),
+		store:     ticket.NewStore(projectsDir),
 		eventsDir: eventsDir,
 		broker:    broker,
 		project:   project,

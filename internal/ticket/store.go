@@ -6,16 +6,18 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/boozedog/smoovtask/internal/finder"
 )
 
 // Store provides file-based ticket storage.
 type Store struct {
-	ticketsDir string
+	projectsDir string
 }
 
-// NewStore creates a Store that reads/writes tickets in the given directory.
-func NewStore(ticketsDir string) *Store {
-	return &Store{ticketsDir: ticketsDir}
+// NewStore creates a Store that reads/writes tickets under the given projects directory.
+func NewStore(projectsDir string) *Store {
+	return &Store{projectsDir: projectsDir}
 }
 
 // ListFilter defines optional filters for listing tickets.
@@ -25,14 +27,36 @@ type ListFilter struct {
 	Excludes []Status
 }
 
+// ticketDir returns the directory for a ticket based on project and creation time.
+// Format: <projectsDir>/<project>/tickets/YYYY/MM
+func (s *Store) ticketDir(t *Ticket) string {
+	return filepath.Join(
+		s.projectsDir,
+		t.Project,
+		"tickets",
+		t.Created.UTC().Format("2006"),
+		t.Created.UTC().Format("01"),
+	)
+}
+
+// ticketPath returns the full file path for a ticket.
+func (s *Store) ticketPath(t *Ticket) string {
+	return filepath.Join(s.ticketDir(t), t.Filename())
+}
+
 // Create generates a new ticket and writes it to disk.
 func (s *Store) Create(t *Ticket) error {
-	if err := os.MkdirAll(s.ticketsDir, 0o755); err != nil {
-		return fmt.Errorf("create tickets dir: %w", err)
+	if t.Project == "" {
+		return fmt.Errorf("ticket project is required")
+	}
+
+	dir := s.ticketDir(t)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create ticket dir: %w", err)
 	}
 
 	if t.ID == "" {
-		id, err := GenerateID(s.ticketsDir)
+		id, err := GenerateID(s.projectsDir)
 		if err != nil {
 			return fmt.Errorf("generate ID: %w", err)
 		}
@@ -44,7 +68,7 @@ func (s *Store) Create(t *Ticket) error {
 		return fmt.Errorf("render ticket: %w", err)
 	}
 
-	path := filepath.Join(s.ticketsDir, t.Filename())
+	path := s.ticketPath(t)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("write ticket: %w", err)
 	}
@@ -69,13 +93,18 @@ func (s *Store) Get(id string) (*Ticket, error) {
 
 // Save writes an existing ticket back to disk.
 func (s *Store) Save(t *Ticket) error {
-	// Remove old file if it exists (ID matches but filename might differ due to timestamp)
+	// Remove old file if it exists (ID matches but path might differ)
 	oldPath, err := s.findFile(t.ID)
 	if err == nil && oldPath != "" {
-		path := filepath.Join(s.ticketsDir, t.Filename())
-		if oldPath != path {
+		newPath := s.ticketPath(t)
+		if oldPath != newPath {
 			os.Remove(oldPath)
 		}
+	}
+
+	dir := s.ticketDir(t)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create ticket dir: %w", err)
 	}
 
 	data, err := Render(t)
@@ -83,7 +112,7 @@ func (s *Store) Save(t *Ticket) error {
 		return fmt.Errorf("render ticket: %w", err)
 	}
 
-	path := filepath.Join(s.ticketsDir, t.Filename())
+	path := s.ticketPath(t)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("write ticket: %w", err)
 	}
@@ -102,21 +131,19 @@ func (s *Store) ListMeta(filter ListFilter) ([]*Ticket, error) {
 }
 
 func (s *Store) listWithParser(filter ListFilter, parser func([]byte) (*Ticket, error)) ([]*Ticket, error) {
-	entries, err := os.ReadDir(s.ticketsDir)
-	if os.IsNotExist(err) {
-		return nil, nil
+	searchDir := s.projectsDir
+	if filter.Project != "" {
+		searchDir = filepath.Join(s.projectsDir, filter.Project, "tickets")
 	}
+
+	files, err := finder.FindFiles(searchDir)
 	if err != nil {
-		return nil, fmt.Errorf("read tickets dir: %w", err)
+		return nil, fmt.Errorf("find ticket files: %w", err)
 	}
 
 	var tickets []*Ticket
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-
-		data, err := os.ReadFile(filepath.Join(s.ticketsDir, entry.Name()))
+	for _, path := range files {
+		data, err := os.ReadFile(path)
 		if err != nil {
 			continue
 		}
@@ -148,27 +175,24 @@ func excluded(s Status, excludes []Status) bool {
 
 // findFile finds the file path for a ticket by ID (exact or prefix match).
 func (s *Store) findFile(id string) (string, error) {
-	entries, err := os.ReadDir(s.ticketsDir)
+	files, err := finder.FindFiles(s.projectsDir)
 	if err != nil {
-		return "", fmt.Errorf("read tickets dir: %w", err)
+		return "", fmt.Errorf("find ticket files: %w", err)
 	}
 
 	var matches []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
+	for _, path := range files {
+		name := filepath.Base(path)
 		extracted := extractIDFromFilename(name)
 		if extracted == "" {
 			continue
 		}
 		if extracted == id {
 			// Exact match — return immediately.
-			return filepath.Join(s.ticketsDir, name), nil
+			return path, nil
 		}
 		if strings.HasPrefix(extracted, id) {
-			matches = append(matches, filepath.Join(s.ticketsDir, name))
+			matches = append(matches, path)
 		}
 	}
 
