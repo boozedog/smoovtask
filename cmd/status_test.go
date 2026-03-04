@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,6 +22,9 @@ func TestStatus_ValidTransition(t *testing.T) {
 
 	// Add a note (required before review)
 	env.addNoteEvent(t, tk.ID)
+
+	// Create a clean worktree (required before review)
+	env.ensureCleanWorktree(t, tk.ID)
 
 	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "review")
 	if err != nil {
@@ -101,6 +106,9 @@ func TestStatus_WithTicketFlag(t *testing.T) {
 
 	env.addNoteEvent(t, tk.ID)
 
+	// Create a clean worktree (required before review)
+	env.ensureCleanWorktree(t, tk.ID)
+
 	out, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tk.ID, "review")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -133,6 +141,8 @@ func TestStatus_AutoUnblock(t *testing.T) {
 	// Move B: IN-PROGRESS → REVIEW → HUMAN-REVIEW → DONE
 	// Add a note (required before review)
 	env.addNoteEvent(t, tkB.ID)
+	// Create a clean worktree (required before review)
+	env.ensureCleanWorktree(t, tkB.ID)
 	// First go to REVIEW
 	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tkB.ID, "review")
 	if err != nil {
@@ -169,6 +179,53 @@ func TestStatus_AutoUnblock(t *testing.T) {
 	}
 	if updatedA.PriorStatus != nil {
 		t.Errorf("ticket A prior_status = %v, want nil", updatedA.PriorStatus)
+	}
+}
+
+func TestStatus_RequiresWorktree(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "no worktree", ticket.StatusInProgress)
+	tk.Assignee = "test-session-status"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+	env.addNoteEvent(t, tk.ID)
+
+	// No worktree created — review should fail
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tk.ID, "review")
+	if err == nil {
+		t.Fatal("expected error when worktree does not exist")
+	}
+	if !strings.Contains(err.Error(), "worktree does not exist") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "worktree does not exist")
+	}
+}
+
+func TestStatus_RejectsDirtyWorktree(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "dirty worktree", ticket.StatusInProgress)
+	tk.Assignee = "test-session-status"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+	env.addNoteEvent(t, tk.ID)
+	env.ensureCleanWorktree(t, tk.ID)
+
+	// Create an uncommitted file in the worktree
+	cwd, _ := os.Getwd()
+	wtPath := filepath.Join(cwd, ".worktrees", tk.ID)
+	if err := os.WriteFile(filepath.Join(wtPath, "dirty.txt"), []byte("uncommitted"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	_, err := env.runCmd(t, "--run-id", "test-session-status", "status", "--ticket", tk.ID, "review")
+	if err == nil {
+		t.Fatal("expected error when worktree has uncommitted changes")
+	}
+	if !strings.Contains(err.Error(), "uncommitted changes") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "uncommitted changes")
 	}
 }
 

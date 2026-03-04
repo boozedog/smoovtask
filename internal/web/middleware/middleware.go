@@ -1,3 +1,4 @@
+// Package middleware provides HTTP middleware for the smoovtask web server.
 package middleware
 
 import "net/http"

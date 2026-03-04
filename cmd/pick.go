@@ -36,12 +36,12 @@ func runPick(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	runID := identity.RunID()
 	actor := identity.Actor()
 
@@ -156,7 +156,15 @@ func runPick(_ *cobra.Command, args []string) error {
 	fmt.Printf("- Resolve ambiguity — don't guess at intent, ask\n")
 	fmt.Printf("- Do implementation work in the ticket worktree: `.worktrees/%s` (create if missing, reuse if present)\n", tk.ID)
 	fmt.Printf("\nOnly begin implementation once you fully understand what is expected.\n")
-	fmt.Print(guidance.LoggingImplementation)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
+	if err != nil {
+		return fmt.Errorf("find repo root: %w", err)
+	}
+	fmt.Print(guidance.LoggingImplementation(guidance.NotesDir(repoRoot)))
 	return nil
 }
 

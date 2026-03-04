@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
@@ -54,12 +56,12 @@ func claimReview(ticketID string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	runID := identity.RunID()
 	actor := identity.Actor()
 
@@ -140,7 +142,18 @@ func claimReview(ticketID string) error {
 	fmt.Printf("- [ ] If the fix cannot be fully verified through code review alone (e.g., UI behavior,\n")
 	fmt.Printf("      runtime issues), ask the user to confirm the fix works before approving\n")
 	fmt.Printf("- [ ] Document findings with `st note \"<findings>\"`\n")
-	fmt.Printf("\nReminder: `st note` is required before handing off (`st status human-review`) or rejecting (`st status rework`).\n")
-	fmt.Print(guidance.LoggingReview)
+	fmt.Printf("\nReminder: `st note` is required before any disposition.\n")
+	fmt.Printf("- `st status done` — approve directly, only if you are absolutely certain you can fully verify correctness yourself\n")
+	fmt.Printf("- `st status human-review` — hand off to human review (default — use when in any doubt)\n")
+	fmt.Printf("- `st status rework` — send back for changes\n")
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
+	if err != nil {
+		return fmt.Errorf("find repo root: %w", err)
+	}
+	fmt.Print(guidance.LoggingReview(guidance.NotesDir(repoRoot)))
 	return nil
 }

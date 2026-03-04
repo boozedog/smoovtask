@@ -48,27 +48,15 @@ func runSpawn(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk, err := store.Get(ticketID)
 	if err != nil {
 		return fmt.Errorf("get ticket: %w", err)
-	}
-
-	if spawnDryRun {
-		prompt := spawn.BuildPrompt(tk, "<run-id>")
-		fmt.Println("--- Dry Run: Prompt ---")
-		fmt.Println(prompt)
-		fmt.Println("--- End Prompt ---")
-		fmt.Printf("\nWorktree: %s\n", spawn.WorktreePath(".", tk.ID))
-		fmt.Printf("Branch:   %s\n", spawn.BranchName(tk.ID))
-		fmt.Printf("Backend:  %s\n", spawnBackend)
-		fmt.Printf("Timeout:  %s\n", spawnTimeout)
-		return nil
 	}
 
 	// Verify we're in a git repo
@@ -79,6 +67,18 @@ func runSpawn(_ *cobra.Command, args []string) error {
 	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
 	if err != nil {
 		return fmt.Errorf("not in a git repository: %w", err)
+	}
+
+	if spawnDryRun {
+		prompt := spawn.BuildPrompt(tk, "<run-id>", repoRoot)
+		fmt.Println("--- Dry Run: Prompt ---")
+		fmt.Println(prompt)
+		fmt.Println("--- End Prompt ---")
+		fmt.Printf("\nWorktree: %s\n", spawn.WorktreePath(repoRoot, tk.ID))
+		fmt.Printf("Branch:   %s\n", spawn.BranchName(tk.ID))
+		fmt.Printf("Backend:  %s\n", spawnBackend)
+		fmt.Printf("Timeout:  %s\n", spawnTimeout)
+		return nil
 	}
 
 	// Check if worktree already exists

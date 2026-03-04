@@ -4,8 +4,10 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
-	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/boozedog/smoovtask/internal/finder"
 )
 
 const (
@@ -20,9 +22,9 @@ const (
 )
 
 // GenerateID creates a new unique ticket ID (st_xxxxxx).
-// It checks for collisions against existing files in ticketsDir.
-func GenerateID(ticketsDir string) (string, error) {
-	existing, err := existingIDs(ticketsDir)
+// It checks for collisions against existing files in projectsDir.
+func GenerateID(projectsDir string) (string, error) {
+	existing, err := existingIDs(projectsDir)
 	if err != nil {
 		return "", fmt.Errorf("scan existing IDs: %w", err)
 	}
@@ -55,23 +57,17 @@ func randomID() (string, error) {
 	return b.String(), nil
 }
 
-// existingIDs scans the tickets directory and returns a set of existing ticket IDs.
-func existingIDs(ticketsDir string) (map[string]bool, error) {
+// existingIDs scans the projects directory recursively and returns a set of existing ticket IDs.
+func existingIDs(projectsDir string) (map[string]bool, error) {
 	ids := make(map[string]bool)
 
-	entries, err := os.ReadDir(ticketsDir)
-	if os.IsNotExist(err) {
-		return ids, nil
-	}
+	files, err := finder.FindFiles(projectsDir)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
+	for _, path := range files {
+		name := filepath.Base(path)
 		if id := extractIDFromFilename(name); id != "" {
 			ids[id] = true
 		}

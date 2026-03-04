@@ -52,7 +52,7 @@ func TestCanTransition(t *testing.T) {
 		{ticket.StatusOpen, ticket.StatusReview, false},
 		{ticket.StatusOpen, ticket.StatusDone, false},
 		{ticket.StatusRework, ticket.StatusDone, false},
-		{ticket.StatusReview, ticket.StatusDone, false},
+		{ticket.StatusReview, ticket.StatusDone, true},
 		{ticket.StatusDone, ticket.StatusOpen, false},
 		{ticket.StatusDone, ticket.StatusCancelled, false},
 		{ticket.StatusCancelled, ticket.StatusOpen, false},

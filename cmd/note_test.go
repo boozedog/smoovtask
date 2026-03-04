@@ -230,6 +230,7 @@ func TestNote_FromFile(t *testing.T) {
 
 func TestNote_FromFile_NoFile(t *testing.T) {
 	env := newTestEnv(t)
+
 	_ = env
 
 	// No note file exists — should error

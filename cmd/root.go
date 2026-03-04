@@ -1,3 +1,4 @@
+// Package cmd implements the st CLI commands using Cobra.
 package cmd
 
 import (
