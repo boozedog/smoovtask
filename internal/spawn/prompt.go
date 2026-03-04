@@ -2,6 +2,7 @@ package spawn
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/boozedog/smoovtask/internal/ticket"
@@ -9,7 +10,8 @@ import (
 
 // BuildPrompt constructs the prompt that gets fed to the AI agent worker.
 // It includes ticket context and st CLI instructions.
-func BuildPrompt(tk *ticket.Ticket, runID string) string {
+// repoRoot is the absolute path to the main repo root (not a worktree).
+func BuildPrompt(tk *ticket.Ticket, runID, repoRoot string) string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "You are working on ticket %s: %s\n\n", tk.ID, tk.Title)
@@ -28,7 +30,8 @@ func BuildPrompt(tk *ticket.Ticket, runID string) string {
 	b.WriteString("- Work in the current directory (a git worktree of the main repo)\n")
 	b.WriteString("- Make your changes and commit them with simple, short commit messages\n")
 	b.WriteString("- Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no co-authors, no elaborate formatting\n")
-	fmt.Fprintf(&b, "- To log progress: write your note to `.st/notes/%s.md` using the Write tool, then run `st note --ticket %s --run-id %s`\n", runID, tk.ID, runID)
+	notesDir := filepath.Join(repoRoot, ".st", "notes")
+	fmt.Fprintf(&b, "- To log progress: write your note to `%s/%s.md` using the Write tool, then run `st note --ticket %s --run-id %s`\n", notesDir, runID, tk.ID, runID)
 	fmt.Fprintf(&b, "- When done, run `st status review --ticket %s --run-id %s` to submit for review, then run /exit to end the session\n", tk.ID, runID)
 	fmt.Fprintf(&b, "- If you get stuck, run `st status blocked --ticket %s --run-id %s` and add a note explaining why\n", tk.ID, runID)
 	b.WriteString("- Do not push to remote. Do not create PRs. Just commit locally.\n")

@@ -1,3 +1,4 @@
+// Package web provides the smoovtask web UI server with SSE-based live updates.
 package web
 
 import (
@@ -40,7 +41,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 		return fmt.Errorf("get events dir: %w", err)
 	}
 
-	ticketsDir, err := s.cfg.TicketsDir()
+	projectsDir, err := s.cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
@@ -56,7 +57,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	// Set up handlers.
 	cwd, _ := os.Getwd()
 	proj := project.Detect(s.cfg, cwd)
-	h := handler.New(ticketsDir, eventsDir, s.broker, proj)
+	h := handler.New(projectsDir, eventsDir, s.broker, proj)
 
 	mux := http.NewServeMux()
 

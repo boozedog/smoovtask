@@ -10,6 +10,7 @@ import (
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/identity"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
@@ -52,12 +53,12 @@ func runStatus(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	runID := identity.RunID()
 	actor := identity.Actor()
 
@@ -96,6 +97,13 @@ func runStatus(_ *cobra.Command, args []string) error {
 		}
 	}
 
+	// Require clean worktree before submitting for review.
+	if targetStatus == ticket.StatusReview {
+		if err := requireCleanWorktree(tk.ID); err != nil {
+			return err
+		}
+	}
+
 	now := time.Now().UTC()
 	oldStatus := tk.Status
 	tk.Status = targetStatus
@@ -111,7 +119,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 	heading := statusHeading(targetStatus)
 
 	var sectionFields map[string]string
-	if oldStatus == ticket.StatusHumanReview && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
+	if (oldStatus == ticket.StatusHumanReview || oldStatus == ticket.StatusReview) && (targetStatus == ticket.StatusDone || targetStatus == ticket.StatusRework) {
 		reviewedBy := runID
 		if reviewedBy == "" {
 			reviewedBy = actor
@@ -188,6 +196,34 @@ func runStatus(_ *cobra.Command, args []string) error {
 			})
 			fmt.Printf("Auto-unblocked: %s → %s\n", ut.ID, ut.Status)
 		}
+	}
+
+	return nil
+}
+
+// requireCleanWorktree verifies the ticket's worktree exists and has no uncommitted changes.
+func requireCleanWorktree(ticketID string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
+	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
+	if err != nil {
+		return fmt.Errorf("cannot determine repo root: %w", err)
+	}
+
+	wtPath := spawn.WorktreePath(repoRoot, ticketID)
+	if _, err := os.Stat(wtPath); err != nil {
+		return fmt.Errorf("cannot move to REVIEW — ticket worktree does not exist at %s. Work must be done in a worktree", wtPath)
+	}
+
+	clean, err := spawn.WorktreeIsClean(wtPath)
+	if err != nil {
+		return fmt.Errorf("check worktree status: %w", err)
+	}
+	if !clean {
+		return fmt.Errorf("cannot move to REVIEW — ticket worktree has uncommitted changes. Commit all work in %s first", wtPath)
 	}
 
 	return nil

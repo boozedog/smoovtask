@@ -26,12 +26,12 @@ func HandleSubagentStart(input *Input) (Output, error) {
 		return Output{}, fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return Output{}, fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk, err := store.Get(ticketID)
 	if err != nil {
 		// Ticket not found — don't fail, just skip context injection

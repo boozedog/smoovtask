@@ -1,3 +1,4 @@
+// Package workflow implements the ticket state machine and transition rules.
 package workflow
 
 import (
@@ -20,7 +21,7 @@ func RequiresNote(from, to ticket.Status) bool {
 	if from == ticket.StatusInProgress && to == ticket.StatusReview {
 		return true
 	}
-	if from == ticket.StatusReview && (to == ticket.StatusHumanReview || to == ticket.StatusRework) {
+	if from == ticket.StatusReview && (to == ticket.StatusHumanReview || to == ticket.StatusDone || to == ticket.StatusRework) {
 		return true
 	}
 	if from == ticket.StatusHumanReview && (to == ticket.StatusDone || to == ticket.StatusRework) {

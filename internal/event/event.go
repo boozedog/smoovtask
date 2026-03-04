@@ -1,3 +1,4 @@
+// Package event provides append-only JSONL event logging for smoovtask.
 package event
 
 import (

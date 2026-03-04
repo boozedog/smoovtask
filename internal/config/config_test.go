@@ -133,12 +133,12 @@ func TestEnsureDirs(t *testing.T) {
 	}
 
 	// Override DefaultDir for this test by using the vault path directly
-	ticketsDir := filepath.Join(vault, "tickets")
-	if err := os.MkdirAll(ticketsDir, 0o755); err != nil {
-		t.Fatalf("MkdirAll tickets: %v", err)
+	projectsDir := filepath.Join(vault, "projects")
+	if err := os.MkdirAll(projectsDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll projects: %v", err)
 	}
 
-	if _, err := os.Stat(ticketsDir); err != nil {
-		t.Errorf("tickets dir not created: %v", err)
+	if _, err := os.Stat(projectsDir); err != nil {
+		t.Errorf("projects dir not created: %v", err)
 	}
 }

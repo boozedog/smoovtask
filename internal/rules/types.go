@@ -1,3 +1,4 @@
+// Package rules evaluates auto-approve rules for tool permission requests.
 package rules
 
 import "gopkg.in/yaml.v3"

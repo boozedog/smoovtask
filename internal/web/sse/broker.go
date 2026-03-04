@@ -1,3 +1,4 @@
+// Package sse implements server-sent event broadcasting for live web UI updates.
 package sse
 
 import (

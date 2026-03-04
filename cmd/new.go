@@ -110,12 +110,12 @@ func runNew(_ *cobra.Command, args []string) error {
 		tk.DependsOn = []string{}
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	if err := cfg.EnsureDirs(); err != nil {
 		return fmt.Errorf("ensure dirs: %w", err)
 	}

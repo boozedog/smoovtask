@@ -21,11 +21,11 @@ import (
 func testSetup(t *testing.T) (*handler.Handler, string, string) {
 	t.Helper()
 
-	ticketsDir := t.TempDir()
+	projectsDir := t.TempDir()
 	eventsDir := t.TempDir()
 
 	// Create a test ticket.
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk := &ticket.Ticket{
 		ID:       "st_abc123",
 		Title:    "Test ticket",
@@ -70,8 +70,8 @@ func testSetup(t *testing.T) (*handler.Handler, string, string) {
 	}
 
 	broker := sse.NewBroker()
-	h := handler.New(ticketsDir, eventsDir, broker, "testproj")
-	return h, ticketsDir, eventsDir
+	h := handler.New(projectsDir, eventsDir, broker, "testproj")
+	return h, projectsDir, eventsDir
 }
 
 func TestBoard(t *testing.T) {
@@ -174,8 +174,8 @@ func TestPartialBoard(t *testing.T) {
 }
 
 func TestBoardReviewColumnSortsAssignedTicketsFirst(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
-	store := ticket.NewStore(ticketsDir)
+	h, projectsDir, _ := testSetup(t)
+	store := ticket.NewStore(projectsDir)
 
 	unassignedReview := &ticket.Ticket{
 		ID:       "st_rev001",
@@ -220,8 +220,8 @@ func TestBoardReviewColumnSortsAssignedTicketsFirst(t *testing.T) {
 }
 
 func TestBoardReviewColumnShowsAgentReviewBeforeHumanReview(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
-	store := ticket.NewStore(ticketsDir)
+	h, projectsDir, _ := testSetup(t)
+	store := ticket.NewStore(projectsDir)
 
 	agentReview := &ticket.Ticket{
 		ID:       "st_rev_agent",
@@ -595,10 +595,10 @@ func TestSSEBrokerUnsubscribe(t *testing.T) {
 }
 
 func TestTicketTimestampFormatting(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
+	h, projectsDir, _ := testSetup(t)
 
 	// Create a ticket with ISO timestamps in the body.
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk := &ticket.Ticket{
 		ID:       "st_ts0001",
 		Title:    "Timestamp test",
@@ -630,10 +630,10 @@ func TestTicketTimestampFormatting(t *testing.T) {
 }
 
 func TestListSortOrder(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
+	h, projectsDir, _ := testSetup(t)
 
 	// Add a DONE ticket.
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tk := &ticket.Ticket{
 		ID:       "st_done01",
 		Title:    "Done ticket",
@@ -833,8 +833,8 @@ func TestCreateTicket(t *testing.T) {
 }
 
 func TestCriticalPathPage(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
-	store := ticket.NewStore(ticketsDir)
+	h, projectsDir, _ := testSetup(t)
+	store := ticket.NewStore(projectsDir)
 
 	dep := &ticket.Ticket{
 		ID:       "st_cpdep",
@@ -887,8 +887,8 @@ func TestCriticalPathPage(t *testing.T) {
 }
 
 func TestCriticalPathScopeDefaultsToAllAndSupportsCurrent(t *testing.T) {
-	h, ticketsDir, _ := testSetup(t)
-	store := ticket.NewStore(ticketsDir)
+	h, projectsDir, _ := testSetup(t)
+	store := ticket.NewStore(projectsDir)
 
 	allDep := &ticket.Ticket{
 		ID:       "st_alldep",

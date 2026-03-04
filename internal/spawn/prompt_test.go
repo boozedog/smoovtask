@@ -15,7 +15,8 @@ func TestBuildPrompt(t *testing.T) {
 	}
 	runID := "spawn-test123"
 
-	prompt := BuildPrompt(tk, runID)
+	repoRoot := "/fake/repo"
+	prompt := BuildPrompt(tk, runID, repoRoot)
 
 	// Should contain ticket info
 	if !strings.Contains(prompt, "st_abc123") {
@@ -30,9 +31,9 @@ func TestBuildPrompt(t *testing.T) {
 		t.Error("prompt should contain ticket body")
 	}
 
-	// Should contain st CLI instructions with run ID
-	if !strings.Contains(prompt, ".st/notes/spawn-test123.md") {
-		t.Error("prompt should contain file-based note path with run ID")
+	// Should contain absolute note path with run ID
+	if !strings.Contains(prompt, "/fake/repo/.st/notes/spawn-test123.md") {
+		t.Error("prompt should contain absolute note path with run ID")
 	}
 	if !strings.Contains(prompt, "st note --ticket st_abc123 --run-id spawn-test123") {
 		t.Error("prompt should contain st note command with ticket ID and run ID")
@@ -53,7 +54,7 @@ func TestBuildPromptEmptyBody(t *testing.T) {
 		Title: "Add tests",
 	}
 
-	prompt := BuildPrompt(tk, "run-123")
+	prompt := BuildPrompt(tk, "run-123", "/fake/repo")
 
 	if strings.Contains(prompt, "## Ticket Context") {
 		t.Error("prompt should not contain ticket context section when body is empty")

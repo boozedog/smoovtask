@@ -14,7 +14,7 @@ func TestHandleSessionStartLogsEvent(t *testing.T) {
 	env := setupTestEnv(t, projectPath)
 
 	// Create a ticket so the handler has something to count
-	store := ticket.NewStore(env.ticketsDir(t))
+	store := ticket.NewStore(env.projectsDir(t))
 	tk := &ticket.Ticket{
 		ID:       "st_test01",
 		Title:    "Test ticket",

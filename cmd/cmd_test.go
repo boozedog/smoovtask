@@ -3,6 +3,7 @@ package cmd
 import (
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,15 +14,15 @@ import (
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
-// testEnv sets up a temp config, tickets dir, and events dir.
+// testEnv sets up a temp config, projects dir, and events dir.
 // It sets SMOOVBRAIN_DIR so config.Load() and EventsDir() use the test paths.
 type testEnv struct {
-	ConfigDir  string
-	TicketsDir string
-	EventsDir  string
-	Store      *ticket.Store
-	EventLog   *event.EventLog
-	Config     *config.Config
+	ConfigDir   string
+	ProjectsDir string
+	EventsDir   string
+	Store       *ticket.Store
+	EventLog    *event.EventLog
+	Config      *config.Config
 }
 
 // newTestEnv creates a fully isolated test environment.
@@ -32,14 +33,14 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	baseDir := t.TempDir()
 	configDir := filepath.Join(baseDir, "config")
-	ticketsDir := filepath.Join(baseDir, "vault", "tickets")
+	projectsDir := filepath.Join(baseDir, "vault", "projects")
 	eventsDir := filepath.Join(configDir, "events")
 
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("create config dir: %v", err)
 	}
-	if err := os.MkdirAll(ticketsDir, 0o755); err != nil {
-		t.Fatalf("create tickets dir: %v", err)
+	if err := os.MkdirAll(projectsDir, 0o755); err != nil {
+		t.Fatalf("create projects dir: %v", err)
 	}
 	if err := os.MkdirAll(eventsDir, 0o755); err != nil {
 		t.Fatalf("create events dir: %v", err)
@@ -56,6 +57,20 @@ func newTestEnv(t *testing.T) *testEnv {
 	// Set SMOOVBRAIN_DIR so config.Load() and EventsDir() use our temp paths
 	t.Setenv("SMOOVBRAIN_DIR", configDir)
 
+	// Initialize a git repo so worktree checks work in tests.
+	for _, gitArgs := range [][]string{
+		{"init"},
+		{"config", "user.email", "test@test.com"},
+		{"config", "user.name", "Test"},
+		{"commit", "--allow-empty", "-m", "init"},
+	} {
+		cmd := exec.Command("git", gitArgs...)
+		cmd.Dir = baseDir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s: %v", gitArgs, out, err)
+		}
+	}
+
 	// Change to baseDir so project.Detect matches "testproject"
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -68,21 +83,35 @@ func newTestEnv(t *testing.T) *testEnv {
 		_ = os.Chdir(origDir)
 	})
 
+	// Initialize a git repo so commands that resolve the repo root work.
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.email", "test@test.com"},
+		{"config", "user.name", "Test"},
+		{"commit", "--allow-empty", "-m", "init"},
+	} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = baseDir
+		if out, gitErr := cmd.CombinedOutput(); gitErr != nil {
+			t.Fatalf("git %v: %s: %v", args, out, gitErr)
+		}
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	el := event.NewEventLog(eventsDir)
 
 	return &testEnv{
-		ConfigDir:  configDir,
-		TicketsDir: ticketsDir,
-		EventsDir:  eventsDir,
-		Store:      store,
-		EventLog:   el,
-		Config:     cfg,
+		ConfigDir:   configDir,
+		ProjectsDir: projectsDir,
+		EventsDir:   eventsDir,
+		Store:       store,
+		EventLog:    el,
+		Config:      cfg,
 	}
 }
 
@@ -121,6 +150,30 @@ func (e *testEnv) addNoteEvent(t *testing.T, ticketID string) {
 		Actor:   "agent",
 		Data:    map[string]any{"message": "test note"},
 	})
+}
+
+// ensureCleanWorktree creates a git worktree at .worktrees/<ticketID> with a
+// clean working tree, so requireCleanWorktree passes during tests.
+func (e *testEnv) ensureCleanWorktree(t *testing.T, ticketID string) {
+	t.Helper()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get cwd: %v", err)
+	}
+
+	wtDir := filepath.Join(cwd, ".worktrees")
+	if err := os.MkdirAll(wtDir, 0o755); err != nil {
+		t.Fatalf("create .worktrees dir: %v", err)
+	}
+
+	branch := "st/" + ticketID
+	wtPath := filepath.Join(wtDir, ticketID)
+	cmd := exec.Command("git", "worktree", "add", "-b", branch, wtPath)
+	cmd.Dir = cwd
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git worktree add: %s: %v", out, err)
+	}
 }
 
 // runCmd executes a cobra command with the given args and captures stdout.

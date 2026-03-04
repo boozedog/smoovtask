@@ -8,7 +8,9 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/project"
+	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -26,12 +28,12 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		return &Output{}, nil
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return nil, fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 
 	// Count tickets for event logging only — not shown to agent.
 	openTickets, err := store.List(ticket.ListFilter{
@@ -79,6 +81,12 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		},
 	})
 
+	// Compute notes dir — anchored to main repo root so worktrees resolve correctly.
+	notesDir := ".st/notes" // fallback if not in a git repo
+	if repoRoot, err := spawn.WorktreeRepoRoot(input.CWD); err == nil {
+		notesDir = guidance.NotesDir(repoRoot)
+	}
+
 	var b strings.Builder
 	role := normalizeRole(os.Getenv("ST_ROLE"))
 	fmt.Fprintf(&b, "You are working in a tracked smoovtask project called %s. ", proj)
@@ -89,74 +97,87 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	} else {
 		fmt.Fprintf(&b, "Session role: `%s`.\n\n", role)
 	}
-	b.WriteString(quickRefForRole(role))
+	b.WriteString(quickRefForRole(role, notesDir))
 
 	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil
 }
 
-// noteGuidance tells agents how to write notes using the file-based drop approach.
-// Agents write their note content to .st/notes/<run-id>.md using the Write tool
-// (which avoids shell escaping issues), then run `st note` to append it.
-const noteGuidance = "- To add notes: use the Write tool to write your note content to `.st/notes/<run-id>.md`, then run `st note --run-id <run-id>` (no message arg needed — it reads from the file)\n"
+// noteGuidance returns the note-writing instruction with the absolute notes dir path.
+func noteGuidance(notesDir string) string {
+	return fmt.Sprintf("- To add notes: use the Write tool to write your note content to `%s/<run-id>.md`, then run `st note --run-id <run-id>` (no message arg needed — it reads from the file)\n", notesDir)
+}
 
-const quickRefGeneric = "## Review Semantics\n" +
-	"`st status review` moves work to `REVIEW` (agentic review queue), and `st status human-review` moves it to `HUMAN-REVIEW` (human sign-off queue).\n" +
-	"Use `st review` only for claiming agent-review tickets.\n\n" +
-	"## Implementing\n" +
-	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
-	"- `st list --run-id <run-id>`              view candidate tickets\n" +
-	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
-	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
-	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
-	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
-	"## Reviewing\n" +
-	"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
-	"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
-	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
-	"- `st status done --run-id <run-id>`         mark done after human review\n" +
-	"- `st status rework --run-id <run-id>`      send back for changes\n\n" +
-	"## Always\n" +
-	noteGuidance +
-	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
-	"- `st context --run-id <run-id>`            check current session context\n\n" +
-	"Run `st --help` for more.\n"
+func quickRefGeneric(notesDir string) string {
+	return "## Review Semantics\n" +
+		"`st status review` moves work to `REVIEW` (agentic review queue), and `st status human-review` moves it to `HUMAN-REVIEW` (human sign-off queue).\n" +
+		"Use `st review` only for claiming agent-review tickets.\n\n" +
+		"## Implementing\n" +
+		"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
+		"- `st list --run-id <run-id>`              view candidate tickets\n" +
+		"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
+		"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+		"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
+		"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n" +
+		"- Always commit all changes in the ticket worktree before requesting review — `st status review` will reject uncommitted work\n\n" +
+		"## Reviewing\n" +
+		"Use `st review` to claim the agentic review pass — it prints the checklist and ticket context.\n" +
+		"- `st review <ticket-id> --run-id <run-id>`  claim a ticket for review\n" +
+		"- `st status done --run-id <run-id>`          approve directly (only if absolutely certain you can fully verify correctness yourself)\n" +
+		"- `st status human-review --run-id <run-id>`  hand off to human review (default — use when in any doubt)\n" +
+		"- `st status rework --run-id <run-id>`        send back for changes\n\n" +
+		"## Always\n" +
+		noteGuidance(notesDir) +
+		"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+		"- `st context --run-id <run-id>`            check current session context\n\n" +
+		"Run `st --help` for more.\n"
+}
 
-const quickRefLeader = "## Leader\n" +
-	"- Launch implementers with `st work` (or `st work --cli opencode`)\n" +
-	"- Launch reviewers with `st review <ticket-id>`\n" +
-	"- Launch background workers with `st spawn <ticket-id> --run-id <run-id>`\n" +
-	"- Monitor work with `st list --run-id <run-id>` and inspect details via `st show <ticket-id>`\n" +
-	noteGuidance +
-	"Run `st --help` for more.\n"
+func quickRefLeader(notesDir string) string {
+	return "## Leader\n" +
+		"- Launch implementers with `st work` (or `st work --cli opencode`)\n" +
+		"- Launch reviewers with `st review <ticket-id>`\n" +
+		"- Launch background workers with `st spawn <ticket-id> --run-id <run-id>`\n" +
+		"- Monitor work with `st list --run-id <run-id>` and inspect details via `st show <ticket-id>`\n" +
+		noteGuidance(notesDir) +
+		"Run `st --help` for more.\n"
+}
 
-const quickRefImplementer = "## Implementing\n" +
-	"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
-	"- `st list --run-id <run-id>`              view candidate tickets\n" +
-	"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
-	"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
-	"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
-	"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n\n" +
-	"## Always\n" +
-	noteGuidance +
-	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
-	"- `st context --run-id <run-id>`            check current session context\n\n" +
-	"Run `st --help` for more.\n"
+func quickRefImplementer(notesDir string) string {
+	return "## Implementing\n" +
+		"Before making code changes, claim a ticket. Ask the user before picking or creating one.\n" +
+		"- `st list --run-id <run-id>`              view candidate tickets\n" +
+		"- `st pick <ticket-id> --run-id <run-id>`  claim a ticket\n" +
+		"- `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`  create a new ticket\n" +
+		"- `st handoff <ticket-id> --run-id <run-id>`  return a claimed ticket to OPEN\n" +
+		"- `st status review --run-id <run-id>`    move ticket to REVIEW when implementation is done\n" +
+		"- Always commit all changes in the ticket worktree before requesting review — `st status review` will reject uncommitted work\n\n" +
+		"## Always\n" +
+		noteGuidance(notesDir) +
+		"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+		"- `st context --run-id <run-id>`            check current session context\n\n" +
+		"Run `st --help` for more.\n"
+}
 
-const quickRefReviewer = "## Reviewing\n" +
-	"- Claim a ticket with `st review <ticket-id> --run-id <run-id>` (eligibility enforced)\n" +
-	"- `st status human-review --run-id <run-id>` hand off to human review\n" +
-	"- `st status rework --run-id <run-id>`       send back for changes\n\n" +
-	"## Always\n" +
-	noteGuidance +
-	"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
-	"- `st context --run-id <run-id>`            check current session context\n\n" +
-	"Run `st --help` for more.\n"
+func quickRefReviewer(notesDir string) string {
+	return "## Reviewing\n" +
+		"- Claim a ticket with `st review <ticket-id> --run-id <run-id>` (eligibility enforced)\n" +
+		"- `st status done --run-id <run-id>`          approve directly (only if you are absolutely certain you can fully verify correctness yourself)\n" +
+		"- `st status human-review --run-id <run-id>`  hand off to human review (default — use when in any doubt)\n" +
+		"- `st status rework --run-id <run-id>`        send back for changes\n\n" +
+		"## Always\n" +
+		noteGuidance(notesDir) +
+		"- `st show <ticket-id> --run-id <run-id>`   view full ticket details\n" +
+		"- `st context --run-id <run-id>`            check current session context\n\n" +
+		"Run `st --help` for more.\n"
+}
 
-const quickRefWorker = "## Worker\n" +
-	noteGuidance +
-	"- Update status with `st status <status> --run-id <run-id>`\n" +
-	"- Check context with `st context --run-id <run-id>`\n\n" +
-	"Run `st --help` for more.\n"
+func quickRefWorker(notesDir string) string {
+	return "## Worker\n" +
+		noteGuidance(notesDir) +
+		"- Update status with `st status <status> --run-id <run-id>`\n" +
+		"- Check context with `st context --run-id <run-id>`\n\n" +
+		"Run `st --help` for more.\n"
+}
 
 func normalizeRole(role string) string {
 	role = strings.ToLower(strings.TrimSpace(role))
@@ -172,17 +193,17 @@ func normalizeRole(role string) string {
 	}
 }
 
-func quickRefForRole(role string) string {
+func quickRefForRole(role, notesDir string) string {
 	switch role {
 	case "leader":
-		return quickRefLeader
+		return quickRefLeader(notesDir)
 	case "implementer":
-		return quickRefImplementer
+		return quickRefImplementer(notesDir)
 	case "reviewer":
-		return quickRefReviewer
+		return quickRefReviewer(notesDir)
 	case "worker":
-		return quickRefWorker
+		return quickRefWorker(notesDir)
 	default:
-		return quickRefGeneric
+		return quickRefGeneric(notesDir)
 	}
 }

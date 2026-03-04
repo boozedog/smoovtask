@@ -52,9 +52,9 @@ func runContext(_ *cobra.Command, _ []string) error {
 
 	// Find active ticket for this run
 	if runID != "" {
-		ticketsDir, err := cfg.TicketsDir()
+		projectsDir, err := cfg.ProjectsDir()
 		if err == nil {
-			store := ticket.NewStore(ticketsDir)
+			store := ticket.NewStore(projectsDir)
 			tickets, err := store.List(ticket.ListFilter{Project: proj})
 			if err == nil {
 				for _, tk := range tickets {

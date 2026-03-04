@@ -1,3 +1,4 @@
+// Package static embeds and serves the web UI's static assets.
 package static
 
 import "embed"
