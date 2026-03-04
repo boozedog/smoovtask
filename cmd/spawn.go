@@ -30,12 +30,14 @@ var (
 	spawnTimeout time.Duration
 	spawnBackend string
 	spawnDryRun  bool
+	spawnBase    string
 )
 
 func init() {
 	spawnCmd.Flags().DurationVar(&spawnTimeout, "timeout", 45*time.Minute, "worker timeout (e.g. 45m, 1h)")
 	spawnCmd.Flags().StringVar(&spawnBackend, "backend", "claude", "AI backend to use")
 	spawnCmd.Flags().BoolVar(&spawnDryRun, "dry-run", false, "print the prompt without launching")
+	spawnCmd.Flags().StringVar(&spawnBase, "base", "", "git ref to branch from (default: HEAD of main repo)")
 	rootCmd.AddCommand(spawnCmd)
 }
 
@@ -91,6 +93,7 @@ func runSpawn(_ *cobra.Command, args []string) error {
 		TicketID: tk.ID,
 		Backend:  spawnBackend,
 		Timeout:  spawnTimeout,
+		BaseRef:  spawnBase,
 	})
 	if err != nil {
 		return err

@@ -6,7 +6,7 @@ AI agent workflow and ticketing system for Claude Code, OpenCode, and PI. Comman
 
 Go 1.26 · Cobra (CLI) · BurntSushi/toml (config) · YAML v3 (ticket frontmatter) · JSONL (event log)
 
-**Web UI:** templ (Go HTML templating) · HTMX with SSE · FrankenUI. Avoid direct DOM manipulation — prefer properly structured templ partials that HTMX can swap/process correctly.
+**Web UI:** templ (Go HTML templating) · HTMX with SSE · DaisyUI + Tailwind CSS. Avoid direct DOM manipulation — prefer properly structured templ partials that HTMX can swap/process correctly.
 
 ## Architecture
 
@@ -33,6 +33,4 @@ Tickets are markdown files with YAML frontmatter in an Obsidian vault. Events ar
 - [Project structure](docs/structure.md)
 - [Building & running](docs/building.md)
 - [Storage paths](docs/storage.md)
-- Franken UI contexts snapshot (local): `docs/franken-ui/contexts/`
-- Snapshot notes: `docs/franken-ui/README.md`
-- Vendor script (FrankenUI CSS/JS + context docs + htmx): `scripts/vendor.sh` (`just vendor`)
+- Vendor script (DaisyUI CSS + Tailwind browser + htmx): `scripts/vendor.sh` (`just vendor`)

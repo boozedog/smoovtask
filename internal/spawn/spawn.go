@@ -21,6 +21,7 @@ type Options struct {
 	Backend  string
 	Timeout  time.Duration
 	RunID    string // run ID for the spawned worker (generated if empty)
+	BaseRef  string // git ref to branch from (default: HEAD of main repo)
 }
 
 // Result contains the outcome of a spawn operation.
@@ -64,6 +65,11 @@ func Run(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("get ticket: %w", err)
 	}
 
+	// Validate backend early, before creating worktree or tmux pane
+	if _, err := GetBackend(opts.Backend); err != nil {
+		return nil, err
+	}
+
 	// Find repo root — handle being in a worktree already
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -75,7 +81,7 @@ func Run(opts Options) (*Result, error) {
 	}
 
 	// Create worktree
-	worktreePath, branch, err := CreateWorktree(repoRoot, tk.ID)
+	worktreePath, branch, err := CreateWorktree(repoRoot, tk.ID, opts.BaseRef)
 	if err != nil {
 		return nil, fmt.Errorf("create worktree: %w", err)
 	}
@@ -317,9 +323,9 @@ func logOutcome(el *event.EventLog, tk *ticket.Ticket, runID string, started tim
 
 // tmuxPanePID returns the PID of the process in a specific tmux pane.
 func tmuxPanePID(tmuxPath, paneID string) (int, error) {
-	out, err := exec.Command(tmuxPath, "list-panes", "-t", paneID, "-F", "#{pane_pid}").Output()
+	out, err := exec.Command(tmuxPath, "display-message", "-t", paneID, "-p", "#{pane_pid}").Output()
 	if err != nil {
-		return 0, fmt.Errorf("list-panes for %s: %w", paneID, err)
+		return 0, fmt.Errorf("display-message for %s: %w", paneID, err)
 	}
 	pid, err := strconv.Atoi(strings.TrimSpace(string(out)))
 	if err != nil || pid <= 0 {

@@ -48,45 +48,45 @@ templ CriticalPathPartial(data CriticalPathData) {
 
 templ CriticalPathContent(data CriticalPathData) {
 	<div class="max-w-5xl mx-auto">
-		<ul class="uk-tab-alt mt-2 mb-4">
-			<li
+		<div role="tablist" class="tabs tabs-border mt-2 mb-4">
+			<a
+				role="tab"
 				if data.Scope == "all" {
-					class="uk-active"
+					class="tab tab-active"
+				} else {
+					class="tab"
 				}
+				hx-get={ criticalPathPartialURL("all") }
+				hx-target="#content"
+				hx-swap="innerHTML"
+				hx-push-url={ criticalPathPageURL("all") }
+				href={ templ.SafeURL(criticalPathPageURL("all")) }
 			>
-				<a
-					hx-get={ criticalPathPartialURL("all") }
-					hx-target="#content"
-					hx-swap="innerHTML"
-					hx-push-url={ criticalPathPageURL("all") }
-					href={ templ.SafeURL(criticalPathPageURL("all")) }
-				>
-					All Projects
-				</a>
-			</li>
-			<li
+				All Projects
+			</a>
+			<a
+				role="tab"
 				if data.Scope == "current" {
-					class="uk-active"
+					class="tab tab-active"
+				} else {
+					class="tab"
 				}
+				hx-get={ criticalPathPartialURL("current") }
+				hx-target="#content"
+				hx-swap="innerHTML"
+				hx-push-url={ criticalPathPageURL("current") }
+				href={ templ.SafeURL(criticalPathPageURL("current")) }
 			>
-				<a
-					hx-get={ criticalPathPartialURL("current") }
-					hx-target="#content"
-					hx-swap="innerHTML"
-					hx-push-url={ criticalPathPageURL("current") }
-					href={ templ.SafeURL(criticalPathPageURL("current")) }
-				>
-					Current Project
-				</a>
-			</li>
-		</ul>
+				Current Project
+			</a>
+		</div>
 
 		if data.Graph.Empty {
-			<div class="uk-alert uk-margin" data-uk-alert>
+			<div class="alert my-4">
 				No dependency chains found.
 			</div>
 		} else {
-			<div class="st-dep-graph uk-margin-top" id="dep-graph" data-edges={ data.Graph.EdgesJSON() }>
+			<div class="st-dep-graph mt-4" id="dep-graph" data-edges={ data.Graph.EdgesJSON() }>
 				<svg class="st-dep-edges" id="dep-edges"></svg>
 				<div class="st-dep-grid">
 					for _, layer := range data.Graph.Layers {

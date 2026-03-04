@@ -11,7 +11,7 @@ just fmt            # gofumpt (formatter)
 just vuln           # govulncheck
 just templ          # generate templ templates only
 just web            # run web UI dev server with air (live reload)
-just vendor         # vendor FrankenUI/htmx/fonts from npm
+just vendor         # vendor DaisyUI/Tailwind/htmx from npm
 just release        # goreleaser snapshot build
 just clean          # remove build artifacts
 ```

@@ -177,7 +177,7 @@ The web UI provides a browser-based dashboard with live updates:
 - **Activity feed** (`/activity`) — recent events with project/type filters
 - **Live updates** via SSE — changes appear instantly without page reload
 
-Built with templ templates, htmx + SSE extension, and Franken UI (dark theme).
+Built with templ templates, htmx + SSE extension, and DaisyUI + Tailwind CSS (sunset theme).
 
 ### Hooks
 
@@ -296,10 +296,10 @@ smoovtask/
 │       ├── handler/            HTTP route handlers (board, list, ticket, activity)
 │       ├── middleware/         CORS, rate limiting
 │       ├── sse/               Server-Sent Events broker and file watcher
-│       ├── static/            Embedded assets (FrankenUI, htmx, fonts)
+│       ├── static/            Embedded assets (DaisyUI, Tailwind, htmx, fonts)
 │       └── templates/         templ HTML templates
 ├── docs/                       Documentation
-├── scripts/                    Vendor script for FrankenUI/htmx
+├── scripts/                    Vendor script for DaisyUI/Tailwind/htmx
 ├── justfile                    Build/test/lint commands
 ├── go.mod
 └── go.sum
@@ -407,7 +407,7 @@ just fmt            # gofumpt (not gofmt)
 just vuln           # govulncheck
 just templ          # Generate templ templates only
 just web            # Run web UI dev server with air (live reload)
-just vendor         # Vendor FrankenUI/htmx/fonts from npm
+just vendor         # Vendor DaisyUI/Tailwind/htmx from npm
 just release        # goreleaser snapshot build
 just clean          # Remove build artifacts
 ```
