@@ -147,9 +147,9 @@ func lookupActiveTicket(cfg *config.Config, proj, sessionID string) string {
 	if proj == "" || sessionID == "" {
 		return ""
 	}
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return ""
 	}
-	return activeTicketID(ticket.NewStore(ticketsDir), proj, sessionID)
+	return activeTicketID(ticket.NewStore(projectsDir), proj, sessionID)
 }

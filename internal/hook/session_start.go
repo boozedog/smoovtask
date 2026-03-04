@@ -28,12 +28,12 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		return &Output{}, nil
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return nil, fmt.Errorf("get tickets dir: %w", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 
 	// Count tickets for event logging only — not shown to agent.
 	openTickets, err := store.List(ticket.ListFilter{

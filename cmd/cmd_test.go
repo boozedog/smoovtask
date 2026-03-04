@@ -14,15 +14,15 @@ import (
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
-// testEnv sets up a temp config, tickets dir, and events dir.
+// testEnv sets up a temp config, projects dir, and events dir.
 // It sets SMOOVBRAIN_DIR so config.Load() and EventsDir() use the test paths.
 type testEnv struct {
-	ConfigDir  string
-	TicketsDir string
-	EventsDir  string
-	Store      *ticket.Store
-	EventLog   *event.EventLog
-	Config     *config.Config
+	ConfigDir   string
+	ProjectsDir string
+	EventsDir   string
+	Store       *ticket.Store
+	EventLog    *event.EventLog
+	Config      *config.Config
 }
 
 // newTestEnv creates a fully isolated test environment.
@@ -33,14 +33,14 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	baseDir := t.TempDir()
 	configDir := filepath.Join(baseDir, "config")
-	ticketsDir := filepath.Join(baseDir, "vault", "tickets")
+	projectsDir := filepath.Join(baseDir, "vault", "projects")
 	eventsDir := filepath.Join(configDir, "events")
 
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("create config dir: %v", err)
 	}
-	if err := os.MkdirAll(ticketsDir, 0o755); err != nil {
-		t.Fatalf("create tickets dir: %v", err)
+	if err := os.MkdirAll(projectsDir, 0o755); err != nil {
+		t.Fatalf("create projects dir: %v", err)
 	}
 	if err := os.MkdirAll(eventsDir, 0o755); err != nil {
 		t.Fatalf("create events dir: %v", err)
@@ -102,16 +102,16 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatalf("load config: %v", err)
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	el := event.NewEventLog(eventsDir)
 
 	return &testEnv{
-		ConfigDir:  configDir,
-		TicketsDir: ticketsDir,
-		EventsDir:  eventsDir,
-		Store:      store,
-		EventLog:   el,
-		Config:     cfg,
+		ConfigDir:   configDir,
+		ProjectsDir: projectsDir,
+		EventsDir:   eventsDir,
+		Store:       store,
+		EventLog:    el,
+		Config:      cfg,
 	}
 }
 

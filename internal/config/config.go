@@ -137,13 +137,13 @@ func (c *Config) VaultPath() (string, error) {
 	return ExpandPath(c.Settings.VaultPath)
 }
 
-// TicketsDir returns the expanded tickets directory path.
-func (c *Config) TicketsDir() (string, error) {
+// ProjectsDir returns the expanded projects directory path.
+func (c *Config) ProjectsDir() (string, error) {
 	vault, err := c.VaultPath()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(vault, "tickets"), nil
+	return filepath.Join(vault, "projects"), nil
 }
 
 // EventsDir returns the expanded events directory path.
@@ -164,14 +164,14 @@ func (c *Config) RulesDir() (string, error) {
 	return filepath.Join(dir, "rules"), nil
 }
 
-// EnsureDirs creates the vault tickets dir and events dir if they don't exist.
+// EnsureDirs creates the vault projects dir and events dir if they don't exist.
 func (c *Config) EnsureDirs() error {
-	tickets, err := c.TicketsDir()
+	projects, err := c.ProjectsDir()
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(tickets, 0o755); err != nil {
-		return fmt.Errorf("create tickets dir: %w", err)
+	if err := os.MkdirAll(projects, 0o755); err != nil {
+		return fmt.Errorf("create projects dir: %w", err)
 	}
 
 	events, err := c.EventsDir()

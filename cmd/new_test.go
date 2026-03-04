@@ -48,13 +48,13 @@ func newTestEnvResolved(t *testing.T) *testEnv {
 	}
 	env.Config = cfg
 
-	// Update store to point to resolved tickets dir
-	resolvedTicketsDir := filepath.Join(resolvedVault, "tickets")
-	if err := os.MkdirAll(resolvedTicketsDir, 0o755); err != nil {
-		t.Fatalf("create resolved tickets dir: %v", err)
+	// Update store to point to resolved projects dir
+	resolvedProjectsDir := filepath.Join(resolvedVault, "projects")
+	if err := os.MkdirAll(resolvedProjectsDir, 0o755); err != nil {
+		t.Fatalf("create resolved projects dir: %v", err)
 	}
-	env.TicketsDir = resolvedTicketsDir
-	env.Store = ticket.NewStore(resolvedTicketsDir)
+	env.ProjectsDir = resolvedProjectsDir
+	env.Store = ticket.NewStore(resolvedProjectsDir)
 
 	return env
 }
@@ -435,14 +435,14 @@ func TestNew_DescriptionFlag(t *testing.T) {
 		t.Fatalf("got %d tickets, want 1", len(tickets))
 	}
 
-	// Read the ticket file to verify the description is in the body
+	// Read the ticket file to verify the description is in the body.
+	// Re-fetch with full body via Get so we can check Body directly.
 	tk := tickets[0]
-	raw, err := os.ReadFile(filepath.Join(env.TicketsDir, tk.Filename()))
+	full, err := env.Store.Get(tk.ID)
 	if err != nil {
-		t.Fatalf("read ticket file: %v", err)
+		t.Fatalf("get ticket: %v", err)
 	}
-	body := string(raw)
-	if !strings.Contains(body, "This is the description body") {
-		t.Errorf("ticket body should contain the description, got:\n%s", body)
+	if !strings.Contains(full.Body, "This is the description body") {
+		t.Errorf("ticket body should contain the description, got:\n%s", full.Body)
 	}
 }

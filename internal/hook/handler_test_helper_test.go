@@ -29,9 +29,9 @@ func setupTestEnv(t *testing.T, projectPath string) testEnv {
 	configDir := filepath.Join(tmpDir, ".smoovtask")
 	eventsDir := filepath.Join(configDir, "events")
 	vaultDir := filepath.Join(tmpDir, "vault")
-	ticketsDir := filepath.Join(vaultDir, "tickets")
+	projectsDir := filepath.Join(vaultDir, "projects")
 
-	for _, d := range []string{configDir, eventsDir, ticketsDir} {
+	for _, d := range []string{configDir, eventsDir, projectsDir} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatalf("mkdir %s: %v", d, err)
 		}
@@ -57,10 +57,10 @@ func setupTestEnv(t *testing.T, projectPath string) testEnv {
 	}
 }
 
-// ticketsDir returns the tickets directory path for this test env.
-func (e testEnv) ticketsDir(t *testing.T) string {
+// projectsDir returns the projects directory path for this test env.
+func (e testEnv) projectsDir(t *testing.T) string {
 	t.Helper()
-	return filepath.Join(e.Home, "vault", "tickets")
+	return filepath.Join(e.Home, "vault", "projects")
 }
 
 // quote returns a TOML-safe quoted string.

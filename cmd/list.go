@@ -40,7 +40,7 @@ func runList(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ticketsDir, err := cfg.TicketsDir()
+	projectsDir, err := cfg.ProjectsDir()
 	if err != nil {
 		return fmt.Errorf("get tickets dir: %w", err)
 	}
@@ -67,7 +67,7 @@ func runList(_ *cobra.Command, _ []string) error {
 		filter.Excludes = []ticket.Status{ticket.StatusDone, ticket.StatusCancelled}
 	}
 
-	store := ticket.NewStore(ticketsDir)
+	store := ticket.NewStore(projectsDir)
 	tickets, err := store.List(filter)
 	if err != nil {
 		return fmt.Errorf("list tickets: %w", err)
