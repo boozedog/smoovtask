@@ -69,7 +69,7 @@ templ AgentCard(agent AgentInfo) {
 		<div class="flex items-center gap-2">
 			@StalledIcon(agent.RunID, agent.Ticket, agent.LastEventTS.UnixMilli(), agent.Stalled)
 			<span class={ heatDotClass(agent.HeatState) } data-run-id={ agent.RunID } data-last-hook-ts-ms={ fmt.Sprintf("%d", agent.LastEventTS.UnixMilli()) }></span>
-			<span class="uk-text-mono text-sm font-semibold">{ shortAssignee(agent.RunID) }</span>
+			<span class="font-mono text-sm font-semibold">{ shortAssignee(agent.RunID) }</span>
 			if agent.Source != "" {
 				@SourceBadge(agent.Source)
 			}
@@ -83,7 +83,7 @@ templ AgentCard(agent AgentInfo) {
 					hx-target="#ticket-modal-body"
 					class="hover:underline"
 				>
-					<span class="uk-text-mono opacity-60">{ agent.Ticket }</span>
+					<span class="font-mono opacity-60">{ agent.Ticket }</span>
 					if agent.TicketTitle != "" {
 						<span class="ml-1">{ agent.TicketTitle }</span>
 					}

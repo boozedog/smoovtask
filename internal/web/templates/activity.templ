@@ -154,7 +154,7 @@ templ ActivityContent(data ActivityData) {
 										if ev.Source != "" {
 											@SourceBadge(ev.Source)
 										}
-										<span class="uk-text-mono">{ shortAssignee(ev.RunID) }</span>
+										<span class="font-mono">{ shortAssignee(ev.RunID) }</span>
 									</span>
 								} else {
 									<span class="opacity-50">{ ev.Actor }</span>
