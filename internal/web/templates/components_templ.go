@@ -16,7 +16,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "badge badge-xs st-priority-" + strings.ToLower(string(p))
+	return "badge badge-sm st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -59,9 +59,9 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 
 func workflowBadgeClass(s ticket.Status) string {
 	if s == ticket.StatusRework {
-		return "badge badge-xs badge-error"
+		return "badge badge-sm badge-error"
 	}
-	return "badge badge-xs badge-secondary"
+	return "badge badge-sm badge-secondary"
 }
 
 func workflowBadgeLabel(s ticket.Status) string {
@@ -310,7 +310,7 @@ func StatusBadge(s ticket.Status) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var12 = []any{"badge badge-xs " + statusBadgeClass(s)}
+		var templ_7745c5c3_Var12 = []any{"badge badge-sm " + statusBadgeClass(s)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -470,7 +470,7 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 			return templ_7745c5c3_Err
 		}
 		if tk.Status == ticket.StatusHumanReview {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge badge-xs badge-secondary st-card-corner-badge\">Human</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge badge-sm badge-secondary st-card-corner-badge\">Human</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

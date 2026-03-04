@@ -2,7 +2,7 @@ package templates
 
 templ Layout(title string, currentPath string) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="sunset">
+	<html lang="en" data-theme="black">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -16,7 +16,12 @@ templ Layout(title string, currentPath string) {
 				/* Bridge CSS variables: map old FrankenUI var names to DaisyUI sunset theme.
 				   These allow existing hsl(var(--name)) references to keep working
 				   until component migration tickets update them. */
-				[data-theme="sunset"] {
+				[data-theme="black"] {
+					--color-primary: oklch(70% 0.15 45);
+					--color-primary-content: oklch(100% 0 0);
+					--radius-selector: 0.25rem;
+					--radius-field: 0.25rem;
+					--radius-box: 0.5rem;
 					--background: 220 20% 10%;
 					--foreground: 220 10% 65%;
 					--card: 220 20% 12%;

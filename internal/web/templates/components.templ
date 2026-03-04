@@ -8,7 +8,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "badge badge-xs st-priority-" + strings.ToLower(string(p))
+	return "badge badge-sm st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -51,9 +51,9 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 
 func workflowBadgeClass(s ticket.Status) string {
 	if s == ticket.StatusRework {
-		return "badge badge-xs badge-error"
+		return "badge badge-sm badge-error"
 	}
-	return "badge badge-xs badge-secondary"
+	return "badge badge-sm badge-secondary"
 }
 
 func workflowBadgeLabel(s ticket.Status) string {
@@ -146,7 +146,7 @@ templ PriorityBadge(p ticket.Priority) {
 }
 
 templ StatusBadge(s ticket.Status) {
-	<span class={ "badge badge-xs " + statusBadgeClass(s) }>
+	<span class={ "badge badge-sm " + statusBadgeClass(s) }>
 		{ statusLabel(s) }
 	</span>
 }
@@ -170,7 +170,7 @@ templ SourceBadge(source string) {
 templ TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs int64) {
 	<a href={ templ.SafeURL(fmt.Sprintf("/ticket/%s", tk.ID)) } hx-get={ fmt.Sprintf("/partials/ticket/%s", tk.ID) } hx-target="#ticket-modal-body" class="card card-xs bg-base-200 card-body st-ticket-card">
 		if tk.Status == ticket.StatusHumanReview {
-			<span class="badge badge-xs badge-secondary st-card-corner-badge">Human</span>
+			<span class="badge badge-sm badge-secondary st-card-corner-badge">Human</span>
 		}
 		<div class="st-card-project text-xs opacity-50">{ tk.Project }</div>
 		<div class="card-title st-card-title">{ tk.Title }</div>
