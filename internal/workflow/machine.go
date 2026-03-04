@@ -12,7 +12,7 @@ var transitions = map[ticket.Status][]ticket.Status{
 	ticket.StatusBacklog:     {ticket.StatusOpen, ticket.StatusBlocked, ticket.StatusCancelled},
 	ticket.StatusOpen:        {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
 	ticket.StatusInProgress:  {ticket.StatusReview, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
-	ticket.StatusReview:      {ticket.StatusHumanReview, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
+	ticket.StatusReview:      {ticket.StatusHumanReview, ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
 	ticket.StatusHumanReview: {ticket.StatusDone, ticket.StatusRework, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusCancelled},
 	ticket.StatusRework:      {ticket.StatusInProgress, ticket.StatusBlocked, ticket.StatusBacklog, ticket.StatusOpen, ticket.StatusCancelled},
 	ticket.StatusBlocked:     {}, // unblocks to prior status, handled separately
