@@ -16,7 +16,7 @@ import (
 )
 
 func priorityClass(p ticket.Priority) string {
-	return "uk-badge uk-rounded st-priority-" + strings.ToLower(string(p))
+	return "badge badge-sm st-priority-" + strings.ToLower(string(p))
 }
 
 func statusClass(s ticket.Status) string {
@@ -30,13 +30,13 @@ func statusBadgeClass(s ticket.Status) string {
 	case ticket.StatusCancelled:
 		return "st-status-badge-cancelled"
 	case ticket.StatusBlocked, ticket.StatusRework:
-		return "uk-badge-destructive"
+		return "badge-error"
 	case ticket.StatusInProgress, ticket.StatusReview:
-		return "uk-badge-primary"
+		return "badge-primary"
 	case ticket.StatusHumanReview:
-		return "uk-badge-secondary"
+		return "badge-secondary"
 	default:
-		return "uk-badge-secondary"
+		return "badge-secondary"
 	}
 }
 
@@ -59,9 +59,9 @@ func showWorkflowBadge(tk *ticket.Ticket) bool {
 
 func workflowBadgeClass(s ticket.Status) string {
 	if s == ticket.StatusRework {
-		return "uk-badge uk-rounded uk-badge-destructive"
+		return "badge badge-sm badge-error"
 	}
-	return "uk-badge uk-rounded uk-badge-secondary"
+	return "badge badge-sm badge-secondary"
 }
 
 func workflowBadgeLabel(s ticket.Status) string {
@@ -310,7 +310,7 @@ func StatusBadge(s ticket.Status) templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var12 = []any{"uk-badge uk-rounded " + statusBadgeClass(s)}
+		var templ_7745c5c3_Var12 = []any{"badge badge-sm " + statusBadgeClass(s)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -399,12 +399,12 @@ func SourceBadge(source string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			} else if source == "pi" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"uk-text-meta uk-text-mono uppercase\">pi</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<span class=\"text-xs opacity-60 uk-text-mono uppercase\">pi</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<span class=\"uk-text-meta uk-text-mono uppercase\">?</span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<span class=\"text-xs opacity-60 uk-text-mono uppercase\">?</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -465,37 +465,37 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" hx-target=\"#ticket-modal-body\" class=\"uk-card uk-card-body st-ticket-card\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" hx-target=\"#ticket-modal-body\" class=\"card card-body bg-base-200 st-ticket-card\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if tk.Status == ticket.StatusHumanReview {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"uk-badge uk-rounded uk-badge-secondary st-card-corner-badge\">Human</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge badge-sm badge-secondary st-card-corner-badge\">Human</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"st-card-project uk-text-meta opacity-50\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"st-card-project text-xs opacity-50\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(tk.Project)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components.templ`, Line: 175, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components.templ`, Line: 175, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div><div class=\"uk-card-title st-card-title\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div><div class=\"card-title st-card-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(tk.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components.templ`, Line: 176, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components.templ`, Line: 176, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -546,14 +546,14 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"uk-text-meta uk-text-mono opacity-80\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<span class=\"text-xs uk-text-mono opacity-80\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(tk.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components.templ`, Line: 182, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components.templ`, Line: 182, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -655,7 +655,7 @@ func TicketCard(tk *ticket.Ticket, source string, stalled bool, lastHookUnixMs i
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" class=\"st-assignee-pill uk-rounded uk-text-sm\" style=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" class=\"st-assignee-pill rounded-md text-sm\" style=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
