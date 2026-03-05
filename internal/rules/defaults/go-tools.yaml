@@ -1,0 +1,72 @@
+name: go-tools
+description: Go development toolchain commands
+priority: 50
+event: PreToolUse
+
+rules:
+  - name: allow-go-test
+    match:
+      tool: Bash
+      command: ^go\s+test\b
+    action: allow
+
+  - name: allow-go-build
+    match:
+      tool: Bash
+      command: ^go\s+build\b
+    action: allow
+
+  - name: allow-go-vet
+    match:
+      tool: Bash
+      command: ^go\s+vet\b
+    action: allow
+
+  - name: allow-go-mod
+    match:
+      tool: Bash
+      command: ^go\s+mod\b
+    action: allow
+    message: "go mod commands allowed"
+
+  - name: allow-go-install
+    match:
+      tool: Bash
+      command: ^go\s+install\b
+    action: allow
+    message: "go install allowed for tool installation"
+
+  - name: allow-go-doc
+    match:
+      tool: Bash
+      command: ^go\s+doc\b
+    action: allow
+    message: "go doc is read-only"
+
+  - name: allow-go-env
+    match:
+      tool: Bash
+      command: ^go\s+env\b
+    action: allow
+    message: "go env is read-only"
+
+  - name: allow-gofumpt
+    match:
+      tool: Bash
+      command: ^gofumpt\b
+    action: allow
+    message: "gofumpt formatter allowed"
+
+  - name: allow-golangci-lint
+    match:
+      tool: Bash
+      command: ^golangci-lint\b
+    action: allow
+    message: "golangci-lint allowed"
+
+  - name: allow-air
+    match:
+      tool: Bash
+      command: ^air\b
+    action: allow
+    message: "air dev server allowed"
