@@ -11,13 +11,6 @@ rules:
     action: deny
     message: "git push is blocked — push manually after review"
 
-  - name: block-git-commit
-    match:
-      tool: Bash
-      command: \bgit\s+commit\b
-    action: deny
-    message: "git commit is blocked — commit manually after review"
-
   - name: block-force-push
     match:
       tool: Bash
