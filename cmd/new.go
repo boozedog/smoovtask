@@ -15,10 +15,11 @@ import (
 )
 
 var newCmd = &cobra.Command{
-	Use:   "new [title]",
-	Short: "Create a new ticket for the current project",
-	Args:  cobra.MaximumNArgs(1),
-	RunE:  runNew,
+	Use:     "new [title]",
+	Aliases: []string{"create"},
+	Short:   "Create a new ticket for the current project",
+	Args:    cobra.MaximumNArgs(1),
+	RunE:    runNew,
 }
 
 var (
