@@ -1,8 +1,8 @@
 version: 2
 
 builds:
-  - main: ./cmd/sb
-    binary: sb
+  - main: ./cmd/st
+    binary: st
     env:
       - CGO_ENABLED=0
     goos:
@@ -15,6 +15,14 @@ builds:
 archives:
   - formats:
       - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
