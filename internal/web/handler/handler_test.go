@@ -954,7 +954,7 @@ func TestCriticalPathScopeDefaultsToAllAndSupportsCurrent(t *testing.T) {
 		t.Fatal("expected default scope to include other project path")
 	}
 
-	curReq := httptest.NewRequest(http.MethodGet, "/critical-path?scope=current", nil)
+	curReq := httptest.NewRequest(http.MethodGet, "/critical-path?project=testproj", nil)
 	curW := httptest.NewRecorder()
 	h.CriticalPath(curW, curReq)
 

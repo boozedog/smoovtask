@@ -28,10 +28,12 @@ func boardStatusLabel(s ticket.Status) string {
 }
 
 type BoardData struct {
-	Columns          []BoardColumn
-	RunSources       map[string]string
+	Columns           []BoardColumn
+	RunSources        map[string]string
 	RunLastHookUnixMs map[string]int64
-	StalledRunIDs    map[string]bool
+	StalledRunIDs     map[string]bool
+	CurrentProject    string
+	Projects          []string
 }
 
 type BoardColumn struct {
@@ -52,7 +54,7 @@ func isDoneCollapsible(col BoardColumn) bool {
 }
 
 templ BoardPage(data BoardData) {
-	@Layout("Board", "/") {
+	@Layout("Board", "/", data.CurrentProject, data.Projects) {
 		@BoardPartial(data)
 	}
 }

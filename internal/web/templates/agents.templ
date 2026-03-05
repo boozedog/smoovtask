@@ -19,7 +19,9 @@ type AgentInfo struct {
 }
 
 type AgentsData struct {
-	Agents []AgentInfo
+	Agents         []AgentInfo
+	CurrentProject string
+	Projects       []string
 }
 
 func heatDotClass(heat string) string {
@@ -34,7 +36,7 @@ func heatDotClass(heat string) string {
 }
 
 templ AgentsPage(data AgentsData) {
-	@Layout("Agents", "/agents") {
+	@Layout("Agents", "/agents", data.CurrentProject, data.Projects) {
 		@AgentsPartial(data)
 	}
 }

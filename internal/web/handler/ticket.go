@@ -114,7 +114,9 @@ func (h *Handler) buildTicketData(r *http.Request) (templates.TicketData, error)
 	})
 
 	return templates.TicketData{
-		Ticket:   tk,
-		BodyHTML: rendered,
+		Ticket:         tk,
+		BodyHTML:       rendered,
+		CurrentProject: r.URL.Query().Get("project"),
+		Projects:       h.allProjects(),
 	}, nil
 }

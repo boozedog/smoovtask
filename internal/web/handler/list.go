@@ -134,13 +134,10 @@ func (h *Handler) buildListData(r *http.Request) (templates.ListData, error) {
 		})
 	}
 
-	// Collect unique project names for the filter dropdown.
-	allTickets, _ := h.store.ListMeta(ticket.ListFilter{})
-	projects := uniqueProjects(allTickets)
-
 	return templates.ListData{
-		Tickets:  tickets,
-		Projects: projects,
+		Tickets:        tickets,
+		Projects:       h.allProjects(),
+		CurrentProject: filterProject,
 		Filter: templates.ListFilter{
 			Project: filterProject,
 			Status:  filterStatus,

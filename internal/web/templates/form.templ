@@ -21,6 +21,7 @@ type TicketFormData struct {
 	TicketID string
 	Values   TicketFormValues
 	Error    string
+	Projects []string
 }
 
 func formTitle(mode string) string {
@@ -38,7 +39,7 @@ func formAction(d TicketFormData) string {
 }
 
 templ TicketFormPage(data TicketFormData) {
-	@Layout(formTitle(data.Mode), "/new") {
+	@Layout(formTitle(data.Mode), "/new", "", data.Projects) {
 		@TicketFormContent(data)
 	}
 }
@@ -61,7 +62,12 @@ templ TicketFormContent(data TicketFormData) {
 
 			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
 				<label class="st-ticket-form-label" for="project">Project</label>
-				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } required/>
+				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } list="project-options" required/>
+				<datalist id="project-options">
+					for _, p := range data.Projects {
+						<option value={ p }/>
+					}
+				</datalist>
 			</div>
 
 			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
@@ -142,7 +148,12 @@ templ TicketFormModalPartial(data TicketFormData) {
 			</div>
 			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
 				<label class="st-ticket-form-label" for="project">Project</label>
-				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } required/>
+				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } list="project-options-modal" required/>
+				<datalist id="project-options-modal">
+					for _, p := range data.Projects {
+						<option value={ p }/>
+					}
+				</datalist>
 			</div>
 			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
 				<label class="st-ticket-form-label" for="status">Status</label>

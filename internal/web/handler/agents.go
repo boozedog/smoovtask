@@ -12,22 +12,23 @@ import (
 
 // Agents renders the agents page.
 func (h *Handler) Agents(w http.ResponseWriter, r *http.Request) {
-	data := h.buildAgentsData()
+	data := h.buildAgentsData(r)
 	_ = templates.AgentsPage(data).Render(r.Context(), w)
 }
 
 // PartialAgents renders the agents partial for htmx swaps.
 func (h *Handler) PartialAgents(w http.ResponseWriter, r *http.Request) {
-	data := h.buildAgentsData()
+	data := h.buildAgentsData(r)
 	_ = templates.AgentsPartial(data).Render(r.Context(), w)
 }
 
-func (h *Handler) buildAgentsData() templates.AgentsData {
+func (h *Handler) buildAgentsData(r *http.Request) templates.AgentsData {
 	const recentLimit = 500
 	const stalledThreshold = 2 * time.Minute
 	const staleThreshold = 10 * time.Minute
 	const maxEventsPerAgent = 15
 
+	filterProject := r.URL.Query().Get("project")
 	events := recentEvents(h.eventsDir, event.Query{}, recentLimit)
 
 	type agentState struct {
@@ -111,10 +112,18 @@ func (h *Handler) buildAgentsData() templates.AgentsData {
 			if err == nil && tk != nil {
 				if tk.Assignee == a.runID {
 					ticketTitle = tk.Title
+					// Filter by project if set.
+					if filterProject != "" && tk.Project != filterProject {
+						continue
+					}
 				} else {
 					a.ticket = ""
 				}
 			}
+		}
+		// If filtering by project and agent has no ticket, skip.
+		if filterProject != "" && a.ticket == "" {
+			continue
 		}
 
 		// Collect recent events (newest first), cap at maxEventsPerAgent.
@@ -149,5 +158,9 @@ func (h *Handler) buildAgentsData() templates.AgentsData {
 		return result[i].LastEventTS.After(result[j].LastEventTS)
 	})
 
-	return templates.AgentsData{Agents: result}
+	return templates.AgentsData{
+		Agents:         result,
+		CurrentProject: filterProject,
+		Projects:       h.allProjects(),
+	}
 }

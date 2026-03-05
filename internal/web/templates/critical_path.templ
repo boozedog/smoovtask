@@ -7,36 +7,23 @@ import (
 )
 
 type CriticalPathData struct {
-	Project    string
-	Scope      string
-	Graph      ticket.DependencyGraph
-	ByID       map[string]*ticket.Ticket
-	RunSources map[string]string
-}
-
-func criticalPathPartialURL(scope string) string {
-	if scope == "current" {
-		return "/partials/critical-path?scope=current"
-	}
-	return "/partials/critical-path"
-}
-
-func criticalPathPageURL(scope string) string {
-	if scope == "current" {
-		return "/critical-path?scope=current"
-	}
-	return "/critical-path"
+	Project        string
+	Graph          ticket.DependencyGraph
+	ByID           map[string]*ticket.Ticket
+	RunSources     map[string]string
+	CurrentProject string
+	Projects       []string
 }
 
 templ CriticalPathPage(data CriticalPathData) {
-	@Layout("Critical Path", "/critical-path") {
+	@Layout("Critical Path", "/critical-path", data.CurrentProject, data.Projects) {
 		@CriticalPathPartial(data)
 	}
 }
 
 templ CriticalPathPartial(data CriticalPathData) {
 	<div
-		hx-get={ criticalPathPartialURL(data.Scope) }
+		hx-get="/partials/critical-path"
 		hx-trigger="sse:refresh-work"
 		hx-target="this"
 		hx-swap="outerHTML"
@@ -48,39 +35,6 @@ templ CriticalPathPartial(data CriticalPathData) {
 
 templ CriticalPathContent(data CriticalPathData) {
 	<div class="max-w-5xl mx-auto">
-		<div role="tablist" class="tabs tabs-border mt-2 mb-4">
-			<a
-				role="tab"
-				if data.Scope == "all" {
-					class="tab tab-active"
-				} else {
-					class="tab"
-				}
-				hx-get={ criticalPathPartialURL("all") }
-				hx-target="#content"
-				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL("all") }
-				href={ templ.SafeURL(criticalPathPageURL("all")) }
-			>
-				All Projects
-			</a>
-			<a
-				role="tab"
-				if data.Scope == "current" {
-					class="tab tab-active"
-				} else {
-					class="tab"
-				}
-				hx-get={ criticalPathPartialURL("current") }
-				hx-target="#content"
-				hx-swap="innerHTML"
-				hx-push-url={ criticalPathPageURL("current") }
-				href={ templ.SafeURL(criticalPathPageURL("current")) }
-			>
-				Current Project
-			</a>
-		</div>
-
 		if data.Graph.Empty {
 			<div class="alert my-4">
 				No dependency chains found.

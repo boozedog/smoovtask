@@ -39,12 +39,14 @@ func ticketPartialURL(id string) string {
 }
 
 type TicketData struct {
-	Ticket   *ticket.Ticket
-	BodyHTML string
+	Ticket         *ticket.Ticket
+	BodyHTML        string
+	CurrentProject string
+	Projects       []string
 }
 
 templ TicketPage(data TicketData) {
-	@Layout(data.Ticket.Title, "/ticket") {
+	@Layout(data.Ticket.Title, "/ticket", data.CurrentProject, data.Projects) {
 		@TicketPartial(data)
 	}
 }
