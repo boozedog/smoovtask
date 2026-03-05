@@ -18,23 +18,12 @@ rules:
     action: allow
     message: "read-only git commands allowed"
 
-  - name: allow-go-test
+  - name: allow-git-commit
     match:
       tool: Bash
-      command: ^go\s+test\b
+      command: ^git\s+(add|commit)\b
     action: allow
-
-  - name: allow-go-build
-    match:
-      tool: Bash
-      command: ^go\s+build\b
-    action: allow
-
-  - name: allow-go-vet
-    match:
-      tool: Bash
-      command: ^go\s+vet\b
-    action: allow
+    message: "git add/commit allowed for worktree commits"
 
   - name: allow-make
     match:

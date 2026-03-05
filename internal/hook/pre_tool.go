@@ -2,6 +2,7 @@ package hook
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -62,6 +63,17 @@ func HandlePreTool(input *Input) (Output, error) {
 		msg := missingTicketWriteBlockMessage(input.SessionID)
 		return Output{
 			AdditionalContext: msg,
+			Decision: &Decision{
+				HookEventName: "PreToolUse",
+				Behavior:      "deny",
+				Reason:        msg,
+			},
+		}, nil
+	}
+
+	// Hard-block git commit commands that contain attribution trailers.
+	if msg := rejectCommitAttribution(input); msg != "" {
+		return Output{
 			Decision: &Decision{
 				HookEventName: "PreToolUse",
 				Behavior:      "deny",
@@ -136,6 +148,30 @@ func activeTicketID(store *ticket.Store, proj, sessionID string) string {
 		if tk.Assignee == sessionID &&
 			(tk.Status == ticket.StatusInProgress || tk.Status == ticket.StatusRework) {
 			return tk.ID
+		}
+	}
+	return ""
+}
+
+// rejectCommitAttribution checks if a Bash tool call is a git commit whose
+// message contains Co-Authored-By, Signed-off-by, or similar attribution
+// trailers. Returns a denial reason, or "" if the command is fine.
+func rejectCommitAttribution(input *Input) string {
+	if input.ToolName != "Bash" {
+		return ""
+	}
+	cmd, ok := input.ToolInput["command"].(string)
+	if !ok {
+		return ""
+	}
+	lower := strings.ToLower(cmd)
+	if !strings.Contains(lower, "git commit") {
+		return ""
+	}
+	for _, trailer := range []string{"co-authored-by", "signed-off-by"} {
+		if strings.Contains(lower, trailer) {
+			return "BLOCKED: commit messages must not contain Co-Authored-By, Signed-off-by, or any attribution trailers. " +
+				"Remove the trailer and retry with a simple commit message."
 		}
 	}
 	return ""

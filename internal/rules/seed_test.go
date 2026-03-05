@@ -21,6 +21,7 @@ func TestSeedDefaultsCreatesFiles(t *testing.T) {
 		"bash-pipeline.yaml",
 		"file-protection.yaml",
 		"git-safety.yaml",
+		"go-tools.yaml",
 	}
 	for _, name := range expected {
 		path := filepath.Join(dir, name)
@@ -82,8 +83,8 @@ rules:
 	if !names["allow-st"] {
 		t.Error("default rule allow-st was not added")
 	}
-	if !names["allow-go-test"] {
-		t.Error("default rule allow-go-test was not added")
+	if !names["allow-git-commit"] {
+		t.Error("default rule allow-git-commit was not added")
 	}
 }
 

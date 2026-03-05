@@ -20,17 +20,23 @@ var noteCmd = &cobra.Command{
 	Short: "Append a note to the current ticket",
 	Long: `Append a note to the current ticket.
 
-The message can be provided as a positional argument, or via a drop file at
-.st/notes/<run-id>.md. When no message argument is given, st note looks for
-the drop file, reads its content, and deletes it after appending.`,
+The message can be provided via --file <path> (preferred), as a positional
+argument, or via a legacy drop file at .st/notes/<run-id>.md.
+
+When using --file, the agent writes the note to any file it chooses, then
+passes the path. The file is deleted after reading.`,
 	Args: cobra.RangeArgs(0, 2),
 	RunE: runNote,
 }
 
-var noteTicket string
+var (
+	noteTicket string
+	noteFile   string
+)
 
 func init() {
 	noteCmd.Flags().StringVar(&noteTicket, "ticket", "", "ticket ID (default: current ticket)")
+	noteCmd.Flags().StringVar(&noteFile, "file", "", "path to a file containing the note content (file is deleted after reading)")
 	rootCmd.AddCommand(noteCmd)
 }
 
@@ -60,23 +66,41 @@ func readNoteFile(path string) (string, error) {
 }
 
 func runNote(_ *cobra.Command, args []string) error {
-	// Support: st note <message>, st note <ticket-id> <message>, or st note (file-based)
+	// Support: st note --file <path>, st note <message>, st note <ticket-id> <message>,
+	// or st note (legacy drop file)
 	var message string
 	ticketFlag := noteTicket
-	switch len(args) {
-	case 2:
+
+	switch {
+	case noteFile != "":
+		// --file flag: read from the given path (agent-chosen location)
+		content, err := readNoteFile(noteFile)
+		if err != nil {
+			return fmt.Errorf("cannot read note file %s: %w", noteFile, err)
+		}
+		message = strings.TrimSpace(content)
+		if message == "" {
+			return fmt.Errorf("note file %s is empty", noteFile)
+		}
+		// If positional args were also provided, treat first as ticket ID
+		if len(args) > 0 && ticketFlag == "" {
+			if ticket.LooksLikeTicketID(args[0]) {
+				ticketFlag = args[0]
+			}
+		}
+	case len(args) == 2:
 		if ticketFlag == "" {
 			ticketFlag = args[0]
 		}
 		message = args[1]
-	case 1:
+	case len(args) == 1:
 		// Single arg — if --ticket is not set and arg looks like a ticket ID, error helpfully
 		if ticketFlag == "" && ticket.LooksLikeTicketID(args[0]) {
 			return fmt.Errorf("argument %q looks like a ticket ID — did you mean: st note %s \"<message>\"?", args[0], args[0])
 		}
 		message = args[0]
-	case 0:
-		// No args — try reading from drop file
+	default:
+		// No args, no --file — try legacy drop file
 		runID := identity.RunID()
 		if runID == "" {
 			return fmt.Errorf("--run-id is required when using file-based notes (no message argument provided)")
