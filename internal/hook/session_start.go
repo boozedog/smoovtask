@@ -137,6 +137,7 @@ func quickRefLeader(notesDir string) string {
 		"- Launch implementers with `st work` (or `st work --cli opencode`)\n" +
 		"- Launch reviewers with `st review <ticket-id>`\n" +
 		"- Launch background workers with `st spawn <ticket-id> --run-id <run-id>`\n" +
+		"- Create tickets with `st new \"title\" -p P3 -d \"desc\" --run-id <run-id>`\n" +
 		"- Monitor work with `st list --run-id <run-id>` and inspect details via `st show <ticket-id>`\n" +
 		noteGuidance(notesDir) +
 		"Run `st --help` for more.\n"
