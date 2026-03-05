@@ -12,6 +12,12 @@ func NotesDir(repoRoot string) string {
 	return filepath.Join(repoRoot, ".st", "notes")
 }
 
+// CommitRules returns the standard instruction forbidding attribution lines in commit messages.
+func CommitRules() string {
+	return "NEVER include Co-Authored-By, Signed-off-by, or any other attribution/trailer lines in commit messages. " +
+		"Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
+}
+
 // NoteHowTo returns the standard instruction for how to add notes using the file-based drop approach.
 // notesDir is the absolute path to the notes directory (e.g., /path/to/repo/.st/notes).
 func NoteHowTo(notesDir string) string {

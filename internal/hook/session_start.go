@@ -97,6 +97,9 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	} else {
 		fmt.Fprintf(&b, "Session role: `%s`.\n\n", role)
 	}
+	b.WriteString("## Commit Rules\n")
+	b.WriteString(guidance.CommitRules())
+	b.WriteString("\n\n")
 	b.WriteString(quickRefForRole(role, notesDir))
 
 	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil

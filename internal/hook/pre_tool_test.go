@@ -450,6 +450,110 @@ rules:
 	}
 }
 
+func TestRejectCommitAttribution(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   *Input
+		blocked bool
+	}{
+		{
+			name: "co-authored-by in commit message",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": `git commit -m "fix bug\n\nCo-Authored-By: Claude <noreply@anthropic.com>"`,
+				},
+			},
+			blocked: true,
+		},
+		{
+			name: "co-authored-by lowercase",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": `git commit -m "fix bug\n\nco-authored-by: Someone"`,
+				},
+			},
+			blocked: true,
+		},
+		{
+			name: "signed-off-by in commit",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": `git commit -m "fix bug\n\nSigned-off-by: Agent"`,
+				},
+			},
+			blocked: true,
+		},
+		{
+			name: "heredoc with co-authored-by",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": "git commit -m \"$(cat <<'EOF'\nfix bug\n\nCo-Authored-By: Claude\nEOF\n)\"",
+				},
+			},
+			blocked: true,
+		},
+		{
+			name: "clean commit message",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": `git commit -m "fix authentication bug"`,
+				},
+			},
+			blocked: false,
+		},
+		{
+			name: "non-bash tool",
+			input: &Input{
+				ToolName: "Edit",
+				ToolInput: map[string]any{
+					"old_string": "Co-Authored-By: Claude",
+				},
+			},
+			blocked: false,
+		},
+		{
+			name: "bash but not git commit",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": `echo "Co-Authored-By: test"`,
+				},
+			},
+			blocked: false,
+		},
+		{
+			name: "git add with no commit",
+			input: &Input{
+				ToolName: "Bash",
+				ToolInput: map[string]any{
+					"command": "git add .",
+				},
+			},
+			blocked: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := rejectCommitAttribution(tt.input)
+			if tt.blocked && msg == "" {
+				t.Error("expected rejection but got empty string")
+			}
+			if !tt.blocked && msg != "" {
+				t.Errorf("expected no rejection but got: %s", msg)
+			}
+			if tt.blocked && !strings.Contains(msg, "BLOCKED") {
+				t.Errorf("rejection message should contain BLOCKED, got: %s", msg)
+			}
+		})
+	}
+}
+
 func TestHandlePreToolTicketDenyTakesPriorityOverRuleAllow(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)

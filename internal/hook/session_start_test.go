@@ -115,6 +115,9 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	if !strings.Contains(ctx, ".st/notes/<run-id>.md") {
 		t.Error("missing file-based note guidance")
 	}
+	if !strings.Contains(ctx, "Co-Authored-By") {
+		t.Error("missing commit rules forbidding attribution trailers")
+	}
 	if !strings.Contains(ctx, "do not guess") {
 		t.Error("missing instruction to ask user about role")
 	}
