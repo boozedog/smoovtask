@@ -2,7 +2,6 @@ package spawn
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/boozedog/smoovtask/internal/ticket"
@@ -30,8 +29,7 @@ func BuildPrompt(tk *ticket.Ticket, runID, repoRoot string) string {
 	b.WriteString("- Work in the current directory (a git worktree of the main repo)\n")
 	b.WriteString("- Make your changes and commit them with simple, short commit messages\n")
 	b.WriteString("- Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no co-authors, no elaborate formatting\n")
-	notesDir := filepath.Join(repoRoot, ".st", "notes")
-	fmt.Fprintf(&b, "- To log progress: write your note to `%s/%s.md` using the Write tool, then run `st note --ticket %s --run-id %s`\n", notesDir, runID, tk.ID, runID)
+	fmt.Fprintf(&b, "- To log progress: write your note to a file using the Write tool, then run `st note --file <path> --ticket %s --run-id %s` (the file is deleted after reading)\n", tk.ID, runID)
 	fmt.Fprintf(&b, "- When done, run `st status review --ticket %s --run-id %s` to submit for review, then run /exit to end the session\n", tk.ID, runID)
 	fmt.Fprintf(&b, "- If you get stuck, run `st status blocked --ticket %s --run-id %s` and add a note explaining why\n", tk.ID, runID)
 	b.WriteString("- Do not push to remote. Do not create PRs. Just commit locally.\n")

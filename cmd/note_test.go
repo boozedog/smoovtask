@@ -272,6 +272,115 @@ func TestNote_FromFile_EmptyFile(t *testing.T) {
 	}
 }
 
+func TestNote_FileFlag(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "file flag target", ticket.StatusInProgress)
+	tk.Assignee = "test-session-fileflag"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	// Write note to an arbitrary temp file (simulates agent choosing its own path)
+	noteContent := "## Update\n- Fixed the `bug` in **main.go**\n- Added ```go\nfmt.Println()\n``` snippet\n"
+	tmpFile := filepath.Join(t.TempDir(), "my-note.md")
+	if err := os.WriteFile(tmpFile, []byte(noteContent), 0o644); err != nil {
+		t.Fatalf("write temp note: %v", err)
+	}
+
+	out, err := env.runCmd(t, "--run-id", "test-session-fileflag", "note", "--file", tmpFile)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Note added to "+tk.ID) {
+		t.Errorf("output = %q, want substring %q", out, "Note added to "+tk.ID)
+	}
+
+	// Verify note appears in ticket body
+	updated, err := env.Store.Get(tk.ID)
+	if err != nil {
+		t.Fatalf("get ticket: %v", err)
+	}
+	if !strings.Contains(updated.Body, "Fixed the `bug`") {
+		t.Errorf("body = %q, want note content in body", updated.Body)
+	}
+
+	// Verify the file was cleaned up
+	if _, err := os.Stat(tmpFile); !os.IsNotExist(err) {
+		t.Error("note file should have been deleted after reading")
+	}
+}
+
+func TestNote_FileFlag_WithTicket(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "file+ticket target", ticket.StatusOpen)
+
+	tmpFile := filepath.Join(t.TempDir(), "note.md")
+	if err := os.WriteFile(tmpFile, []byte("note via --file and --ticket"), 0o644); err != nil {
+		t.Fatalf("write temp note: %v", err)
+	}
+
+	out, err := env.runCmd(t, "--run-id", "test-session-ft", "note", "--file", tmpFile, "--ticket", tk.ID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(out, "Note added to "+tk.ID) {
+		t.Errorf("output = %q, want substring %q", out, "Note added to "+tk.ID)
+	}
+
+	updated, err := env.Store.Get(tk.ID)
+	if err != nil {
+		t.Fatalf("get ticket: %v", err)
+	}
+	if !strings.Contains(updated.Body, "note via --file and --ticket") {
+		t.Errorf("body = %q, want note content", updated.Body)
+	}
+}
+
+func TestNote_FileFlag_MissingFile(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "missing file target", ticket.StatusInProgress)
+	tk.Assignee = "test-session-mf"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	_, err := env.runCmd(t, "--run-id", "test-session-mf", "note", "--file", "/nonexistent/path/note.md")
+	if err == nil {
+		t.Fatal("expected error for missing --file path")
+	}
+	if !strings.Contains(err.Error(), "cannot read note file") {
+		t.Errorf("error = %q, want 'cannot read note file'", err.Error())
+	}
+}
+
+func TestNote_FileFlag_EmptyFile(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "empty file target", ticket.StatusInProgress)
+	tk.Assignee = "test-session-ef"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	tmpFile := filepath.Join(t.TempDir(), "empty.md")
+	if err := os.WriteFile(tmpFile, []byte("  \n  "), 0o644); err != nil {
+		t.Fatalf("write temp note: %v", err)
+	}
+
+	_, err := env.runCmd(t, "--run-id", "test-session-ef", "note", "--file", tmpFile)
+	if err == nil {
+		t.Fatal("expected error for empty --file")
+	}
+	if !strings.Contains(err.Error(), "empty") {
+		t.Errorf("error = %q, want 'empty'", err.Error())
+	}
+}
+
 func TestUnescapeNote(t *testing.T) {
 	tests := []struct {
 		name string

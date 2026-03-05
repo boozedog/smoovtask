@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/identity"
-	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/workflow"
 	"github.com/spf13/cobra"
@@ -146,14 +144,6 @@ func claimReview(ticketID string) error {
 	fmt.Printf("- `st status done` — approve directly, only if you are absolutely certain you can fully verify correctness yourself\n")
 	fmt.Printf("- `st status human-review` — hand off to human review (default — use when in any doubt)\n")
 	fmt.Printf("- `st status rework` — send back for changes\n")
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-	repoRoot, err := spawn.WorktreeRepoRoot(cwd)
-	if err != nil {
-		return fmt.Errorf("find repo root: %w", err)
-	}
-	fmt.Print(guidance.LoggingReview(guidance.NotesDir(repoRoot)))
+	fmt.Print(guidance.LoggingReview())
 	return nil
 }
