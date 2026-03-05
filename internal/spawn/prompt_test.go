@@ -31,11 +31,11 @@ func TestBuildPrompt(t *testing.T) {
 		t.Error("prompt should contain ticket body")
 	}
 
-	// Should contain absolute note path with run ID
-	if !strings.Contains(prompt, "/fake/repo/.st/notes/spawn-test123.md") {
-		t.Error("prompt should contain absolute note path with run ID")
+	// Should contain --file and --ticket in note instruction
+	if !strings.Contains(prompt, "--file <path>") {
+		t.Error("prompt should contain --file flag in note instruction")
 	}
-	if !strings.Contains(prompt, "st note --ticket st_abc123 --run-id spawn-test123") {
+	if !strings.Contains(prompt, "--ticket st_abc123 --run-id spawn-test123") {
 		t.Error("prompt should contain st note command with ticket ID and run ID")
 	}
 	if !strings.Contains(prompt, "st status review --ticket st_abc123 --run-id spawn-test123") {

@@ -40,7 +40,7 @@ func HandleSubagentStart(input *Input) (Output, error) {
 
 	ctx := fmt.Sprintf(
 		"smoovtask ticket context: %s — %s (project: %s, priority: %s, status: %s)\n"+
-			"Log progress: write your note to `.st/notes/<run-id>.md` using the Write tool, then run `st note --ticket %s --run-id <your-run-id>`",
+			"Log progress: write your note to a file using the Write tool, then run `st note --file <path> --ticket %s --run-id <your-run-id>` (the file is deleted after reading)",
 		tk.ID, tk.Title, tk.Project, tk.Priority, tk.Status, tk.ID,
 	)
 
