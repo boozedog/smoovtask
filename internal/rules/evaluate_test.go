@@ -920,6 +920,112 @@ func TestEvaluateCompoundWithDefaults(t *testing.T) {
 	}
 }
 
+func TestEvaluateGoVetCommand(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	allowed := []string{
+		"go vet ./...",
+		"go vet ./internal/rules/",
+	}
+
+	for _, cmd := range allowed {
+		t.Run("allow/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateTemplCommands(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	allowed := []string{
+		"templ generate",
+		"templ generate ./...",
+		"templ fmt .",
+	}
+
+	for _, cmd := range allowed {
+		t.Run("allow/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateFilePathAllowRules(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		tool         string
+		filePath     string
+		wantDecision Action
+	}{
+		{
+			name:         "allow write to projects dir",
+			tool:         "Write",
+			filePath:     "/Users/david/projects/smoovtask/main.go",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "allow edit in projects dir",
+			tool:         "Edit",
+			filePath:     "/Users/david/projects/smoovtask/internal/rules/evaluate.go",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "allow write to obsidian dir",
+			tool:         "Write",
+			filePath:     "/Users/david/obsidian/smoovtask/tickets/st_abc123.md",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "allow edit in obsidian dir",
+			tool:         "Edit",
+			filePath:     "/Users/david/obsidian/smoovtask/tickets/st_abc123.md",
+			wantDecision: ActionAllow,
+		},
+		{
+			name:         "deny write to .env still works",
+			tool:         "Write",
+			filePath:     "/Users/david/projects/smoovtask/.env",
+			wantDecision: ActionDeny,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", tt.tool, map[string]any{"file_path": tt.filePath})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != tt.wantDecision {
+				t.Errorf("expected %s for %s %q, got %s (rule: %s, reason: %s)", tt.wantDecision, tt.tool, tt.filePath, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
 func TestEvaluatePublicInvalidRulesReturnsNil(t *testing.T) {
 	// Create a temp dir with an invalid rule file
 	dir := t.TempDir()

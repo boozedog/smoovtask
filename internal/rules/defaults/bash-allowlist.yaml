@@ -30,6 +30,12 @@ rules:
       command: ^go\s+build\b
     action: allow
 
+  - name: allow-go-vet
+    match:
+      tool: Bash
+      command: ^go\s+vet\b
+    action: allow
+
   - name: allow-make
     match:
       tool: Bash
@@ -73,6 +79,13 @@ rules:
       command: ^(grep|cat|head|tail|wc|sort|uniq|cut|tr|diff|find|echo|printf)\b
     action: allow
     message: "read-only bash commands allowed"
+
+  - name: allow-templ
+    match:
+      tool: Bash
+      command: ^templ\b
+    action: allow
+    message: "templ commands allowed"
 
   - name: allow-just
     match:

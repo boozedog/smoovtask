@@ -21,3 +21,21 @@ rules:
       file_path: \.claude/plans/
     action: allow
     message: "writing to .claude/plans is permitted"
+
+  - name: allow-projects-writes
+    match:
+      tool:
+        - Edit
+        - Write
+      file_path: /projects/
+    action: allow
+    message: "writing to ~/projects is permitted"
+
+  - name: allow-obsidian-writes
+    match:
+      tool:
+        - Edit
+        - Write
+      file_path: /obsidian/
+    action: allow
+    message: "writing to ~/obsidian is permitted"
