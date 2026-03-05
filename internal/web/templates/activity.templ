@@ -44,9 +44,10 @@ func eventContext(ev event.Event) string {
 }
 
 type ActivityData struct {
-	Events   []event.Event
-	Projects []string
-	Filter   ActivityFilter
+	Events         []event.Event
+	Projects       []string
+	CurrentProject string
+	Filter         ActivityFilter
 }
 
 type ActivityFilter struct {
@@ -55,7 +56,7 @@ type ActivityFilter struct {
 }
 
 templ ActivityPage(data ActivityData) {
-	@Layout("Activity", "/activity") {
+	@Layout("Activity", "/activity", data.CurrentProject, data.Projects) {
 		@ActivityPartial(data)
 	}
 }
@@ -67,29 +68,10 @@ templ ActivityPartial(data ActivityData) {
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disinherit="hx-swap"
-		hx-include="[name='project'],[name='event_type']"
+		hx-include="[name='event_type']"
 	>
 		<div class="mb-4 flex flex-wrap items-center gap-3">
-			<select
-				name="project"
-				class="select select-bordered select-sm w-52 max-w-full"
-				hx-get="/partials/activity-content"
-				hx-target="#activity-content"
-				hx-swap="innerHTML"
-				hx-include="[name='event_type']"
-			>
-				<option value="">All Projects</option>
-				for _, p := range data.Projects {
-					<option
-						value={ p }
-						if data.Filter.Project == p {
-							selected
-						}
-					>
-						{ p }
-					</option>
-				}
-			</select>
+			<input type="hidden" name="project" value={ data.CurrentProject }/>
 			<select
 				name="event_type"
 				class="select select-bordered select-sm w-52 max-w-full"

@@ -19,6 +19,7 @@ func (h *Handler) NewTicket(w http.ResponseWriter, r *http.Request) {
 			Status:   string(ticket.StatusOpen),
 			Priority: string(ticket.DefaultPriority),
 		},
+		Projects: h.allProjects(),
 	}
 	_ = templates.TicketFormPage(data).Render(r.Context(), w)
 }
@@ -31,6 +32,7 @@ func (h *Handler) PartialNewTicket(w http.ResponseWriter, r *http.Request) {
 			Status:   string(ticket.StatusOpen),
 			Priority: string(ticket.DefaultPriority),
 		},
+		Projects: h.allProjects(),
 	}
 	_ = templates.TicketFormModalPartial(data).Render(r.Context(), w)
 }
@@ -130,6 +132,7 @@ func (h *Handler) EditTicket(w http.ResponseWriter, r *http.Request) {
 			DependsOn: strings.Join(tk.DependsOn, ","),
 			Tags:      strings.Join(tk.Tags, ","),
 		},
+		Projects: h.allProjects(),
 	}
 	_ = templates.TicketFormPage(data).Render(r.Context(), w)
 }
@@ -153,6 +156,7 @@ func (h *Handler) PartialEditTicket(w http.ResponseWriter, r *http.Request) {
 			DependsOn: strings.Join(tk.DependsOn, ","),
 			Tags:      strings.Join(tk.Tags, ","),
 		},
+		Projects: h.allProjects(),
 	}
 	_ = templates.TicketFormModalPartial(data).Render(r.Context(), w)
 }
@@ -298,6 +302,7 @@ func (h *Handler) renderFormErrorWithValues(w http.ResponseWriter, r *http.Reque
 		TicketID: ticketID,
 		Values:   values,
 		Error:    msg,
+		Projects: h.allProjects(),
 	}
 	w.WriteHeader(http.StatusBadRequest)
 	_ = templates.TicketFormPage(data).Render(r.Context(), w)
@@ -316,6 +321,7 @@ func (h *Handler) renderFormModalErrorWithValues(w http.ResponseWriter, r *http.
 		TicketID: ticketID,
 		Values:   values,
 		Error:    msg,
+		Projects: h.allProjects(),
 	}
 	_ = templates.TicketFormModalPartial(data).Render(r.Context(), w)
 }

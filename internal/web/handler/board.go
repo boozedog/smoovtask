@@ -42,7 +42,7 @@ func reviewTicketLess(a, b *ticket.Ticket) bool {
 
 // Board renders the kanban board page.
 func (h *Handler) Board(w http.ResponseWriter, r *http.Request) {
-	data, err := h.buildBoardData()
+	data, err := h.buildBoardData(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func (h *Handler) Board(w http.ResponseWriter, r *http.Request) {
 
 // PartialBoard renders the board partial (with SSE self-refresh wrapper) for htmx swaps.
 func (h *Handler) PartialBoard(w http.ResponseWriter, r *http.Request) {
-	data, err := h.buildBoardData()
+	data, err := h.buildBoardData(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,10 +60,11 @@ func (h *Handler) PartialBoard(w http.ResponseWriter, r *http.Request) {
 	_ = templates.BoardPartial(data).Render(r.Context(), w)
 }
 
-func (h *Handler) buildBoardData() (templates.BoardData, error) {
+func (h *Handler) buildBoardData(r *http.Request) (templates.BoardData, error) {
 	const stalledThreshold = 2 * time.Minute
 
-	tickets, err := h.store.ListMeta(ticket.ListFilter{})
+	filterProject := r.URL.Query().Get("project")
+	tickets, err := h.store.ListMeta(ticket.ListFilter{Project: filterProject})
 	if err != nil {
 		return templates.BoardData{}, err
 	}
@@ -178,5 +179,7 @@ func (h *Handler) buildBoardData() (templates.BoardData, error) {
 		RunSources:        runSources,
 		RunLastHookUnixMs: runLastHookUnixMs,
 		StalledRunIDs:     stalledRunIDs,
+		CurrentProject:    filterProject,
+		Projects:          h.allProjects(),
 	}, nil
 }

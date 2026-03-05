@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/boozedog/smoovtask/internal/event"
-	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/templates"
 )
 
@@ -106,13 +105,10 @@ func (h *Handler) buildActivityData(r *http.Request) (templates.ActivityData, er
 		}
 	}
 
-	// Collect unique project names.
-	allTickets, _ := h.store.ListMeta(ticket.ListFilter{})
-	projects := uniqueProjects(allTickets)
-
 	return templates.ActivityData{
-		Events:   events,
-		Projects: projects,
+		Events:         events,
+		Projects:       h.allProjects(),
+		CurrentProject: filterProject,
 		Filter: templates.ActivityFilter{
 			Project:   filterProject,
 			EventType: filterEventType,

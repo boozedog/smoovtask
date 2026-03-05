@@ -1,6 +1,6 @@
 package templates
 
-templ Layout(title string, currentPath string) {
+templ Layout(title string, currentPath string, currentProject string, projects []string) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="black">
 		<head>
@@ -231,6 +231,19 @@ templ Layout(title string, currentPath string) {
 					</div>
 				</div>
 				<div class="flex items-center gap-2">
+					<select id="st-project-select" class="select select-sm w-44" onchange="stSelectProject(this)">
+						<option value="">All Projects</option>
+						for _, p := range projects {
+							<option
+								value={ p }
+								if currentProject == p {
+									selected
+								}
+							>
+								{ p }
+							</option>
+						}
+					</select>
 					<button
 						id="st-audio-toggle"
 						class="st-audio-toggle"
@@ -259,6 +272,17 @@ templ Layout(title string, currentPath string) {
 			</dialog>
 			<script>
 				// Global function definitions (safe to re-declare on script re-evaluation).
+
+				// --- Project selector ---
+				function stSelectProject(select) {
+					var url = new URL(window.location);
+					if (select.value) {
+						url.searchParams.set('project', select.value);
+					} else {
+						url.searchParams.delete('project');
+					}
+					window.location = url.toString();
+				}
 
 				// --- Audio alert system ---
 				var _stSoundMap = {
@@ -520,6 +544,15 @@ templ Layout(title string, currentPath string) {
 				if (!window._stInitialized) {
 				window._stInitialized = true;
 
+				// Auto-inject project param into all HTMX requests.
+				document.body.addEventListener('htmx:configRequest', function(e) {
+					var sel = document.getElementById('st-project-select');
+					if (!sel || !sel.value) return;
+					if (!e.detail.parameters['project']) {
+						e.detail.parameters['project'] = sel.value;
+					}
+				});
+
 				document.addEventListener('animationend', function(e) {
 					if (e.target.classList.contains('st-session-dot-flash')) {
 						e.target.classList.remove('st-session-dot-flash');
@@ -653,6 +686,15 @@ templ Layout(title string, currentPath string) {
 						title = h1 ? h1.textContent.trim() : 'Ticket';
 					}
 					if (title) document.title = title + ' — smoovtask';
+					// Preserve project param in pushed URL.
+					var projectSel = document.getElementById('st-project-select');
+					if (projectSel && projectSel.value) {
+						var pushUrl = new URL(window.location);
+						if (!pushUrl.searchParams.has('project')) {
+							pushUrl.searchParams.set('project', projectSel.value);
+							history.replaceState({}, '', pushUrl);
+						}
+					}
 				});
 
 				// Handle browser back/forward.
@@ -680,6 +722,12 @@ templ Layout(title string, currentPath string) {
 							}
 						});
 						syncAgentActivityState();
+					}
+					// Sync project dropdown from URL on back/forward.
+					var projectSel = document.getElementById('st-project-select');
+					if (projectSel) {
+						var urlProject = new URL(window.location).searchParams.get('project') || '';
+						projectSel.value = urlProject;
 					}
 				});
 

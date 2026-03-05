@@ -8,9 +8,10 @@ import (
 )
 
 type ListData struct {
-	Tickets  []*ticket.Ticket
-	Projects []string
-	Filter   ListFilter
+	Tickets        []*ticket.Ticket
+	Projects       []string
+	CurrentProject string
+	Filter         ListFilter
 }
 
 type ListFilter struct {
@@ -21,7 +22,7 @@ type ListFilter struct {
 }
 
 templ ListPage(data ListData) {
-	@Layout("Tickets", "/list") {
+	@Layout("Tickets", "/list", data.CurrentProject, data.Projects) {
 		@ListPartial(data)
 	}
 }
@@ -35,26 +36,7 @@ templ ListPartial(data ListData) {
 		hx-disinherit="hx-swap"
 	>
 		<div class="mb-4 flex flex-wrap items-center gap-3">
-			<select
-				name="project"
-				class="select select-sm w-52 max-w-full"
-				hx-get="/partials/list-content"
-				hx-target="#list-content"
-				hx-swap="innerHTML"
-				hx-include="[name='status'],[name='sort'],[name='dir']"
-			>
-				<option value="">All Projects</option>
-				for _, p := range data.Projects {
-					<option
-						value={ p }
-						if data.Filter.Project == p {
-							selected
-						}
-					>
-						{ p }
-					</option>
-				}
-			</select>
+			<input type="hidden" name="project" value={ data.CurrentProject }/>
 			<select
 				name="status"
 				class="select select-sm w-52 max-w-full"

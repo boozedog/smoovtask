@@ -80,6 +80,11 @@ func recentEvents(eventsDir string, q event.Query, limit int) []event.Event {
 	return events
 }
 
+func (h *Handler) allProjects() []string {
+	all, _ := h.store.ListMeta(ticket.ListFilter{})
+	return uniqueProjects(all)
+}
+
 func (h *Handler) resolveRunSources(runIDs []string) map[string]string {
 	wanted := make(map[string]struct{}, len(runIDs))
 	for _, runID := range runIDs {

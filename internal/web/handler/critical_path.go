@@ -26,17 +26,9 @@ func (h *Handler) PartialCriticalPath(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPathData, error) {
-	scope := r.URL.Query().Get("scope")
-	if scope != "current" {
-		scope = "all"
-	}
+	filterProject := r.URL.Query().Get("project")
 
-	filter := ticket.ListFilter{}
-	if scope == "current" {
-		filter.Project = h.project
-	}
-
-	all, err := h.store.ListMeta(filter)
+	all, err := h.store.ListMeta(ticket.ListFilter{Project: filterProject})
 	if err != nil {
 		return templates.CriticalPathData{}, err
 	}
@@ -59,10 +51,11 @@ func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPath
 	runSources := h.resolveRunSources(runIDs)
 
 	return templates.CriticalPathData{
-		Project:    h.project,
-		Scope:      scope,
-		Graph:      graph,
-		ByID:       byID,
-		RunSources: runSources,
+		Project:        h.project,
+		Graph:          graph,
+		ByID:           byID,
+		RunSources:     runSources,
+		CurrentProject: filterProject,
+		Projects:       h.allProjects(),
 	}, nil
 }
