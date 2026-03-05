@@ -11,14 +11,14 @@ func TestRepoName(t *testing.T) {
 		want string
 	}{
 		// SSH SCP-style
-		{"git@github.com:boozedog/smoovtask.git", "boozedog/smoovtask"},
-		{"git@github.com:boozedog/smoovtask", "boozedog/smoovtask"},
+		{"git@github.com:boozedog/smoovtask.git", "smoovtask"},
+		{"git@github.com:boozedog/smoovtask", "smoovtask"},
 		// HTTPS
-		{"https://github.com/boozedog/smoovtask.git", "boozedog/smoovtask"},
-		{"https://github.com/boozedog/smoovtask", "boozedog/smoovtask"},
+		{"https://github.com/boozedog/smoovtask.git", "smoovtask"},
+		{"https://github.com/boozedog/smoovtask", "smoovtask"},
 		// ssh:// URL
-		{"ssh://git@github.com/boozedog/smoovtask.git", "boozedog/smoovtask"},
-		{"ssh://git@github.com/boozedog/smoovtask", "boozedog/smoovtask"},
+		{"ssh://git@github.com/boozedog/smoovtask.git", "smoovtask"},
+		{"ssh://git@github.com/boozedog/smoovtask", "smoovtask"},
 		// Edge cases
 		{"", ""},
 	}
