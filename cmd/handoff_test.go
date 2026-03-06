@@ -17,6 +17,8 @@ func TestHandoff_FromInProgress(t *testing.T) {
 		t.Fatalf("save ticket: %v", err)
 	}
 
+	env.addNoteEvent(t, tk.ID)
+
 	out, err := env.runCmd(t, "--run-id", "test-session-1", "handoff", tk.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -49,6 +51,8 @@ func TestHandoff_FromRework(t *testing.T) {
 	if err := env.Store.Save(tk); err != nil {
 		t.Fatalf("save ticket: %v", err)
 	}
+
+	env.addNoteEvent(t, tk.ID)
 
 	out, err := env.runCmd(t, "--run-id", "test-session-2", "handoff", tk.ID)
 	if err != nil {
@@ -104,6 +108,36 @@ func TestHandoff_NoAssignee(t *testing.T) {
 	}
 }
 
+func TestHandoff_RequiresNote(t *testing.T) {
+	env := newTestEnv(t)
+
+	tk := env.createTicket(t, "no note handoff", ticket.StatusInProgress)
+	tk.Assignee = "test-session-note"
+	if err := env.Store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	// Try to hand off without a note — should fail
+	_, err := env.runCmd(t, "--run-id", "test-session-note", "handoff", tk.ID)
+	if err == nil {
+		t.Fatal("expected error for handoff without note")
+	}
+	if !strings.Contains(err.Error(), "detailed note is required") {
+		t.Errorf("error = %q, want substring %q", err.Error(), "detailed note is required")
+	}
+
+	// Add a note and retry — should succeed
+	env.addNoteEvent(t, tk.ID)
+
+	out, retryErr := env.runCmd(t, "--run-id", "test-session-note", "handoff", tk.ID)
+	if retryErr != nil {
+		t.Fatalf("unexpected error after adding note: %v", retryErr)
+	}
+	if !strings.Contains(out, "Handed off "+tk.ID) {
+		t.Errorf("output = %q, want substring %q", out, "Handed off "+tk.ID)
+	}
+}
+
 func TestHandoff_EventLogged(t *testing.T) {
 	env := newTestEnv(t)
 
@@ -112,6 +146,8 @@ func TestHandoff_EventLogged(t *testing.T) {
 	if err := env.Store.Save(tk); err != nil {
 		t.Fatalf("save ticket: %v", err)
 	}
+
+	env.addNoteEvent(t, tk.ID)
 
 	_, err := env.runCmd(t, "--run-id", "test-session-5", "handoff", tk.ID)
 	if err != nil {
@@ -142,6 +178,8 @@ func TestHandoff_ByTicketFlag(t *testing.T) {
 	if err := env.Store.Save(tk); err != nil {
 		t.Fatalf("save ticket: %v", err)
 	}
+
+	env.addNoteEvent(t, tk.ID)
 
 	out, err := env.runCmd(t, "--run-id", "test-session-6", "handoff", "--ticket", tk.ID)
 	if err != nil {
