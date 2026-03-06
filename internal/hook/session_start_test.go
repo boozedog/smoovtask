@@ -112,7 +112,7 @@ func TestHandleSessionStartMinimalOutput(t *testing.T) {
 	if !strings.Contains(ctx, "st --help") {
 		t.Error("missing help reference")
 	}
-	if !strings.Contains(ctx, "st note --file <path> --ticket <ticket-id>") {
+	if !strings.Contains(ctx, "st note --file <ticket-id>-note.md --ticket <ticket-id>") {
 		t.Error("missing file-based note guidance")
 	}
 	if !strings.Contains(ctx, "Co-Authored-By") {

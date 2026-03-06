@@ -74,7 +74,7 @@ func TestHandleSubagentStartOpenTicket(t *testing.T) {
 	if !strings.Contains(ctx, "--ticket st_open01") {
 		t.Error("missing st note --ticket instruction in context: " + ctx)
 	}
-	if !strings.Contains(ctx, "--file <path>") {
+	if !strings.Contains(ctx, "--file st_open01-note.md") {
 		t.Error("missing --file flag in note instruction: " + ctx)
 	}
 	// Should NOT contain workflow directives

@@ -32,7 +32,7 @@ func TestBuildPrompt(t *testing.T) {
 	}
 
 	// Should contain --file and --ticket in note instruction
-	if !strings.Contains(prompt, "--file <path>") {
+	if !strings.Contains(prompt, "--file st_abc123-note.md") {
 		t.Error("prompt should contain --file flag in note instruction")
 	}
 	if !strings.Contains(prompt, "--ticket st_abc123 --run-id spawn-test123") {
