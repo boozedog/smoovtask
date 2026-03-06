@@ -94,7 +94,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 				.st-board-wrapper::after { right: 0; background: linear-gradient(to left, hsl(var(--background)), transparent); }
 				.st-board-wrapper.scroll-left::before { opacity: 1; }
 				.st-board-wrapper.scroll-right::after { opacity: 1; }
-				.st-modal-ticket { width: 66vw; max-width: 1200px; }
+				.st-modal-ticket { width: 80vw; max-width: 1400px; }
 				.st-modal-header { padding: 1rem 1.25rem 0.85rem; padding-right: 3.5rem; border-bottom: 1px solid hsl(var(--st-border)); }
 				.st-modal-body { padding: 1.1rem 1.25rem 1.25rem; }
 				.st-ticket-header { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -202,17 +202,17 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						</a>
 						<a
 							role="tab"
-							if currentPath == "/agents" {
+							if currentPath == "/sessions" {
 								class="tab tab-active"
 							} else {
 								class="tab"
 							}
-							hx-get="/partials/agents"
+							hx-get="/partials/sessions"
 							hx-target="#content"
-							hx-push-url="/agents"
-							href="/agents"
+							hx-push-url="/sessions"
+							href="/sessions"
 						>
-							Agents
+							Sessions
 						</a>
 						<a
 							role="tab"
@@ -679,7 +679,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 							tab.classList.remove('tab-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/list': 'Tickets', '/agents': 'Agents', '/activity': 'Activity', '/critical-path': 'Critical Path'};
+					var titleMap = {'/': 'Board', '/list': 'Tickets', '/sessions': 'Sessions', '/activity': 'Activity', '/critical-path': 'Critical Path'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');
@@ -704,7 +704,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						modalEl.close();
 					}
 					var path = window.location.pathname;
-					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/agents': '/partials/agents', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
+					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/sessions': '/partials/sessions', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path'};
 					var partial = partialMap[path];
 					if (!partial && path.startsWith('/ticket/')) {
 						partial = '/partials' + path;

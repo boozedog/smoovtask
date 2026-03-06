@@ -970,12 +970,10 @@ func TestCriticalPathScopeDefaultsToAllAndSupportsCurrent(t *testing.T) {
 	}
 }
 
-func TestAgents(t *testing.T) {
+func TestSessions(t *testing.T) {
 	h, _, eventsDir := testSetup(t)
 
-	// Add hook events for an active agent.
-	// RunID must match the ticket's Assignee ("session-123") so the
-	// agent→ticket association is retained after cross-referencing.
+	// Add hook events for an active session.
 	evLog := event.NewEventLog(eventsDir)
 	ev := event.Event{
 		TS:      time.Now().UTC().Add(-30 * time.Second),
@@ -1002,23 +1000,23 @@ func TestAgents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
 	w := httptest.NewRecorder()
-	h.Agents(w, req)
+	h.Sessions(w, req)
 
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
 	}
 	body := w.Body.String()
 	if !strings.Contains(body, "session-") {
-		t.Error("expected agents page to contain shortened run ID")
+		t.Error("expected sessions page to contain shortened run ID")
 	}
 	if !strings.Contains(body, "In progress ticket") {
-		t.Error("expected agents page to contain ticket title")
+		t.Error("expected sessions page to contain ticket title")
 	}
 }
 
-func TestAgentsShowsStalledIndicatorAfterTwoMinutes(t *testing.T) {
+func TestSessionsShowsStalledIndicatorAfterTwoMinutes(t *testing.T) {
 	h, _, eventsDir := testSetup(t)
 
 	evLog := event.NewEventLog(eventsDir)
@@ -1035,17 +1033,17 @@ func TestAgentsShowsStalledIndicatorAfterTwoMinutes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
 	w := httptest.NewRecorder()
-	h.Agents(w, req)
+	h.Sessions(w, req)
 
 	body := w.Body.String()
 	if !strings.Contains(body, "st-stalled-icon st-alert-active") {
-		t.Error("expected agents page to show stalled warning icon for inactive agent")
+		t.Error("expected sessions page to show stalled warning icon for inactive session")
 	}
 }
 
-func TestAgentsHidesStalledIndicatorWhenRecentHookExists(t *testing.T) {
+func TestSessionsHidesStalledIndicatorWhenRecentHookExists(t *testing.T) {
 	h, _, eventsDir := testSetup(t)
 
 	evLog := event.NewEventLog(eventsDir)
@@ -1062,17 +1060,17 @@ func TestAgentsHidesStalledIndicatorWhenRecentHookExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
 	w := httptest.NewRecorder()
-	h.Agents(w, req)
+	h.Sessions(w, req)
 
 	body := w.Body.String()
 	if strings.Contains(body, "st-stalled-icon st-alert-active") {
-		t.Error("expected agents page to hide stalled warning icon for active agent")
+		t.Error("expected sessions page to hide stalled warning icon for active session")
 	}
 }
 
-func TestAgentsExcludesEndedSessions(t *testing.T) {
+func TestSessionsIncludesEndedSessions(t *testing.T) {
 	h, _, eventsDir := testSetup(t)
 
 	evLog := event.NewEventLog(eventsDir)
@@ -1103,13 +1101,105 @@ func TestAgentsExcludesEndedSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
 	w := httptest.NewRecorder()
-	h.Agents(w, req)
+	h.Sessions(w, req)
 
 	body := w.Body.String()
-	if strings.Contains(body, "run-ende") {
-		t.Error("expected ended agent to be excluded from agents page")
+	if !strings.Contains(body, "run-ende") {
+		t.Error("expected ended session to be included on sessions page")
+	}
+}
+
+func TestSessionDetail(t *testing.T) {
+	h, _, eventsDir := testSetup(t)
+
+	evLog := event.NewEventLog(eventsDir)
+	ev := event.Event{
+		TS:      time.Now().UTC().Add(-60 * time.Second),
+		Event:   event.HookSessionStart,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "detail-run-1",
+		Source:  "claude",
+	}
+	if err := evLog.Append(ev); err != nil {
+		t.Fatal(err)
+	}
+	ev2 := event.Event{
+		TS:      time.Now().UTC().Add(-30 * time.Second),
+		Event:   event.HookPreTool,
+		Ticket:  "st_def456",
+		Project: "testproj",
+		Actor:   "agent",
+		RunID:   "detail-run-1",
+		Source:  "claude",
+		Data:    map[string]any{"tool": "Bash", "command": "git status"},
+	}
+	if err := evLog.Append(ev2); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/partials/session/detail-run-1", nil)
+	req.SetPathValue("runID", "detail-run-1")
+	w := httptest.NewRecorder()
+	h.SessionDetail(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "detail-run") {
+		t.Error("expected session detail to contain run ID")
+	}
+	// Event names are shown without the "hook." prefix.
+	if !strings.Contains(body, "session-start") {
+		t.Error("expected session detail to contain session-start event")
+	}
+	if !strings.Contains(body, "pre-tool") {
+		t.Error("expected session detail to contain pre-tool event")
+	}
+	if !strings.Contains(body, "In progress ticket") {
+		t.Error("expected session detail to contain ticket title")
+	}
+	// Verify tool badge and command content are shown separately.
+	if !strings.Contains(body, "Bash") {
+		t.Error("expected session detail to show tool badge")
+	}
+	if !strings.Contains(body, "git status") {
+		t.Error("expected session detail to show command content")
+	}
+	// Verify newest-first: pre-tool (newer) should appear before session-start (older).
+	preToolIdx := strings.Index(body, ">pre-tool<")
+	sessionStartIdx := strings.Index(body, ">session-start<")
+	if preToolIdx == -1 || sessionStartIdx == -1 {
+		t.Fatal("expected both events in output")
+	}
+	if preToolIdx > sessionStartIdx {
+		t.Error("expected events in newest-first order (pre-tool before session-start)")
+	}
+}
+
+func TestSessionsRedirectFromAgents(t *testing.T) {
+	h, _, _ := testSetup(t)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /agents", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/sessions", http.StatusMovedPermanently)
+	})
+	mux.HandleFunc("GET /sessions", h.Sessions)
+
+	req := httptest.NewRequest(http.MethodGet, "/agents", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Result().StatusCode != http.StatusMovedPermanently {
+		t.Fatalf("expected 301, got %d", w.Result().StatusCode)
+	}
+	loc := w.Header().Get("Location")
+	if loc != "/sessions" {
+		t.Fatalf("expected redirect to /sessions, got %q", loc)
 	}
 }
 

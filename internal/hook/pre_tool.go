@@ -48,9 +48,22 @@ func HandlePreTool(input *Input) (Output, error) {
 	data := map[string]any{
 		"tool": input.ToolName,
 	}
-	if input.ToolName == "Bash" {
+	switch input.ToolName {
+	case "Bash":
 		if cmd, ok := input.ToolInput["command"]; ok {
 			data["command"] = cmd
+		}
+	case "Read", "Edit", "Write", "NotebookEdit", "MultiEdit":
+		if fp, ok := input.ToolInput["file_path"]; ok {
+			data["file_path"] = fp
+		}
+	case "Glob":
+		if pat, ok := input.ToolInput["pattern"]; ok {
+			data["pattern"] = pat
+		}
+	case "Grep":
+		if pat, ok := input.ToolInput["pattern"]; ok {
+			data["pattern"] = pat
 		}
 	}
 
