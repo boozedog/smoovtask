@@ -222,6 +222,7 @@ func TestPick_PrintsWorktreeSwitchCommandInGitRepo(t *testing.T) {
 	runGitCmd(t, wd, "init")
 	runGitCmd(t, wd, "config", "user.name", "Test User")
 	runGitCmd(t, wd, "config", "user.email", "test@example.com")
+	runGitCmd(t, wd, "config", "commit.gpgsign", "false")
 
 	marker := filepath.Join(wd, "marker.txt")
 	if err := os.WriteFile(marker, []byte("marker\n"), 0o644); err != nil {

@@ -82,6 +82,7 @@ func initGitRepoWithCommit(t *testing.T) string {
 	runGit(t, repo, "init")
 	runGit(t, repo, "config", "user.name", "Test User")
 	runGit(t, repo, "config", "user.email", "test@example.com")
+	runGit(t, repo, "config", "commit.gpgsign", "false")
 
 	readme := filepath.Join(repo, "README.md")
 	if err := os.WriteFile(readme, []byte("# test\n"), 0o644); err != nil {

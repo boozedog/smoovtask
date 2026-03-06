@@ -62,6 +62,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		{"init"},
 		{"config", "user.email", "test@test.com"},
 		{"config", "user.name", "Test"},
+		{"config", "commit.gpgsign", "false"},
 		{"commit", "--allow-empty", "-m", "init"},
 	} {
 		cmd := exec.Command("git", gitArgs...)
@@ -88,6 +89,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		{"init"},
 		{"config", "user.email", "test@test.com"},
 		{"config", "user.name", "Test"},
+		{"config", "commit.gpgsign", "false"},
 		{"commit", "--allow-empty", "-m", "init"},
 	} {
 		cmd := exec.Command("git", args...)
@@ -259,6 +261,8 @@ func resetFlags() {
 	leaderCLI = ""
 	workCLI = ""
 	handoffTicket = ""
+	prepTicket = ""
+	prepBase = ""
 	spawnTimeout = 45 * time.Minute
 	spawnBackend = "claude"
 	spawnDryRun = false
