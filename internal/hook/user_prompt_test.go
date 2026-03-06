@@ -1,9 +1,12 @@
 package hook
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
 func TestHandleUserPrompt(t *testing.T) {
@@ -16,7 +19,7 @@ func TestHandleUserPrompt(t *testing.T) {
 		Prompt:    "fix the login bug",
 	}
 
-	if err := HandleUserPrompt(input); err != nil {
+	if _, err := HandleUserPrompt(input); err != nil {
 		t.Fatalf("HandleUserPrompt() error: %v", err)
 	}
 
@@ -44,7 +47,7 @@ func TestHandleUserPromptNoProject(t *testing.T) {
 		Prompt:    "hello",
 	}
 
-	if err := HandleUserPrompt(input); err != nil {
+	if _, err := HandleUserPrompt(input); err != nil {
 		t.Fatalf("HandleUserPrompt() error: %v", err)
 	}
 
@@ -60,6 +63,64 @@ func TestHandleUserPromptNoProject(t *testing.T) {
 	}
 }
 
+func TestHandleUserPromptWithActiveTicket(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	// Create an in-progress ticket assigned to our session
+	store := ticket.NewStore(env.projectsDir(t))
+	tk := &ticket.Ticket{
+		ID:       "st_active",
+		Title:    "Active ticket",
+		Project:  "test-project",
+		Status:   ticket.StatusInProgress,
+		Assignee: "sess-active",
+		Priority: ticket.PriorityP2,
+		Created:  time.Now().UTC(),
+	}
+	if err := store.Save(tk); err != nil {
+		t.Fatalf("save ticket: %v", err)
+	}
+
+	input := &Input{
+		SessionID: "sess-active",
+		CWD:       projectPath,
+		Prompt:    "yes, use JWT for auth",
+	}
+
+	out, err := HandleUserPrompt(input)
+	if err != nil {
+		t.Fatalf("HandleUserPrompt() error: %v", err)
+	}
+
+	if out.AdditionalContext == "" {
+		t.Fatal("expected note reminder in AdditionalContext, got empty string")
+	}
+	if !strings.Contains(out.AdditionalContext, "add a note") {
+		t.Errorf("AdditionalContext should mention adding a note, got: %s", out.AdditionalContext)
+	}
+}
+
+func TestHandleUserPromptNoActiveTicket(t *testing.T) {
+	projectPath := t.TempDir()
+	setupTestEnv(t, projectPath)
+
+	input := &Input{
+		SessionID: "sess-no-ticket",
+		CWD:       projectPath,
+		Prompt:    "hello",
+	}
+
+	out, err := HandleUserPrompt(input)
+	if err != nil {
+		t.Fatalf("HandleUserPrompt() error: %v", err)
+	}
+
+	if out.AdditionalContext != "" {
+		t.Errorf("expected no AdditionalContext without active ticket, got: %s", out.AdditionalContext)
+	}
+}
+
 func TestHandleUserPromptNoConfig(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
@@ -69,7 +130,7 @@ func TestHandleUserPromptNoConfig(t *testing.T) {
 		Prompt:    "test prompt",
 	}
 
-	if err := HandleUserPrompt(input); err != nil {
+	if _, err := HandleUserPrompt(input); err != nil {
 		t.Fatalf("HandleUserPrompt() should not error on missing config, got: %v", err)
 	}
 }
