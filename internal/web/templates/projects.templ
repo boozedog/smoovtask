@@ -1,0 +1,217 @@
+package templates
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/boozedog/smoovtask/internal/ticket"
+)
+
+type ProjectSummary struct {
+	Name              string
+	Path              string
+	Repo              string
+	TicketsByStatus   map[ticket.Status]int
+	TicketsByPriority map[ticket.Priority]int
+	TotalTickets      int
+	ActiveSessions    int
+	Worktrees         []WorktreeInfo
+	LastActivity      time.Time
+	OldestOpenAge     time.Duration
+	DoneCount         int
+}
+
+type WorktreeInfo struct {
+	Name     string
+	Path     string
+	IsTicket bool
+}
+
+type ProjectsData struct {
+	Projects       []ProjectSummary
+	CurrentProject string
+	AllProjects    []string
+}
+
+// activeTicketCount returns the count of non-done, non-cancelled tickets.
+func (p ProjectSummary) ActiveCount() int {
+	return p.TotalTickets - p.DoneCount -
+		p.TicketsByStatus[ticket.StatusCancelled]
+}
+
+func formatDuration(d time.Duration) string {
+	if d == 0 {
+		return "-"
+	}
+	days := int(d.Hours() / 24)
+	if days > 0 {
+		return fmt.Sprintf("%dd", days)
+	}
+	hours := int(d.Hours())
+	if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	return fmt.Sprintf("%dm", int(d.Minutes()))
+}
+
+// statusBarSegments returns ordered segments for the status bar.
+func statusBarSegments(s map[ticket.Status]int, total int) []statusSegment {
+	if total == 0 {
+		return nil
+	}
+	order := []struct {
+		status ticket.Status
+		color  string
+	}{
+		{ticket.StatusBlocked, "#dc2626"},
+		{ticket.StatusOpen, "#3b82f6"},
+		{ticket.StatusInProgress, "#f59e0b"},
+		{ticket.StatusReview, "#8b5cf6"},
+		{ticket.StatusHumanReview, "#a855f7"},
+		{ticket.StatusRework, "#ef4444"},
+		{ticket.StatusDone, "#22c55e"},
+		{ticket.StatusCancelled, "#6b7280"},
+		{ticket.StatusBacklog, "#374151"},
+	}
+	var segments []statusSegment
+	for _, o := range order {
+		count := s[o.status]
+		if count == 0 {
+			continue
+		}
+		pct := float64(count) / float64(total) * 100
+		segments = append(segments, statusSegment{
+			Status: o.status,
+			Color:  o.color,
+			Pct:    pct,
+			Count:  count,
+		})
+	}
+	return segments
+}
+
+type statusSegment struct {
+	Status ticket.Status
+	Color  string
+	Pct    float64
+	Count  int
+}
+
+templ ProjectsPage(data ProjectsData) {
+	@Layout("Projects", "/projects", data.CurrentProject, data.AllProjects) {
+		@ProjectsPartial(data)
+	}
+}
+
+templ ProjectsPartial(data ProjectsData) {
+	<div
+		hx-get="/partials/projects"
+		hx-trigger="sse:refresh-activity"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		@ProjectsContent(data)
+	</div>
+}
+
+templ ProjectsContent(data ProjectsData) {
+	if len(data.Projects) == 0 {
+		<div class="p-8 text-center opacity-50">
+			No projects registered.
+		</div>
+	} else {
+		<div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));">
+			for _, proj := range data.Projects {
+				@ProjectCard(proj)
+			}
+		</div>
+	}
+}
+
+templ ProjectCard(proj ProjectSummary) {
+	<div class="card card-body bg-base-200 flex flex-col gap-3">
+		<!-- Header -->
+		<div class="flex items-center gap-2">
+			<span class="font-semibold text-lg">{ proj.Name }</span>
+			if proj.Repo != "" {
+				<span class="opacity-40 text-xs" title={ proj.Repo }>
+					<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+				</span>
+			}
+			if proj.ActiveSessions > 0 {
+				<div class="flex items-center gap-1 ml-auto">
+					<span class="st-session-dot st-session-dot-hot"></span>
+					<span class="text-xs opacity-60">{ fmt.Sprintf("%d active", proj.ActiveSessions) }</span>
+				</div>
+			}
+		</div>
+		if proj.Path != "" {
+			<div class="text-xs opacity-40 font-mono truncate" title={ proj.Path }>{ proj.Path }</div>
+		}
+		<!-- Status bar -->
+		if proj.TotalTickets > 0 {
+			<div class="flex w-full h-2 rounded-full overflow-hidden bg-base-300" title={ fmt.Sprintf("%d tickets", proj.TotalTickets) }>
+				for _, seg := range statusBarSegments(proj.TicketsByStatus, proj.TotalTickets) {
+					<div
+						style={ fmt.Sprintf("width: %.1f%%; background: %s;", seg.Pct, seg.Color) }
+						title={ fmt.Sprintf("%s: %d", seg.Status, seg.Count) }
+					></div>
+				}
+			</div>
+		}
+		<!-- Stats grid -->
+		<div class="grid grid-cols-3 gap-2 text-sm">
+			<div class="flex flex-col items-center">
+				<span class="text-lg font-bold">{ fmt.Sprintf("%d", proj.TotalTickets) }</span>
+				<span class="text-xs opacity-50">Total</span>
+			</div>
+			<div class="flex flex-col items-center">
+				<span class="text-lg font-bold">{ fmt.Sprintf("%d", proj.ActiveCount()) }</span>
+				<span class="text-xs opacity-50">Active</span>
+			</div>
+			<div class="flex flex-col items-center">
+				<span class="text-lg font-bold">{ fmt.Sprintf("%d", proj.DoneCount) }</span>
+				<span class="text-xs opacity-50">Done</span>
+			</div>
+		</div>
+		<!-- Priority + meta row -->
+		<div class="flex flex-wrap gap-2 text-xs">
+			if proj.TicketsByPriority[ticket.PriorityP0] > 0 {
+				<span class="badge st-priority-p0 badge-sm">{ fmt.Sprintf("P0: %d", proj.TicketsByPriority[ticket.PriorityP0]) }</span>
+			}
+			if proj.TicketsByPriority[ticket.PriorityP1] > 0 {
+				<span class="badge st-priority-p1 badge-sm">{ fmt.Sprintf("P1: %d", proj.TicketsByPriority[ticket.PriorityP1]) }</span>
+			}
+			if !proj.LastActivity.IsZero() {
+				<span class="opacity-50" title={ proj.LastActivity.Format(time.RFC3339) }>
+					Last activity: { relativeTime(proj.LastActivity) }
+				</span>
+			}
+			if proj.OldestOpenAge > 0 {
+				<span class="opacity-50">
+					Oldest open: { formatDuration(proj.OldestOpenAge) }
+				</span>
+			}
+		</div>
+		<!-- Worktrees -->
+		if len(proj.Worktrees) > 0 {
+			<div class="border-t border-[hsl(var(--st-border))] pt-2 mt-1">
+				<details>
+					<summary class="text-xs opacity-50 cursor-pointer select-none">
+						{ fmt.Sprintf("Worktrees (%d)", len(proj.Worktrees)) }
+					</summary>
+					<div class="mt-1 flex flex-col gap-1">
+						for _, wt := range proj.Worktrees {
+							<div class="flex items-center gap-2 text-xs font-mono">
+								if wt.IsTicket {
+									<span class="badge badge-sm badge-outline badge-primary">ticket</span>
+								}
+								<span class="truncate opacity-70" title={ wt.Path }>{ wt.Name }</span>
+							</div>
+						}
+					</div>
+				</details>
+			</div>
+		}
+	</div>
+}

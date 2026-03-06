@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/sse"
@@ -12,6 +13,7 @@ import (
 
 // Handler holds shared dependencies for HTTP handlers.
 type Handler struct {
+	cfg       *config.Config
 	store     *ticket.Store
 	eventsDir string
 	broker    *sse.Broker
@@ -19,8 +21,9 @@ type Handler struct {
 }
 
 // New creates a new Handler.
-func New(projectsDir, eventsDir string, broker *sse.Broker, project string) *Handler {
+func New(cfg *config.Config, projectsDir, eventsDir string, broker *sse.Broker, project string) *Handler {
 	return &Handler{
+		cfg:       cfg,
 		store:     ticket.NewStore(projectsDir),
 		eventsDir: eventsDir,
 		broker:    broker,

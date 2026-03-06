@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/handler"
@@ -70,7 +71,12 @@ func testSetup(t *testing.T) (*handler.Handler, string, string) {
 	}
 
 	broker := sse.NewBroker()
-	h := handler.New(projectsDir, eventsDir, broker, "testproj")
+	cfg := &config.Config{
+		Projects: map[string]config.ProjectConfig{
+			"testproj": {Path: projectsDir},
+		},
+	}
+	h := handler.New(cfg, projectsDir, eventsDir, broker, "testproj")
 	return h, projectsDir, eventsDir
 }
 
