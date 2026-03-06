@@ -100,8 +100,8 @@ func HandleSessionStart(input *Input) (*Output, error) {
 
 // noteGuidance returns the note-writing instruction for hook injection.
 func noteGuidance() string {
-	return "- To add notes: use the Write tool to write your note content to a file, " +
-		"then run `st note --file <path> --ticket <ticket-id> --run-id <run-id>` (the file is deleted after reading)\n"
+	return "- To add notes: use the Write tool to write your note content to `<ticket-id>-note.md` in the current directory, " +
+		"then run `st note --file <ticket-id>-note.md --ticket <ticket-id> --run-id <run-id>` (the file is deleted after reading)\n"
 }
 
 func quickRefGeneric() string {

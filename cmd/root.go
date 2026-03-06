@@ -45,7 +45,7 @@ func isIdentityExempt(cmd *cobra.Command) bool {
 		return true
 	}
 
-	if cmd.Name() == "hook" || cmd.Name() == "help" || cmd.Name() == "assign" || cmd.Name() == "init" || cmd.Name() == "show" || cmd.Name() == "web" || cmd.Name() == "leader" || cmd.Name() == "work" || cmd.Name() == "review" {
+	if cmd.Name() == "hook" || cmd.Name() == "help" || cmd.Name() == "assign" || cmd.Name() == "init" || cmd.Name() == "show" || cmd.Name() == "web" || cmd.Name() == "leader" || cmd.Name() == "work" || cmd.Name() == "review" || cmd.Name() == "prep" {
 		return true
 	}
 

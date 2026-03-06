@@ -5,13 +5,14 @@ package guidance
 // CommitRules returns the standard instruction forbidding attribution lines in commit messages.
 func CommitRules() string {
 	return "NEVER include Co-Authored-By, Signed-off-by, or any other attribution/trailer lines in commit messages. " +
-		"Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
+		"ALWAYS disable GPG signing on commits — the human will sign when preparing the PR. " +
+		"Keep commits simple: `git add <files> && git -c commit.gpgsign=false commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
 }
 
 // NoteHowTo returns the standard instruction for how to add notes.
 func NoteHowTo() string {
-	return "To add a note: use the Write tool to write your note content to a file, " +
-		"then run `st note --file <path> --ticket <ticket-id> --run-id <run-id>` (the file is deleted after reading)."
+	return "To add a note: use the Write tool to write your note content to `<ticket-id>-note.md` in the current directory, " +
+		"then run `st note --file <ticket-id>-note.md --ticket <ticket-id> --run-id <run-id>` (the file is deleted after reading)."
 }
 
 // LoggingImplementation returns the full logging guidance for implementation work

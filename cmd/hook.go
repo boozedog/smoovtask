@@ -13,7 +13,7 @@ import (
 var hookCmd = &cobra.Command{
 	Use:   "hook <event-type>",
 	Short: "Handle Claude Code hook events",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MinimumNArgs(1),
 	RunE:  runHook,
 }
 

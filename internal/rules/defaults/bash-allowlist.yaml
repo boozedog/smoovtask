@@ -21,7 +21,7 @@ rules:
   - name: allow-git-commit
     match:
       tool: Bash
-      command: ^git\s+(add|commit)\b
+      command: ^git\s+(-c\s+\S+\s+)?(add|commit)\b
     action: allow
     message: "git add/commit allowed for worktree commits"
 
