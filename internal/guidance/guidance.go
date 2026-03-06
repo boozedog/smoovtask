@@ -5,7 +5,8 @@ package guidance
 // CommitRules returns the standard instruction forbidding attribution lines in commit messages.
 func CommitRules() string {
 	return "NEVER include Co-Authored-By, Signed-off-by, or any other attribution/trailer lines in commit messages. " +
-		"Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
+		"ALWAYS disable GPG signing on commits — the human will sign when preparing the PR. " +
+		"Keep commits simple: `git add <files> && git -c commit.gpgsign=false commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
 }
 
 // NoteHowTo returns the standard instruction for how to add notes.
