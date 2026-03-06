@@ -48,5 +48,10 @@ func RepoName(remoteURL string) string {
 	// Strip .git suffix
 	path = strings.TrimSuffix(path, ".git")
 
+	// Return only the repo name (last segment), not org/repo.
+	if i := strings.LastIndex(path, "/"); i >= 0 {
+		path = path[i+1:]
+	}
+
 	return path
 }
