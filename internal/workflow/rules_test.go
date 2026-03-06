@@ -27,6 +27,12 @@ func TestRequiresNote(t *testing.T) {
 	if !RequiresNote(ticket.StatusInProgress, ticket.StatusReview) {
 		t.Error("IN-PROGRESS → REVIEW should require note")
 	}
+	if !RequiresNote(ticket.StatusInProgress, ticket.StatusOpen) {
+		t.Error("IN-PROGRESS → OPEN (handoff) should require note")
+	}
+	if !RequiresNote(ticket.StatusRework, ticket.StatusOpen) {
+		t.Error("REWORK → OPEN (handoff) should require note")
+	}
 	if !RequiresNote(ticket.StatusReview, ticket.StatusHumanReview) {
 		t.Error("REVIEW → HUMAN-REVIEW should require note")
 	}

@@ -13,7 +13,8 @@ func TestHandleSessionStartLogsEvent(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
 
-	// Create a ticket so the handler has something to count
+	// Create a ticket so the handler has something to count.
+	// Give it an old Updated time so it doesn't trigger recent-handoff detection.
 	store := ticket.NewStore(env.projectsDir(t))
 	tk := &ticket.Ticket{
 		ID:       "st_test01",
@@ -21,8 +22,8 @@ func TestHandleSessionStartLogsEvent(t *testing.T) {
 		Project:  "test-project",
 		Status:   ticket.StatusOpen,
 		Priority: ticket.PriorityP2,
-		Created:  time.Now().UTC(),
-		Updated:  time.Now().UTC(),
+		Created:  time.Now().UTC().Add(-1 * time.Hour),
+		Updated:  time.Now().UTC().Add(-1 * time.Hour),
 	}
 	if err := store.Create(tk); err != nil {
 		t.Fatalf("create ticket: %v", err)
@@ -153,6 +154,84 @@ func TestHandleSessionStartRoleAwareImplementer(t *testing.T) {
 	}
 	if !strings.Contains(ctx, "st pick <ticket-id> --run-id <run-id>") {
 		t.Error("missing implementer pick command")
+	}
+}
+
+func TestHandleSessionStartRecentHandoff(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	// Create an OPEN ticket with no assignee, updated just now.
+	store := ticket.NewStore(env.projectsDir(t))
+	tk := &ticket.Ticket{
+		ID:       "st_handoff01",
+		Title:    "Recently handed off",
+		Project:  "test-project",
+		Status:   ticket.StatusOpen,
+		Assignee: "",
+		Priority: ticket.PriorityP2,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(tk); err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+
+	input := &Input{
+		SessionID: "sess-new-build",
+		CWD:       projectPath,
+	}
+
+	out, err := HandleSessionStart(input)
+	if err != nil {
+		t.Fatalf("HandleSessionStart() error: %v", err)
+	}
+
+	ctx := out.AdditionalContext
+	if !strings.Contains(ctx, "st pick st_handoff01") {
+		t.Error("expected pickup instructions with ticket ID")
+	}
+	if !strings.Contains(ctx, "Plan Continuation") {
+		t.Error("expected Plan Continuation section")
+	}
+}
+
+func TestHandleSessionStartStaleHandoff(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	// Create an OPEN ticket with no assignee, updated 10 minutes ago.
+	store := ticket.NewStore(env.projectsDir(t))
+	tk := &ticket.Ticket{
+		ID:       "st_stale01",
+		Title:    "Stale handoff",
+		Project:  "test-project",
+		Status:   ticket.StatusOpen,
+		Assignee: "",
+		Priority: ticket.PriorityP2,
+		Created:  time.Now().UTC().Add(-10 * time.Minute),
+		Updated:  time.Now().UTC().Add(-10 * time.Minute),
+	}
+	if err := store.Create(tk); err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+
+	input := &Input{
+		SessionID: "sess-stale",
+		CWD:       projectPath,
+	}
+
+	out, err := HandleSessionStart(input)
+	if err != nil {
+		t.Fatalf("HandleSessionStart() error: %v", err)
+	}
+
+	ctx := out.AdditionalContext
+	if strings.Contains(ctx, "Plan Continuation") {
+		t.Error("stale ticket should not trigger pickup instructions")
+	}
+	if strings.Contains(ctx, "st_stale01") {
+		t.Error("stale ticket ID should not appear in context")
 	}
 }
 

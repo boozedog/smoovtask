@@ -57,7 +57,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	// Set up handlers.
 	cwd, _ := os.Getwd()
 	proj := project.Detect(s.cfg, cwd)
-	h := handler.New(projectsDir, eventsDir, s.broker, proj)
+	h := handler.New(s.cfg, projectsDir, eventsDir, s.broker, proj)
 
 	mux := http.NewServeMux()
 
@@ -77,8 +77,12 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /ticket/{id}/edit", h.EditTicket)
 	mux.HandleFunc("POST /ticket/{id}/edit", h.UpdateTicket)
 	mux.HandleFunc("GET /activity", h.Activity)
-	mux.HandleFunc("GET /agents", h.Agents)
+	mux.HandleFunc("GET /sessions", h.Sessions)
+	mux.HandleFunc("GET /agents", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/sessions", http.StatusMovedPermanently)
+	})
 	mux.HandleFunc("GET /critical-path", h.CriticalPath)
+	mux.HandleFunc("GET /projects", h.Projects)
 
 	// SSE endpoint — single unified stream to avoid HTTP/1.1 connection exhaustion.
 	mux.HandleFunc("GET /events", h.Events)
@@ -90,8 +94,10 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
-	mux.HandleFunc("GET /partials/agents", h.PartialAgents)
+	mux.HandleFunc("GET /partials/sessions", h.PartialSessions)
+	mux.HandleFunc("GET /partials/session/{runID}", h.SessionDetail)
 	mux.HandleFunc("GET /partials/critical-path", h.PartialCriticalPath)
+	mux.HandleFunc("GET /partials/projects", h.PartialProjects)
 	mux.HandleFunc("GET /partials/form/new", h.PartialNewTicket)
 	mux.HandleFunc("GET /partials/form/{id}/edit", h.PartialEditTicket)
 

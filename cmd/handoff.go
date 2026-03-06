@@ -70,6 +70,21 @@ func runHandoff(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot hand off %s — ticket has no assignee", tk.ID)
 	}
 
+	// Require a detailed note explaining why the ticket is being handed off.
+	if workflow.RequiresNote(tk.Status, ticket.StatusOpen) {
+		evDir, evErr := cfg.EventsDir()
+		if evErr != nil {
+			return fmt.Errorf("get events dir: %w", evErr)
+		}
+		hasNote, noteErr := workflow.HasNoteSince(evDir, tk.ID, tk.Updated)
+		if noteErr != nil {
+			return fmt.Errorf("check note requirement: %w", noteErr)
+		}
+		if !hasNote {
+			return fmt.Errorf("cannot hand off %s — a detailed note is required before handoff. Run `st note --ticket %s --run-id %s \"<reason>\"` first", tk.ID, tk.ID, runID)
+		}
+	}
+
 	now := time.Now().UTC()
 	oldStatus := tk.Status
 	previousAssignee := tk.Assignee

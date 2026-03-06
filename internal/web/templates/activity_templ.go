@@ -26,7 +26,6 @@ func eventContext(ev event.Event) string {
 	case ev.Data["from"] != nil:
 		// Show status transition: FROM → TO.
 		from := fmt.Sprintf("%v", ev.Data["from"])
-		// Use explicit "to" field (e.g. status.override), fall back to event name.
 		to := ""
 		if ev.Data["to"] != nil {
 			to = strings.ToUpper(fmt.Sprintf("%v", ev.Data["to"]))
@@ -37,16 +36,45 @@ func eventContext(ev event.Event) string {
 			}
 		}
 		ctx = from + " → " + to
+	case ev.Data["decision"] != nil:
+		// Rule decision: show tool + decision + reason.
+		tool := ""
+		if ev.Data["tool"] != nil {
+			tool = fmt.Sprintf("%v", ev.Data["tool"])
+		}
+		decision := fmt.Sprintf("%v", ev.Data["decision"])
+		reason := ""
+		if ev.Data["reason"] != nil {
+			reason = fmt.Sprintf("%v", ev.Data["reason"])
+		}
+		if tool != "" {
+			ctx = tool + " → " + decision
+		} else {
+			ctx = decision
+		}
+		if reason != "" {
+			ctx += " (" + reason + ")"
+		}
 	case ev.Data["tool"] != nil:
-		ctx = fmt.Sprintf("%v", ev.Data["tool"])
+		tool := fmt.Sprintf("%v", ev.Data["tool"])
+		switch {
+		case ev.Data["command"] != nil:
+			ctx = tool + ": " + fmt.Sprintf("%v", ev.Data["command"])
+		case ev.Data["file_path"] != nil:
+			ctx = tool + ": " + fmt.Sprintf("%v", ev.Data["file_path"])
+		case ev.Data["pattern"] != nil:
+			ctx = tool + ": " + fmt.Sprintf("%v", ev.Data["pattern"])
+		default:
+			ctx = tool
+		}
 	case ev.Data["title"] != nil:
 		ctx = fmt.Sprintf("%v", ev.Data["title"])
 	default:
 		return ""
 	}
 	runes := []rune(ctx)
-	if len(runes) > 80 {
-		ctx = string(runes[:80]) + "…"
+	if len(runes) > 120 {
+		ctx = string(runes[:120]) + "…"
 	}
 	return ctx
 }
@@ -138,7 +166,7 @@ func ActivityPartial(data ActivityData) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(data.CurrentProject)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 74, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 102, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -249,7 +277,7 @@ func ActivityContent(data ActivityData) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(ev.TS.Format("2006-01-02 15:04:05"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 117, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 145, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -262,7 +290,7 @@ func ActivityContent(data ActivityData) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(ev.Event)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 120, Col: 18}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 148, Col: 18}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -280,7 +308,7 @@ func ActivityContent(data ActivityData) templ.Component {
 					var templ_7745c5c3_Var8 templ.SafeURL
 					templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/ticket/" + ev.Ticket))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 125, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 153, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 					if templ_7745c5c3_Err != nil {
@@ -293,7 +321,7 @@ func ActivityContent(data ActivityData) templ.Component {
 					var templ_7745c5c3_Var9 string
 					templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs("/partials/ticket/" + ev.Ticket)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 126, Col: 50}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 154, Col: 50}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 					if templ_7745c5c3_Err != nil {
@@ -306,7 +334,7 @@ func ActivityContent(data ActivityData) templ.Component {
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(ev.Ticket)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 129, Col: 21}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 157, Col: 21}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {
@@ -339,7 +367,7 @@ func ActivityContent(data ActivityData) templ.Component {
 					var templ_7745c5c3_Var11 string
 					templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(shortAssignee(ev.RunID))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 139, Col: 59}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 167, Col: 59}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 					if templ_7745c5c3_Err != nil {
@@ -357,7 +385,7 @@ func ActivityContent(data ActivityData) templ.Component {
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(ev.Actor)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 142, Col: 44}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 170, Col: 44}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -375,7 +403,7 @@ func ActivityContent(data ActivityData) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(eventContext(ev))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 146, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/activity.templ`, Line: 174, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {

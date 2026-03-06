@@ -342,7 +342,18 @@ func runHook(_ *cobra.Command, args []string) error {
 			source = "opencode"
 		}
 		input.Source = source
-		return hook.HandleUserPrompt(input)
+		out, err := hook.HandleUserPrompt(input)
+		if err != nil {
+			return err
+		}
+		if out.AdditionalContext != "" {
+			if source == "claude" {
+				fmt.Print(out.AdditionalContext)
+				return nil
+			}
+			return hook.WriteOutput(*out)
+		}
+		return nil
 
 	default:
 		// Unknown hook events are silently ignored (don't break Claude Code)

@@ -15,54 +15,44 @@ func NoteHowTo() string {
 		"then run `st note --file <ticket-id>-note.md --ticket <ticket-id> --run-id <run-id>` (the file is deleted after reading)."
 }
 
-// LoggingImplementation returns the full logging guidance for implementation work
+// LoggingImplementation returns the full note guidance for implementation work
 // (st pick, before-you-start context).
 func LoggingImplementation() string {
-	return "\n--- Logging ---\n" +
-		"Log your work frequently. Use markdown formatting — headers,\n" +
-		"bullet lists, **bold**, and `code` make notes easier to read. Good things to log:\n" +
-		"- Key decisions and why you made them\n" +
-		"- Discussions with the user — especially clarifications, scope changes, or approvals\n" +
-		"- Design trade-offs considered and the chosen approach\n" +
-		"- Significant progress milestones or blockers encountered\n" +
-		"- Brief code snippets where they help explain a change or decision\n" +
-		"- Improvements you notice that are outside the ticket's scope\n" +
-		"Notes become the ticket's audit trail — another agent should be able to understand what happened.\n" +
+	return "\n--- Notes Are Required ---\n" +
+		"You MUST add notes to this ticket throughout your work — not just at the end.\n" +
+		"`st status review` will REJECT your transition if you haven't added any notes.\n\n" +
+		"Add a note IMMEDIATELY after each of these:\n" +
+		"- The user answers a question or clarifies requirements\n" +
+		"- You make a key design decision or choose between approaches\n" +
+		"- You finish a meaningful chunk of implementation\n" +
+		"- You hit a blocker or discover something surprising\n" +
+		"- You notice improvements outside the ticket's scope\n\n" +
+		"Use markdown formatting (headers, bullet lists, **bold**, `code`).\n" +
+		"Notes are the ticket's audit trail — another agent must be able to\n" +
+		"understand what happened and why.\n" +
 		NoteHowTo() + "\n"
 }
 
-// LoggingReview returns the full logging guidance for review work
+// LoggingReview returns the full note guidance for review work
 // (st review, review context).
 func LoggingReview() string {
-	return "\n--- Logging ---\n" +
-		"Log your work frequently. Use markdown formatting — headers,\n" +
-		"bullet lists, **bold**, and `code` make notes easier to read. Good things to log:\n" +
-		"- Key decisions and why you made them\n" +
-		"- Discussions with the user — especially clarifications, scope changes, or approvals\n" +
-		"- Anything surprising or noteworthy discovered during review\n" +
-		"- Brief code snippets where they help explain a finding or concern\n" +
-		"Notes become the ticket's audit trail — another agent should be able to understand what happened.\n" +
+	return "\n--- Notes Are Required ---\n" +
+		"You MUST add notes to this ticket throughout your review — not just at the end.\n" +
+		"`st status done/human-review/rework` will REJECT your transition without notes.\n\n" +
+		"Add a note IMMEDIATELY after each of these:\n" +
+		"- You finish reviewing a file or component\n" +
+		"- You find an issue, concern, or something noteworthy\n" +
+		"- The user answers a question or clarifies intent\n" +
+		"- You make a judgment call about severity or scope\n\n" +
+		"Use markdown formatting (headers, bullet lists, **bold**, `code`).\n" +
+		"Notes are the ticket's audit trail — another agent must be able to\n" +
+		"understand what was reviewed and what was found.\n" +
 		NoteHowTo() + "\n"
 }
 
-// CompactImplementation returns the compact logging guidance for hooks
-// injecting context into implementation work sessions.
-func CompactImplementation() string {
-	return "LOG FREQUENTLY: Use `st note` throughout your work — not just at the end. " +
-		"Use markdown formatting (headers, bullet lists, code blocks). " +
-		"Log key decisions, discussions with the user (clarifications, scope changes, approvals), " +
-		"anything surprising, and improvements you notice that are outside the ticket's scope. " +
-		"Include brief code snippets where they help explain a change. Notes are the ticket's audit trail. " +
-		NoteHowTo()
-}
-
-// CompactReview returns the compact logging guidance for hooks
-// injecting context into review work sessions.
-func CompactReview() string {
-	return "LOG FREQUENTLY: Use `st note` throughout your work — not just at the end. " +
-		"Use markdown formatting (headers, bullet lists, code blocks). " +
-		"Log key decisions, discussions with the user (clarifications, scope changes, approvals), " +
-		"and anything surprising. Include brief code snippets where they help explain a change. " +
-		"Notes are the ticket's audit trail. " +
+// PromptReminder returns a short note reminder for injection after user messages.
+func PromptReminder() string {
+	return "Reminder: if the user just answered a question, clarified requirements, or made a decision, " +
+		"add a note to the ticket capturing that decision BEFORE continuing with implementation. " +
 		NoteHowTo()
 }

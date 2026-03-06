@@ -18,7 +18,10 @@ func RequiresAssignee(to ticket.Status) bool {
 // RequiresNote returns true if the transition requires that a note was added
 // since the ticket entered its current status.
 func RequiresNote(from, to ticket.Status) bool {
-	if from == ticket.StatusInProgress && to == ticket.StatusReview {
+	if from == ticket.StatusInProgress && (to == ticket.StatusReview || to == ticket.StatusOpen) {
+		return true
+	}
+	if from == ticket.StatusRework && to == ticket.StatusOpen {
 		return true
 	}
 	if from == ticket.StatusReview && (to == ticket.StatusHumanReview || to == ticket.StatusDone || to == ticket.StatusRework) {

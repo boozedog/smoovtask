@@ -554,6 +554,96 @@ func TestRejectCommitAttribution(t *testing.T) {
 	}
 }
 
+func TestHandlePreToolExitPlanModeHandoff(t *testing.T) {
+	projectPath := t.TempDir()
+	env := setupTestEnv(t, projectPath)
+
+	store := ticket.NewStore(env.projectsDir(t))
+	tk := &ticket.Ticket{
+		ID:       "st_plan01",
+		Title:    "Plan ticket",
+		Project:  "test-project",
+		Status:   ticket.StatusInProgress,
+		Assignee: "sess-plan",
+		Priority: ticket.PriorityP2,
+		Created:  time.Now().UTC(),
+		Updated:  time.Now().UTC(),
+	}
+	if err := store.Create(tk); err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+
+	input := &Input{
+		SessionID: "sess-plan",
+		CWD:       projectPath,
+		ToolName:  "ExitPlanMode",
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	// Should allow ExitPlanMode to proceed (no deny).
+	if out.Decision != nil {
+		t.Errorf("expected no deny decision, got: %#v", out.Decision)
+	}
+
+	// Ticket should now be OPEN with no assignee.
+	updated, err := store.Get("st_plan01")
+	if err != nil {
+		t.Fatalf("get ticket: %v", err)
+	}
+	if updated.Status != ticket.StatusOpen {
+		t.Errorf("ticket status = %q, want %q", updated.Status, ticket.StatusOpen)
+	}
+	if updated.Assignee != "" {
+		t.Errorf("ticket assignee = %q, want empty", updated.Assignee)
+	}
+
+	// Should have a handoff event logged.
+	events := readTodayEvents(t, env.EventsDir)
+	var found bool
+	for _, ev := range events {
+		if ev.Event == event.TicketHandoff {
+			found = true
+			if ev.Ticket != "st_plan01" {
+				t.Errorf("handoff event ticket = %q, want %q", ev.Ticket, "st_plan01")
+			}
+			if ev.Data["reason"] != "plan-mode-exit" {
+				t.Errorf("handoff reason = %v, want plan-mode-exit", ev.Data["reason"])
+			}
+		}
+	}
+	if !found {
+		t.Error("expected ticket.handoff event, none found")
+	}
+}
+
+func TestHandlePreToolExitPlanModeNoTicket(t *testing.T) {
+	projectPath := t.TempDir()
+	setupTestEnv(t, projectPath)
+
+	input := &Input{
+		SessionID: "sess-no-plan-ticket",
+		CWD:       projectPath,
+		ToolName:  "ExitPlanMode",
+	}
+
+	out, err := HandlePreTool(input)
+	if err != nil {
+		t.Fatalf("HandlePreTool() error: %v", err)
+	}
+
+	// Should pass through with no decision and no context.
+	if out.Decision != nil {
+		t.Errorf("expected no decision, got: %#v", out.Decision)
+	}
+	if out.AdditionalContext != "" {
+		t.Errorf("expected no context, got: %q", out.AdditionalContext)
+	}
+}
+
 func TestHandlePreToolTicketDenyTakesPriorityOverRuleAllow(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)

@@ -95,7 +95,55 @@ func HandleSessionStart(input *Input) (*Output, error) {
 	b.WriteString("\n\n")
 	b.WriteString(quickRefForRole(role))
 
+	// Detect recently handed-off tickets (plan-mode-exit) and inject pickup instructions.
+	if pickup := recentHandoffPickup(store, proj, input.SessionID); pickup != "" {
+		b.WriteString("\n")
+		b.WriteString(pickup)
+	}
+
 	return &Output{AdditionalContext: wrapAdditionalContext(b.String())}, nil
+}
+
+// recentHandoffPickup checks for OPEN tickets with no assignee that were
+// updated within the last 5 minutes — these are likely plan-mode handoffs
+// waiting for the new build session to pick them up.
+func recentHandoffPickup(store *ticket.Store, proj, sessionID string) string {
+	tickets, err := store.ListMeta(ticket.ListFilter{
+		Project: proj,
+		Status:  ticket.StatusOpen,
+	})
+	if err != nil {
+		return ""
+	}
+
+	cutoff := time.Now().UTC().Add(-5 * time.Minute)
+	var candidates []*ticket.Ticket
+	for _, tk := range tickets {
+		if tk.Assignee == "" && tk.Updated.After(cutoff) {
+			candidates = append(candidates, tk)
+		}
+	}
+
+	if len(candidates) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("## Plan Continuation\n")
+	if len(candidates) == 1 {
+		tk := candidates[0]
+		fmt.Fprintf(&b, "A ticket was recently handed off and is ready for implementation.\n")
+		fmt.Fprintf(&b, "Run `st pick %s --run-id %s` to claim it, then save your implementation plan\n", tk.ID, sessionID)
+		fmt.Fprintf(&b, "as a note on the ticket: write the plan to `%s-note.md` using the Write tool,\n", tk.ID)
+		fmt.Fprintf(&b, "then run `st note --file %s-note.md --ticket %s --run-id %s`.\n", tk.ID, tk.ID, sessionID)
+	} else {
+		b.WriteString("Multiple tickets were recently handed off and are ready for implementation:\n")
+		for _, tk := range candidates {
+			fmt.Fprintf(&b, "- `%s` — %s\n", tk.ID, tk.Title)
+		}
+		fmt.Fprintf(&b, "Run `st pick <ticket-id> --run-id %s` to claim one.\n", sessionID)
+	}
+	return b.String()
 }
 
 // noteGuidance returns the note-writing instruction for hook injection.
