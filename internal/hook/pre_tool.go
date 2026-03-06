@@ -35,6 +35,14 @@ func HandlePreTool(input *Input) (Output, error) {
 
 	proj := project.Detect(cfg, input.CWD)
 
+	// Auto-handoff when exiting plan mode — release the ticket so the new
+	// build session can pick it up.
+	if input.ToolName == "ExitPlanMode" && proj != "" && input.SessionID != "" {
+		if out, handled := handleExitPlanModeHandoff(cfg, proj, input, eventsDir); handled {
+			return out, nil
+		}
+	}
+
 	ticketID := lookupActiveTicket(cfg, proj, input.SessionID)
 
 	data := map[string]any{
@@ -175,6 +183,61 @@ func rejectCommitAttribution(input *Input) string {
 		}
 	}
 	return ""
+}
+
+// handleExitPlanModeHandoff hands off the active ticket when ExitPlanMode is
+// called. Returns (output, true) if a handoff was performed, or (_, false) if
+// there was no active ticket to hand off (caller should continue normally).
+func handleExitPlanModeHandoff(cfg *config.Config, proj string, input *Input, eventsDir string) (Output, bool) {
+	projectsDir, err := cfg.ProjectsDir()
+	if err != nil {
+		return Output{}, false
+	}
+	store := ticket.NewStore(projectsDir)
+	ticketID := activeTicketID(store, proj, input.SessionID)
+	if ticketID == "" {
+		return Output{}, false
+	}
+
+	tk, err := store.Get(ticketID)
+	if err != nil {
+		return Output{}, false
+	}
+
+	now := time.Now().UTC()
+	previousAssignee := tk.Assignee
+	oldStatus := tk.Status
+
+	tk.Status = ticket.StatusOpen
+	tk.Assignee = ""
+	tk.Updated = now
+
+	ticket.AppendSection(tk, "Handed Off", "agent", input.SessionID, "", map[string]string{
+		"reason":            "plan-mode-exit",
+		"previous-assignee": previousAssignee,
+	}, now)
+
+	if err := store.Save(tk); err != nil {
+		return Output{}, false
+	}
+
+	el := event.NewEventLog(eventsDir)
+	_ = el.Append(event.Event{
+		TS:      now,
+		Event:   event.TicketHandoff,
+		Ticket:  tk.ID,
+		Project: proj,
+		Actor:   "agent",
+		RunID:   input.SessionID,
+		Source:  input.Source,
+		Data: map[string]any{
+			"from":              string(oldStatus),
+			"previous_assignee": previousAssignee,
+			"reason":            "plan-mode-exit",
+		},
+	})
+
+	return Output{}, true
 }
 
 // lookupActiveTicket resolves the active ticket for a session.
