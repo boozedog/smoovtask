@@ -11,24 +11,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var hooksCmd = &cobra.Command{
-	Use:   "hooks",
-	Short: "Manage Claude Code hook integration",
+var installCmd = &cobra.Command{
+	Use:   "install",
+	Short: "Install smoovtask hooks, rules, and agent bridges",
+	Long:  `Installs smoovtask into your environment: Claude Code hooks, OpenCode/PI bridge plugins, and default rule files. Existing hooks and settings are preserved.`,
+	RunE:  runInstall,
 }
 
-var hooksInstallCmd = &cobra.Command{
-	Use:   "install",
-	Short: "Install smoovtask hooks into agent settings",
-	Long:  `Installs smoovtask hook commands into agent settings (Claude Code, opencode, or pi). Existing hooks and settings are preserved.`,
-	RunE:  runHooksInstall,
+var uninstallCmd = &cobra.Command{
+	Use:   "uninstall",
+	Short: "Remove smoovtask hooks and agent bridges",
+	Long:  `Removes smoovtask hooks from Claude Code settings and deletes OpenCode/PI bridge plugins. Rule files are left intact.`,
+	RunE:  runUninstall,
 }
 
 var agents []string
 
 func init() {
-	hooksInstallCmd.Flags().StringSliceVar(&agents, "agents", []string{"claude"}, "Agents to install hooks for: claude, opencode, pi, both")
-	hooksCmd.AddCommand(hooksInstallCmd)
-	rootCmd.AddCommand(hooksCmd)
+	installCmd.Flags().StringSliceVar(&agents, "agents", []string{"claude"}, "Agents to install for: claude, opencode, pi, both")
+	uninstallCmd.Flags().StringSliceVar(&agents, "agents", []string{"claude"}, "Agents to uninstall for: claude, opencode, pi, both")
+	rootCmd.AddCommand(installCmd)
+	rootCmd.AddCommand(uninstallCmd)
 }
 
 // hookEntry represents a single hook command entry.
@@ -465,7 +468,7 @@ func smoovtaskHooks() map[string][]hookGroup {
 	}
 }
 
-func runHooksInstall(_ *cobra.Command, _ []string) error {
+func runInstall(_ *cobra.Command, _ []string) error {
 	expandedAgents := expandAgents(agents)
 
 	for _, agent := range expandedAgents {
@@ -499,6 +502,30 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("seed default rules: %w", err)
 	}
 
+	return nil
+}
+
+func runUninstall(_ *cobra.Command, _ []string) error {
+	expandedAgents := expandAgents(agents)
+
+	for _, agent := range expandedAgents {
+		switch agent {
+		case "claude":
+			if err := uninstallClaudeHooks(); err != nil {
+				return fmt.Errorf("uninstall claude hooks: %w", err)
+			}
+		case "opencode":
+			if err := uninstallOpencodePlugin(); err != nil {
+				return fmt.Errorf("uninstall opencode plugin: %w", err)
+			}
+		case "pi":
+			if err := uninstallPiExtension(); err != nil {
+				return fmt.Errorf("uninstall pi extension: %w", err)
+			}
+		}
+	}
+
+	fmt.Println("\nRule files in ~/.smoovtask/rules/ were left intact.")
 	return nil
 }
 
@@ -663,6 +690,145 @@ func installPiExtension() error {
 	}
 
 	fmt.Printf("Installed pi extension: %s\n", extensionFile)
+	return nil
+}
+
+// uninstallClaudeHooks removes all smoovtask hooks from Claude Code settings.
+func uninstallClaudeHooks() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home dir: %w", err)
+	}
+
+	settingsPath := filepath.Join(home, ".claude", "settings.json")
+
+	data, err := os.ReadFile(settingsPath)
+	if os.IsNotExist(err) {
+		fmt.Println("No Claude settings found, nothing to uninstall.")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read %s: %w", settingsPath, err)
+	}
+
+	settings := make(map[string]any)
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return fmt.Errorf("parse %s: %w", settingsPath, err)
+	}
+
+	existingHooks, _ := settings["hooks"].(map[string]any)
+	if existingHooks == nil {
+		fmt.Println("No Claude hooks found, nothing to uninstall.")
+		return nil
+	}
+
+	var removed []string
+	for eventName := range existingHooks {
+		groups, ok := existingHooks[eventName].([]any)
+		if !ok {
+			continue
+		}
+
+		var kept []any
+		for _, g := range groups {
+			group, ok := g.(map[string]any)
+			if !ok {
+				kept = append(kept, g)
+				continue
+			}
+			hookList, ok := group["hooks"].([]any)
+			if !ok {
+				kept = append(kept, g)
+				continue
+			}
+			isSmoovtask := false
+			for _, h := range hookList {
+				entry, ok := h.(map[string]any)
+				if !ok {
+					continue
+				}
+				cmd, _ := entry["command"].(string)
+				if len(cmd) >= 7 && cmd[:7] == "st hook" {
+					isSmoovtask = true
+					break
+				}
+			}
+			if !isSmoovtask {
+				kept = append(kept, g)
+			}
+		}
+
+		if len(kept) == 0 {
+			delete(existingHooks, eventName)
+			removed = append(removed, eventName)
+		} else if len(kept) < len(groups) {
+			existingHooks[eventName] = kept
+			removed = append(removed, eventName)
+		}
+	}
+
+	if len(removed) == 0 {
+		fmt.Println("No smoovtask hooks found in Claude settings.")
+		return nil
+	}
+
+	if len(existingHooks) == 0 {
+		delete(settings, "hooks")
+	} else {
+		settings["hooks"] = existingHooks
+	}
+
+	out, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal settings: %w", err)
+	}
+
+	if err := os.WriteFile(settingsPath, append(out, '\n'), 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", settingsPath, err)
+	}
+
+	fmt.Printf("Removed %d Claude hook(s):\n", len(removed))
+	for _, name := range removed {
+		fmt.Printf("  - %s\n", name)
+	}
+	return nil
+}
+
+// uninstallOpencodePlugin removes the smoovtask plugin for opencode.
+func uninstallOpencodePlugin() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home dir: %w", err)
+	}
+
+	pluginFile := filepath.Join(home, ".config", "opencode", "plugins", "smoovtask-hooks.ts")
+	if err := os.Remove(pluginFile); os.IsNotExist(err) {
+		fmt.Println("No opencode plugin found, nothing to uninstall.")
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("remove plugin: %w", err)
+	}
+
+	fmt.Printf("Removed opencode plugin: %s\n", pluginFile)
+	return nil
+}
+
+// uninstallPiExtension removes the smoovtask extension for pi.
+func uninstallPiExtension() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home dir: %w", err)
+	}
+
+	extensionFile := filepath.Join(home, ".pi", "agent", "extensions", "smoovtask-hooks.ts")
+	if err := os.Remove(extensionFile); os.IsNotExist(err) {
+		fmt.Println("No pi extension found, nothing to uninstall.")
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("remove extension: %w", err)
+	}
+
+	fmt.Printf("Removed pi extension: %s\n", extensionFile)
 	return nil
 }
 

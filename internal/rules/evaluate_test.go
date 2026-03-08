@@ -572,7 +572,7 @@ func TestEvaluateStCommands(t *testing.T) {
 
 	blocked := []string{
 		"st hook session-start",
-		"st hooks install",
+		"st install",
 		"st cancel st_CTaTM7 --run-id abc123",
 		"st assign st_CTaTM7 agent-1 --run-id abc123",
 		"st override st_CTaTM7 DONE --run-id abc123",
