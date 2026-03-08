@@ -114,7 +114,33 @@ func HandlePreTool(input *Input) (Output, error) {
 		return Output{}, nil
 	}
 
-	if result.Decision == rules.ActionAllow || result.Decision == rules.ActionDeny {
+	{
+		ruleData := map[string]any{
+			"tool":     input.ToolName,
+			"decision": string(result.Decision),
+			"ruleset":  result.Ruleset,
+			"rule":     result.Rule,
+			"reason":   result.Reason,
+		}
+		// Include the command context for display in the Rules UI.
+		switch input.ToolName {
+		case "Bash":
+			if cmd, ok := input.ToolInput["command"].(string); ok {
+				ruleData["command"] = cmd
+			}
+		case "Read", "Edit", "Write", "NotebookEdit", "MultiEdit":
+			if fp, ok := input.ToolInput["file_path"].(string); ok {
+				ruleData["file_path"] = fp
+			}
+		case "Glob":
+			if pat, ok := input.ToolInput["pattern"].(string); ok {
+				ruleData["pattern"] = pat
+			}
+		case "Grep":
+			if pat, ok := input.ToolInput["pattern"].(string); ok {
+				ruleData["pattern"] = pat
+			}
+		}
 		_ = el.Append(event.Event{
 			TS:      time.Now().UTC(),
 			Event:   event.HookRuleDecision,
@@ -123,13 +149,7 @@ func HandlePreTool(input *Input) (Output, error) {
 			Actor:   "agent",
 			RunID:   input.SessionID,
 			Source:  input.Source,
-			Data: map[string]any{
-				"tool":     input.ToolName,
-				"decision": string(result.Decision),
-				"ruleset":  result.Ruleset,
-				"rule":     result.Rule,
-				"reason":   result.Reason,
-			},
+			Data:    ruleData,
 		})
 	}
 

@@ -16,12 +16,14 @@ func TestSeedDefaultsCreatesFiles(t *testing.T) {
 		t.Fatalf("SeedDefaults() error = %v", err)
 	}
 
+	// Now seeded as .md files with YAML frontmatter.
 	expected := []string{
-		"bash-allowlist.yaml",
-		"bash-pipeline.yaml",
-		"file-protection.yaml",
-		"git-safety.yaml",
-		"go-tools.yaml",
+		"bash-allowlist.md",
+		"bash-pipeline.md",
+		"file-protection.md",
+		"git-safety.md",
+		"go-tools.md",
+		"readonly-tools.md",
 	}
 	for _, name := range expected {
 		path := filepath.Join(dir, name)
@@ -39,20 +41,9 @@ func TestSeedDefaultsCreatesFiles(t *testing.T) {
 func TestSeedDefaultsMergesNewRules(t *testing.T) {
 	dir := t.TempDir()
 
-	// Write an existing allowlist with only one custom rule.
-	existing := `name: bash-allowlist
-description: Common safe commands
-priority: 50
-event: PreToolUse
-rules:
-  - name: allow-my-custom
-    match:
-      tool: Bash
-      command: ^mycmd\b
-    action: allow
-    message: "my custom command"
-`
-	if err := os.WriteFile(filepath.Join(dir, "bash-allowlist.yaml"), []byte(existing), 0o644); err != nil {
+	// Write an existing allowlist as .md with YAML frontmatter.
+	existing := "---\nname: bash-allowlist\ndescription: Common safe commands\npriority: 50\nevent: PreToolUse\nrules:\n  - name: allow-my-custom\n    match:\n      tool: Bash\n      command: ^mycmd\\b\n    action: allow\n    message: \"my custom command\"\n---\n"
+	if err := os.WriteFile(filepath.Join(dir, "bash-allowlist.md"), []byte(existing), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -61,13 +52,18 @@ rules:
 	}
 
 	// Read the merged file.
-	data, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.yaml"))
+	data, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	yamlData := extractFrontmatter(data)
+	if yamlData == nil {
+		t.Fatal("no frontmatter in merged file")
+	}
+
 	var rs Ruleset
-	if err := yaml.Unmarshal(data, &rs); err != nil {
+	if err := yaml.Unmarshal(yamlData, &rs); err != nil {
 		t.Fatalf("parse merged file: %v", err)
 	}
 
@@ -88,22 +84,11 @@ rules:
 	}
 }
 
-func TestSeedDefaultsDoesNotOverwriteExistingRules(t *testing.T) {
+func TestSeedDefaultsMergesFromLegacyYAML(t *testing.T) {
 	dir := t.TempDir()
 
-	// Write an existing allowlist that has allow-st with a custom pattern.
-	existing := `name: bash-allowlist
-description: Custom
-priority: 50
-event: PreToolUse
-rules:
-  - name: allow-st
-    match:
-      tool: Bash
-      command: ^st\b
-    action: allow
-    message: "my custom st rule"
-`
+	// Write an existing allowlist as legacy .yaml (no frontmatter).
+	existing := "name: bash-allowlist\ndescription: Custom\npriority: 50\nevent: PreToolUse\nrules:\n  - name: allow-my-custom\n    match:\n      tool: Bash\n      command: ^mycmd\\b\n    action: allow\n    message: \"my custom command\"\n"
 	if err := os.WriteFile(filepath.Join(dir, "bash-allowlist.yaml"), []byte(existing), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +97,55 @@ rules:
 		t.Fatalf("SeedDefaults() error = %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.yaml"))
+	// Should have been converted to .md.
+	mdPath := filepath.Join(dir, "bash-allowlist.md")
+	data, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatalf("expected .md file: %v", err)
+	}
+
+	yamlData := extractFrontmatter(data)
+	if yamlData == nil {
+		t.Fatal("no frontmatter in converted file")
+	}
+
+	var rs Ruleset
+	if err := yaml.Unmarshal(yamlData, &rs); err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	names := make(map[string]bool, len(rs.Rules))
+	for _, r := range rs.Rules {
+		names[r.Name] = true
+	}
+
+	if !names["allow-my-custom"] {
+		t.Error("custom rule was lost during migration")
+	}
+	if !names["allow-st"] {
+		t.Error("default rule allow-st was not added")
+	}
+
+	// Old .yaml should have been removed.
+	if _, err := os.Stat(filepath.Join(dir, "bash-allowlist.yaml")); err == nil {
+		t.Error("legacy .yaml file should have been removed after migration to .md")
+	}
+}
+
+func TestSeedDefaultsDoesNotOverwriteExistingRules(t *testing.T) {
+	dir := t.TempDir()
+
+	// Write an existing allowlist that has allow-st with a custom pattern.
+	existing := "---\nname: bash-allowlist\ndescription: Custom\npriority: 50\nevent: PreToolUse\nrules:\n  - name: allow-st\n    match:\n      tool: Bash\n      command: ^st\\b\n    action: allow\n    message: \"my custom st rule\"\n---\n"
+	if err := os.WriteFile(filepath.Join(dir, "bash-allowlist.md"), []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +165,7 @@ func TestSeedDefaultsNoOpWhenUpToDate(t *testing.T) {
 	}
 
 	// Read file content after first seed.
-	first, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.yaml"))
+	first, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +175,7 @@ func TestSeedDefaultsNoOpWhenUpToDate(t *testing.T) {
 		t.Fatalf("second SeedDefaults() error = %v", err)
 	}
 
-	second, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.yaml"))
+	second, err := os.ReadFile(filepath.Join(dir, "bash-allowlist.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,9 +204,9 @@ func TestSeedDefaultsCreatesDir(t *testing.T) {
 func TestSeedDefaultsSkipsUnparseableFiles(t *testing.T) {
 	dir := t.TempDir()
 
-	// Write a file that can't be parsed as YAML ruleset.
-	garbage := filepath.Join(dir, "bash-allowlist.yaml")
-	if err := os.WriteFile(garbage, []byte("not: valid: yaml: [[["), 0o644); err != nil {
+	// Write a file that can't be parsed as YAML frontmatter.
+	garbage := filepath.Join(dir, "bash-allowlist.md")
+	if err := os.WriteFile(garbage, []byte("---\nnot: valid: yaml: [[[\n---\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -187,8 +220,34 @@ func TestSeedDefaultsSkipsUnparseableFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(data) != "not: valid: yaml: [[[" {
+	if string(data) != "---\nnot: valid: yaml: [[[\n---\n" {
 		t.Error("unparseable file was modified")
+	}
+}
+
+func TestLoadRulesetsFromMarkdown(t *testing.T) {
+	dir := t.TempDir()
+
+	md := "---\nname: test-rules\npriority: 10\nevent: PreToolUse\nrules:\n  - name: allow-test\n    match:\n      tool: Bash\n      command: ^test\\b\n    action: allow\n    message: \"test allowed\"\n---\n# Test Rules\n\nDocumentation here.\n"
+	if err := os.WriteFile(filepath.Join(dir, "test.md"), []byte(md), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rulesets, _, err := LoadRulesets(dir)
+	if err != nil {
+		t.Fatalf("LoadRulesets() error = %v", err)
+	}
+	if len(rulesets) != 1 {
+		t.Fatalf("expected 1 ruleset, got %d", len(rulesets))
+	}
+	if rulesets[0].Name != "test-rules" {
+		t.Errorf("expected name 'test-rules', got %q", rulesets[0].Name)
+	}
+	if len(rulesets[0].Rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(rulesets[0].Rules))
+	}
+	if rulesets[0].Rules[0].Name != "allow-test" {
+		t.Errorf("expected rule 'allow-test', got %q", rulesets[0].Rules[0].Name)
 	}
 }
 
@@ -274,5 +333,99 @@ rules:
 	}
 	if merged != nil {
 		t.Error("expected nil when nothing new to add")
+	}
+}
+
+func TestMigrateLegacyRules(t *testing.T) {
+	legacyDir := t.TempDir()
+	vaultDir := filepath.Join(t.TempDir(), "rules")
+
+	// Write a legacy YAML rule file.
+	yaml := "name: custom-rules\npriority: 50\nevent: PreToolUse\nrules:\n  - name: allow-custom\n    match:\n      tool: Bash\n      command: ^custom\\b\n    action: allow\n"
+	if err := os.WriteFile(filepath.Join(legacyDir, "custom.yaml"), []byte(yaml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := MigrateLegacyRules(legacyDir, vaultDir); err != nil {
+		t.Fatalf("MigrateLegacyRules() error = %v", err)
+	}
+
+	// Check that .md file was created in vault.
+	data, err := os.ReadFile(filepath.Join(vaultDir, "custom.md"))
+	if err != nil {
+		t.Fatalf("expected custom.md in vault: %v", err)
+	}
+
+	if !strings.HasPrefix(string(data), "---\n") {
+		t.Error("migrated file should have frontmatter")
+	}
+
+	yamlData := extractFrontmatter(data)
+	if yamlData == nil {
+		t.Fatal("no frontmatter in migrated file")
+	}
+	if !strings.Contains(string(yamlData), "allow-custom") {
+		t.Error("migrated file should contain the custom rule")
+	}
+}
+
+func TestMigrateLegacyRulesDoesNotOverwrite(t *testing.T) {
+	legacyDir := t.TempDir()
+	vaultDir := t.TempDir()
+
+	// Write a legacy YAML rule file.
+	if err := os.WriteFile(filepath.Join(legacyDir, "test.yaml"), []byte("name: legacy\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write an existing .md file in the vault.
+	existing := "---\nname: vault-version\n---\n"
+	if err := os.WriteFile(filepath.Join(vaultDir, "test.md"), []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := MigrateLegacyRules(legacyDir, vaultDir); err != nil {
+		t.Fatalf("MigrateLegacyRules() error = %v", err)
+	}
+
+	// Vault file should not have been overwritten.
+	data, err := os.ReadFile(filepath.Join(vaultDir, "test.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != existing {
+		t.Error("existing vault file was overwritten by migration")
+	}
+}
+
+func TestExtractFrontmatter(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+		nil_ bool
+	}{
+		{"valid", "---\nfoo: bar\n---\nbody\n", "foo: bar", false},
+		{"no frontmatter", "just markdown", "", true},
+		{"no closing", "---\nfoo: bar\n", "", true},
+		{"empty frontmatter", "---\n---\nbody\n", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractFrontmatter([]byte(tt.in))
+			if tt.nil_ {
+				if got != nil {
+					t.Errorf("expected nil, got %q", string(got))
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("expected non-nil")
+			}
+			if string(got) != tt.want {
+				t.Errorf("got %q, want %q", string(got), tt.want)
+			}
+		})
 	}
 }

@@ -83,6 +83,8 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	})
 	mux.HandleFunc("GET /critical-path", h.CriticalPath)
 	mux.HandleFunc("GET /projects", h.Projects)
+	mux.HandleFunc("GET /rules", h.Rules)
+	mux.HandleFunc("POST /rules/allow", h.AllowRule)
 
 	// SSE endpoint — single unified stream to avoid HTTP/1.1 connection exhaustion.
 	mux.HandleFunc("GET /events", h.Events)
@@ -98,6 +100,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /partials/session/{runID}", h.SessionDetail)
 	mux.HandleFunc("GET /partials/critical-path", h.PartialCriticalPath)
 	mux.HandleFunc("GET /partials/projects", h.PartialProjects)
+	mux.HandleFunc("GET /partials/rules", h.PartialRules)
 	mux.HandleFunc("GET /partials/form/new", h.PartialNewTicket)
 	mux.HandleFunc("GET /partials/form/{id}/edit", h.PartialEditTicket)
 

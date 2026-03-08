@@ -39,6 +39,41 @@ func GetWorkerInfo(eventsDir, ticketID string) (*WorkerInfo, error) {
 		return nil, fmt.Errorf("query events: %w", err)
 	}
 
+	return workerInfoFromEvents(ticketID, events), nil
+}
+
+// BatchGetWorkerInfo returns worker info for all tickets that have spawn events.
+// It scans event files once instead of per-ticket, returning a map of ticket ID to WorkerInfo.
+func BatchGetWorkerInfo(eventsDir string) (map[string]*WorkerInfo, error) {
+	events, err := event.QueryEvents(eventsDir, event.Query{})
+	if err != nil {
+		return nil, fmt.Errorf("query events: %w", err)
+	}
+
+	// Group spawn events by ticket ID
+	byTicket := make(map[string][]event.Event)
+	for _, e := range events {
+		if e.Ticket == "" {
+			continue
+		}
+		switch e.Event {
+		case SpawnStarted, SpawnCompleted, SpawnFailed, SpawnTimeout:
+			byTicket[e.Ticket] = append(byTicket[e.Ticket], e)
+		}
+	}
+
+	result := make(map[string]*WorkerInfo, len(byTicket))
+	for ticketID, ticketEvents := range byTicket {
+		if info := workerInfoFromEvents(ticketID, ticketEvents); info != nil {
+			result[ticketID] = info
+		}
+	}
+
+	return result, nil
+}
+
+// workerInfoFromEvents derives WorkerInfo from a set of events for a single ticket.
+func workerInfoFromEvents(ticketID string, events []event.Event) *WorkerInfo {
 	// Find the most recent spawn.started event for this ticket
 	var lastStart *event.Event
 	var lastEnd *event.Event
@@ -57,7 +92,7 @@ func GetWorkerInfo(eventsDir, ticketID string) (*WorkerInfo, error) {
 	}
 
 	if lastStart == nil {
-		return nil, nil
+		return nil
 	}
 
 	// If there's a terminal event after the start, use that
@@ -79,7 +114,7 @@ func GetWorkerInfo(eventsDir, ticketID string) (*WorkerInfo, error) {
 			RunID:    lastStart.RunID,
 			Started:  lastStart.TS,
 			Elapsed:  elapsed,
-		}, nil
+		}
 	}
 
 	// No terminal event — check if PID is still alive
@@ -100,7 +135,7 @@ func GetWorkerInfo(eventsDir, ticketID string) (*WorkerInfo, error) {
 		info.State = WorkerStale
 	}
 
-	return info, nil
+	return info
 }
 
 // isProcessAlive checks if a process with the given PID exists.

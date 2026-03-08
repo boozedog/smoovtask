@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
@@ -68,7 +69,7 @@ func LoadRulesets(dir string) ([]*Ruleset, *BashPipeline, error) {
 			continue
 		}
 		ext := filepath.Ext(entry.Name())
-		if ext != ".yaml" && ext != ".yml" {
+		if ext != ".yaml" && ext != ".yml" && ext != ".md" {
 			continue
 		}
 
@@ -76,6 +77,14 @@ func LoadRulesets(dir string) ([]*Ruleset, *BashPipeline, error) {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, nil, fmt.Errorf("read %s: %w", path, err)
+		}
+
+		// For markdown files, extract YAML frontmatter.
+		if ext == ".md" {
+			data = extractFrontmatter(data)
+			if data == nil {
+				continue // No frontmatter found, skip.
+			}
 		}
 
 		var rs Ruleset
@@ -134,4 +143,20 @@ func LoadRulesets(dir string) ([]*Ruleset, *BashPipeline, error) {
 	})
 
 	return rulesets, bashPipeline, nil
+}
+
+// extractFrontmatter extracts YAML frontmatter from markdown content.
+// Returns nil if no frontmatter delimiter is found.
+func extractFrontmatter(data []byte) []byte {
+	sep := []byte("---")
+	trimmed := bytes.TrimSpace(data)
+	if !bytes.HasPrefix(trimmed, sep) {
+		return nil
+	}
+	rest := trimmed[len(sep):]
+	end := bytes.Index(rest, sep)
+	if end < 0 {
+		return nil
+	}
+	return bytes.TrimSpace(rest[:end])
 }

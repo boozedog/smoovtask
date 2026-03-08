@@ -1,0 +1,143 @@
+package templates
+
+import (
+	"fmt"
+	"time"
+)
+
+type RuleGroup struct {
+	Tool             string
+	Command          string
+	DominantDecision string // "allow", "deny", or "ask"
+	Count            int
+	AllowCount       int
+	DenyCount        int
+	AskCount         int
+	LastSeen         time.Time
+	Ruleset          string
+	Rule             string
+}
+
+type RulesData struct {
+	Groups         []RuleGroup
+	CurrentProject string
+	Projects       []string
+}
+
+func decisionBadgeClass(decision string) string {
+	switch decision {
+	case "allow":
+		return "badge badge-sm badge-success"
+	case "deny":
+		return "badge badge-sm badge-error"
+	case "ask":
+		return "badge badge-sm badge-warning"
+	default:
+		return "badge badge-sm badge-ghost"
+	}
+}
+
+func decisionLabel(decision string) string {
+	if decision == "ask" {
+		return "unmatched"
+	}
+	return decision
+}
+
+func truncateCommand(cmd string, max int) string {
+	runes := []rune(cmd)
+	if len(runes) <= max {
+		return cmd
+	}
+	return string(runes[:max]) + "…"
+}
+
+templ RulesPage(data RulesData) {
+	@Layout("Rules", "/rules", data.CurrentProject, data.Projects) {
+		@RulesPartial(data)
+	}
+}
+
+templ RulesPartial(data RulesData) {
+	<div
+		hx-get="/partials/rules"
+		hx-trigger="sse:refresh-activity"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		@RulesContent(data)
+	</div>
+}
+
+templ RulesContent(data RulesData) {
+	if len(data.Groups) == 0 {
+		<div class="p-8 text-center opacity-50">
+			No rule decisions recorded yet.
+		</div>
+	} else {
+		<div class="overflow-x-auto">
+			<table class="table table-sm w-full">
+				<thead>
+					<tr class="text-xs opacity-50">
+						<th>Decision</th>
+						<th>Tool</th>
+						<th>Command</th>
+						<th>Rule</th>
+						<th class="text-right">Count</th>
+						<th>Last Seen</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, g := range data.Groups {
+						@RuleGroupRow(g)
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ RuleGroupRow(g RuleGroup) {
+	<tr class="hover:bg-base-200">
+		<td>
+			<span class={ decisionBadgeClass(g.DominantDecision) }>{ decisionLabel(g.DominantDecision) }</span>
+			<span class="text-xs opacity-40 ml-1">
+				if g.AllowCount > 0 && g.DenyCount > 0 {
+					{ fmt.Sprintf("%d allow / %d deny", g.AllowCount, g.DenyCount) }
+				}
+			</span>
+		</td>
+		<td>
+			<span class={ toolBadgeClass(g.Tool) }>{ g.Tool }</span>
+		</td>
+		<td class="font-mono text-xs max-w-[400px]">
+			<span class="truncate block" title={ g.Command }>{ truncateCommand(g.Command, 80) }</span>
+		</td>
+		<td class="text-xs opacity-60">
+			<span title={ g.Ruleset + " / " + g.Rule }>{ g.Rule }</span>
+		</td>
+		<td class="text-right text-xs opacity-50">
+			{ fmt.Sprintf("%d", g.Count) }
+		</td>
+		<td class="text-xs opacity-50 whitespace-nowrap">
+			{ relativeTime(g.LastSeen) }
+		</td>
+		<td>
+			if g.DominantDecision != "allow" && g.Tool != "" {
+				<form
+					hx-post="/rules/allow"
+					hx-target="closest div[hx-get='/partials/rules']"
+					hx-swap="outerHTML"
+					class="inline"
+				>
+					<input type="hidden" name="tool" value={ g.Tool }/>
+					<input type="hidden" name="command" value={ g.Command }/>
+					<button type="submit" class="btn btn-xs btn-outline btn-success" title="Add to allowlist">
+						Allow
+					</button>
+				</form>
+			}
+		</td>
+	</tr>
+}

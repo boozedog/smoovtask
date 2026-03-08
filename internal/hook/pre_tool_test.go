@@ -290,7 +290,7 @@ func TestHandlePreToolDenyRule(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
 
-	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	rulesDir := env.rulesDir(t)
 	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -336,7 +336,7 @@ func TestHandlePreToolAllowRule(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
 
-	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	rulesDir := env.rulesDir(t)
 	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -400,7 +400,7 @@ func TestHandlePreToolAllowRuleLogsDecision(t *testing.T) {
 	projectPath := t.TempDir()
 	env := setupTestEnv(t, projectPath)
 
-	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	rulesDir := env.rulesDir(t)
 	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -649,7 +649,7 @@ func TestHandlePreToolTicketDenyTakesPriorityOverRuleAllow(t *testing.T) {
 	env := setupTestEnv(t, projectPath)
 
 	// Create a rule that would allow Edit
-	rulesDir := filepath.Join(env.ConfigDir, "rules")
+	rulesDir := env.rulesDir(t)
 	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

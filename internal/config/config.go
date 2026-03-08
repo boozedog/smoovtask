@@ -155,8 +155,17 @@ func (c *Config) EventsDir() (string, error) {
 	return filepath.Join(dir, "events"), nil
 }
 
-// RulesDir returns the rules directory path.
+// RulesDir returns the rules directory path (in the vault).
 func (c *Config) RulesDir() (string, error) {
+	vault, err := c.VaultPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(vault, "rules"), nil
+}
+
+// LegacyRulesDir returns the old filesystem rules dir (~/.smoovtask/rules/).
+func (c *Config) LegacyRulesDir() (string, error) {
 	dir, err := DefaultDir()
 	if err != nil {
 		return "", err
