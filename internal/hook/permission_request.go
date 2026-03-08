@@ -5,7 +5,6 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
-	"github.com/boozedog/smoovtask/internal/project"
 )
 
 // HandlePermissionRequest logs a permission request event.
@@ -21,7 +20,7 @@ func HandlePermissionRequest(input *Input) (Output, error) {
 		return Output{}, nil
 	}
 
-	proj := project.Detect(cfg, input.CWD)
+	proj := detectProject(cfg, input.CWD)
 
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{

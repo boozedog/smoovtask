@@ -57,9 +57,22 @@ func runNew(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
+	vaultPath, err := cfg.VaultPath()
+	if err != nil {
+		return fmt.Errorf("get vault path: %w", err)
+	}
+
 	var proj string
 	if newProject != "" {
-		if _, ok := cfg.Projects[newProject]; !ok {
+		names, _ := project.ListProjects(vaultPath)
+		found := false
+		for _, n := range names {
+			if n == newProject {
+				found = true
+				break
+			}
+		}
+		if !found {
 			return fmt.Errorf("unknown project %q — check `st init` or config", newProject)
 		}
 		proj = newProject
@@ -68,7 +81,7 @@ func runNew(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("get working directory: %w", err)
 		}
-		proj = project.Detect(cfg, cwd)
+		proj = project.Detect(vaultPath, cwd)
 		if proj == "" {
 			return fmt.Errorf("not in a registered project — run `st init` or use --project")
 		}

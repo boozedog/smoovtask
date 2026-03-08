@@ -21,3 +21,39 @@ rules:
       tool: Grep
     action: allow
     message: "content search allowed"
+
+  - name: allow-toolsearch
+    match:
+      tool: ToolSearch
+    action: allow
+    message: "tool discovery allowed"
+
+  - name: allow-agent
+    match:
+      tool: Agent
+    action: allow
+    message: "agent delegation allowed"
+
+  - name: allow-askuserquestion
+    match:
+      tool: AskUserQuestion
+    action: allow
+    message: "asking user questions allowed"
+
+  - name: allow-enterplanmode
+    match:
+      tool: EnterPlanMode
+    action: allow
+    message: "plan mode allowed"
+
+  - name: allow-exitplanmode
+    match:
+      tool: ExitPlanMode
+    action: allow
+    message: "exit plan mode allowed"
+
+  - name: allow-websearch
+    match:
+      tool: WebSearch
+    action: allow
+    message: "web search allowed"

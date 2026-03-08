@@ -50,7 +50,10 @@ func runList(_ *cobra.Command, _ []string) error {
 	if filterProject == "" {
 		cwd, err := os.Getwd()
 		if err == nil {
-			filterProject = project.Detect(cfg, cwd)
+			vaultPath, vErr := cfg.VaultPath()
+			if vErr == nil {
+				filterProject = project.Detect(vaultPath, cwd)
+			}
 		}
 	}
 

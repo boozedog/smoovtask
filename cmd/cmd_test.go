@@ -11,6 +11,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -46,12 +47,17 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatalf("create events dir: %v", err)
 	}
 
-	// Write config.toml with a test project pointing to baseDir
+	// Write config.toml with vault path only.
 	vaultPath := filepath.Join(baseDir, "vault")
-	configContent := "[settings]\nvault_path = \"" + vaultPath + "\"\n\n[projects]\n[projects.testproject]\npath = \"" + baseDir + "\"\n"
+	configContent := "[settings]\nvault_path = \"" + vaultPath + "\"\n"
 	configPath := filepath.Join(configDir, "config.toml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.toml: %v", err)
+	}
+
+	// Register "testproject" via vault project.md.
+	if err := project.SaveMeta(vaultPath, "testproject", &project.ProjectMeta{Path: baseDir}); err != nil {
+		t.Fatalf("save project meta: %v", err)
 	}
 
 	// Set SMOOVBRAIN_DIR so config.Load() and EventsDir() use our temp paths

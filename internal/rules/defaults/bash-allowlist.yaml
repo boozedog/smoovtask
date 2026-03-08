@@ -79,6 +79,139 @@ rules:
   - name: allow-just
     match:
       tool: Bash
-      command: ^just\s+(fmt|lint|check|test|build|install)\b
+      command: ^just(\s+(fmt|lint|check|test|build|install|vendor))?$
     action: allow
     message: "safe just targets allowed"
+
+  - name: allow-gh-readonly
+    match:
+      tool: Bash
+      command: ^gh\s+(pr|issue|repo|run|workflow|release)\s+(list|view|status|checks|diff)\b
+    action: allow
+    message: "read-only gh commands allowed"
+
+  - name: allow-gh-api
+    match:
+      tool: Bash
+      command: ^gh\s+api\b
+    action: allow
+    message: "gh api allowed (mutation flags blocked by pipeline)"
+
+  - name: allow-gh-pr-create
+    match:
+      tool: Bash
+      command: ^gh\s+pr\s+create\b
+    action: allow
+    message: "gh pr create allowed for agents"
+
+  - name: allow-git-worktree
+    match:
+      tool: Bash
+      command: ^git\s+worktree\s+(list|add|remove)\b
+    action: allow
+    message: "git worktree management allowed"
+
+  - name: allow-git-fetch
+    match:
+      tool: Bash
+      command: ^git\s+fetch\b
+    action: allow
+    message: "git fetch allowed"
+
+  - name: allow-git-checkout
+    match:
+      tool: Bash
+      command: ^git\s+(checkout|switch)\b
+    action: allow
+    message: "git checkout/switch allowed"
+
+  - name: allow-git-rm-cached
+    match:
+      tool: Bash
+      command: ^git\s+rm\s+--cached\b
+    action: allow
+    message: "git rm --cached allowed (unstaging only)"
+
+  - name: allow-env-inspect
+    match:
+      tool: Bash
+      command: ^env\b
+    action: allow
+    message: "env inspection allowed"
+
+  - name: allow-time
+    match:
+      tool: Bash
+      command: ^time\s+
+    action: allow
+    message: "time prefix allowed"
+
+  - name: allow-pgrep
+    match:
+      tool: Bash
+      command: ^pgrep\b
+    action: allow
+    message: "pgrep allowed"
+
+  - name: allow-shellcheck
+    match:
+      tool: Bash
+      command: ^shellcheck\b
+    action: allow
+    message: "shellcheck allowed"
+
+  - name: allow-govulncheck
+    match:
+      tool: Bash
+      command: ^govulncheck\b
+    action: allow
+    message: "govulncheck allowed"
+
+  - name: allow-chezmoi
+    match:
+      tool: Bash
+      command: ^chezmoi\s+(diff|managed|status)\b
+    action: allow
+    message: "read-only chezmoi commands allowed"
+
+  - name: allow-sketchybar-query
+    match:
+      tool: Bash
+      command: ^sketchybar\s+--query\b
+    action: allow
+    message: "sketchybar queries allowed"
+
+  - name: allow-brew
+    match:
+      tool: Bash
+      command: ^brew\s+(info|list|search)\b
+    action: allow
+    message: "read-only brew commands allowed"
+
+  - name: deny-curl-mutate
+    match:
+      tool: Bash
+      command: ^curl\s.*(-X\s*(POST|PUT|PATCH|DELETE)|--request\s*(POST|PUT|PATCH|DELETE)|-d\b|--data|--data-raw|--data-binary|--data-urlencode|-F\b|--form\b|--upload-file|-T\b)
+    action: deny
+    message: "curl mutation flags not allowed (POST/PUT/PATCH/DELETE, -d, -F, -T)"
+
+  - name: deny-curl-long
+    match:
+      tool: Bash
+      command: ^curl\s.{200,}
+    action: deny
+    message: "curl command too long (>200 chars) — possible data exfiltration"
+
+  - name: allow-curl
+    match:
+      tool: Bash
+      command: ^curl\b
+    action: allow
+    message: "curl GET requests allowed"
+
+  - name: allow-sips
+    match:
+      tool: Bash
+      command: ^sips\b
+    action: allow
+    message: "sips image tool allowed"

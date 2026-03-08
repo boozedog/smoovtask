@@ -56,7 +56,8 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 	// Set up handlers.
 	cwd, _ := os.Getwd()
-	proj := project.Detect(s.cfg, cwd)
+	vaultPath, _ := s.cfg.VaultPath()
+	proj := project.Detect(vaultPath, cwd)
 	h := handler.New(s.cfg, projectsDir, eventsDir, s.broker, proj)
 
 	mux := http.NewServeMux()

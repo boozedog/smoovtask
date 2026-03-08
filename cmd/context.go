@@ -42,7 +42,11 @@ func runContext(_ *cobra.Command, _ []string) error {
 	}
 
 	runID := identity.RunID()
-	proj := project.Detect(cfg, cwd)
+	vaultPath, err := cfg.VaultPath()
+	if err != nil {
+		return fmt.Errorf("get vault path: %w", err)
+	}
+	proj := project.Detect(vaultPath, cwd)
 
 	out := contextOutput{
 		RunID:   runID,

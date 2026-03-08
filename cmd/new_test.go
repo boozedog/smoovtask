@@ -8,6 +8,7 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -20,25 +21,30 @@ func newTestEnvResolved(t *testing.T) *testEnv {
 
 	// os.Getwd() may resolve symlinks (macOS: /var → /private/var).
 	// The config was written with t.TempDir() paths which may not be resolved.
-	// Rewrite config with the resolved CWD so project.Detect matches.
+	// Rewrite config and project.md with the resolved CWD so project.Detect matches.
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
 
-	// Check if the config's project path already matches CWD
-	for _, proj := range env.Config.Projects {
-		if proj.Path == cwd {
-			return env
-		}
+	// Check if the vault project.md path already matches CWD
+	vaultPath, _ := env.Config.VaultPath()
+	existingMeta, _ := project.LoadMeta(vaultPath, "testproject")
+	if existingMeta != nil && existingMeta.Path == cwd {
+		return env
 	}
 
-	// Paths differ — rewrite config with resolved CWD
+	// Paths differ — rewrite config and project.md with resolved CWD
 	resolvedVault := filepath.Join(cwd, "vault")
-	configContent := "[settings]\nvault_path = \"" + resolvedVault + "\"\n\n[projects]\n[projects.testproject]\npath = \"" + cwd + "\"\n"
+	configContent := "[settings]\nvault_path = \"" + resolvedVault + "\"\n"
 	configPath := filepath.Join(env.ConfigDir, "config.toml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("rewrite config: %v", err)
+	}
+
+	// Register project with resolved path
+	if err := project.SaveMeta(resolvedVault, "testproject", &project.ProjectMeta{Path: cwd}); err != nil {
+		t.Fatalf("save resolved project meta: %v", err)
 	}
 
 	// Reload config

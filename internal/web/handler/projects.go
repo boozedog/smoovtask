@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/boozedog/smoovtask/internal/web/templates"
 )
@@ -26,13 +27,27 @@ func (h *Handler) PartialProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) buildProjectsData(r *http.Request) templates.ProjectsData {
-	// Merge registered projects from config with ticket-discovered ones.
+	vaultPath, _ := h.cfg.VaultPath()
+
+	// Merge vault-registered projects with ticket-discovered ones.
 	projectNames := make(map[string]bool)
-	for name := range h.cfg.Projects {
-		projectNames[name] = true
+	if vaultPath != "" {
+		names, _ := project.ListProjects(vaultPath)
+		for _, name := range names {
+			projectNames[name] = true
+		}
 	}
 	for _, name := range h.allProjects() {
 		projectNames[name] = true
+	}
+
+	// Load metadata for all vault projects.
+	var allMeta map[string]*project.ProjectMeta
+	if vaultPath != "" {
+		allMeta, _ = project.ListProjectsMeta(vaultPath)
+	}
+	if allMeta == nil {
+		allMeta = make(map[string]*project.ProjectMeta)
 	}
 
 	// Get all tickets once.
@@ -85,10 +100,10 @@ func (h *Handler) buildProjectsData(r *http.Request) templates.ProjectsData {
 			TicketsByPriority: make(map[ticket.Priority]int),
 		}
 
-		// Config info.
-		if pc, ok := h.cfg.Projects[name]; ok {
-			s.Path = pc.Path
-			s.Repo = pc.Repo
+		// Metadata from vault.
+		if pm, ok := allMeta[name]; ok {
+			s.Path = pm.Path
+			s.Repo = pm.Repo
 		}
 
 		// Ticket stats.

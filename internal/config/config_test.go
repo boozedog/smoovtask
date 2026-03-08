@@ -18,12 +18,6 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Settings.VaultPath != "~/obsidian/smoovtask" {
 		t.Errorf("default VaultPath = %q, want %q", cfg.Settings.VaultPath, "~/obsidian/smoovtask")
 	}
-	if len(cfg.Projects) != 0 {
-		t.Errorf("default Projects = %v, want empty", cfg.Projects)
-	}
-	if cfg.Agent.CLI != "claude" {
-		t.Errorf("default Agent.CLI = %q, want %q", cfg.Agent.CLI, "claude")
-	}
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -32,10 +26,6 @@ func TestRoundTrip(t *testing.T) {
 
 	cfg := &Config{
 		Settings: SettingsConfig{VaultPath: "~/my-vault"},
-		Agent:    AgentConfig{CLI: "opencode"},
-		Projects: map[string]ProjectConfig{
-			"myproject": {Path: "/tmp/myproject"},
-		},
 	}
 
 	if err := cfg.SaveTo(path); err != nil {
@@ -50,12 +40,6 @@ func TestRoundTrip(t *testing.T) {
 	if loaded.Settings.VaultPath != cfg.Settings.VaultPath {
 		t.Errorf("VaultPath = %q, want %q", loaded.Settings.VaultPath, cfg.Settings.VaultPath)
 	}
-	if p, ok := loaded.Projects["myproject"]; !ok || p.Path != "/tmp/myproject" {
-		t.Errorf("Projects[myproject] = %+v, want Path=/tmp/myproject", loaded.Projects["myproject"])
-	}
-	if loaded.Agent.CLI != "opencode" {
-		t.Errorf("Agent.CLI = %q, want %q", loaded.Agent.CLI, "opencode")
-	}
 }
 
 func TestIdempotentSave(t *testing.T) {
@@ -64,9 +48,6 @@ func TestIdempotentSave(t *testing.T) {
 
 	cfg := &Config{
 		Settings: SettingsConfig{VaultPath: "~/vault"},
-		Projects: map[string]ProjectConfig{
-			"proj": {Path: "/tmp/proj"},
-		},
 	}
 
 	if err := cfg.SaveTo(path); err != nil {
@@ -125,7 +106,6 @@ func TestEnsureDirs(t *testing.T) {
 
 	cfg := &Config{
 		Settings: SettingsConfig{VaultPath: vault},
-		Projects: make(map[string]ProjectConfig),
 	}
 
 	if err := cfg.SaveTo(path); err != nil {
