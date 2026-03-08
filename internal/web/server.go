@@ -87,6 +87,9 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /rules", h.Rules)
 	mux.HandleFunc("POST /rules/allow", h.AllowRule)
 
+	// API endpoints.
+	mux.HandleFunc("GET /api/search-tickets", h.SearchTickets)
+
 	// SSE endpoint — single unified stream to avoid HTTP/1.1 connection exhaustion.
 	mux.HandleFunc("GET /events", h.Events)
 
