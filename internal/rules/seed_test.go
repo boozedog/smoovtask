@@ -336,68 +336,6 @@ rules:
 	}
 }
 
-func TestMigrateLegacyRules(t *testing.T) {
-	legacyDir := t.TempDir()
-	vaultDir := filepath.Join(t.TempDir(), "rules")
-
-	// Write a legacy YAML rule file.
-	yaml := "name: custom-rules\npriority: 50\nevent: PreToolUse\nrules:\n  - name: allow-custom\n    match:\n      tool: Bash\n      command: ^custom\\b\n    action: allow\n"
-	if err := os.WriteFile(filepath.Join(legacyDir, "custom.yaml"), []byte(yaml), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := MigrateLegacyRules(legacyDir, vaultDir); err != nil {
-		t.Fatalf("MigrateLegacyRules() error = %v", err)
-	}
-
-	// Check that .md file was created in vault.
-	data, err := os.ReadFile(filepath.Join(vaultDir, "custom.md"))
-	if err != nil {
-		t.Fatalf("expected custom.md in vault: %v", err)
-	}
-
-	if !strings.HasPrefix(string(data), "---\n") {
-		t.Error("migrated file should have frontmatter")
-	}
-
-	yamlData := extractFrontmatter(data)
-	if yamlData == nil {
-		t.Fatal("no frontmatter in migrated file")
-	}
-	if !strings.Contains(string(yamlData), "allow-custom") {
-		t.Error("migrated file should contain the custom rule")
-	}
-}
-
-func TestMigrateLegacyRulesDoesNotOverwrite(t *testing.T) {
-	legacyDir := t.TempDir()
-	vaultDir := t.TempDir()
-
-	// Write a legacy YAML rule file.
-	if err := os.WriteFile(filepath.Join(legacyDir, "test.yaml"), []byte("name: legacy\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Write an existing .md file in the vault.
-	existing := "---\nname: vault-version\n---\n"
-	if err := os.WriteFile(filepath.Join(vaultDir, "test.md"), []byte(existing), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := MigrateLegacyRules(legacyDir, vaultDir); err != nil {
-		t.Fatalf("MigrateLegacyRules() error = %v", err)
-	}
-
-	// Vault file should not have been overwritten.
-	data, err := os.ReadFile(filepath.Join(vaultDir, "test.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(data) != existing {
-		t.Error("existing vault file was overwritten by migration")
-	}
-}
-
 func TestExtractFrontmatter(t *testing.T) {
 	tests := []struct {
 		name string

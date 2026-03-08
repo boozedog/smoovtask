@@ -146,15 +146,6 @@ func (c *Config) RulesDir() (string, error) {
 	return filepath.Join(vault, "rules"), nil
 }
 
-// LegacyRulesDir returns the old filesystem rules dir (~/.smoovtask/rules/).
-func (c *Config) LegacyRulesDir() (string, error) {
-	dir, err := DefaultDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, "rules"), nil
-}
-
 // EnsureDirs creates the vault projects dir and events dir if they don't exist.
 func (c *Config) EnsureDirs() error {
 	projects, err := c.ProjectsDir()

@@ -70,7 +70,7 @@ func evaluate(rulesets []*Ruleset, bash *BashPipeline, event, toolName string, t
 
 	result := matchCommand(rulesets, event, toolName, command, filePath, url, notificationType)
 	if result.Decision == ActionAllow && toolName == "Bash" && bash != nil {
-		if deny, reason := bash.Check(command); deny {
+		if deny, reason := bash.Check(command, rulesets); deny {
 			return &EvalResult{
 				Decision: ActionDeny,
 				Reason:   reason,
@@ -111,7 +111,7 @@ func evaluateCompound(rulesets []*Ruleset, bash *BashPipeline, event string, par
 	}
 	// Run pipeline on the full command for structural analysis.
 	if bash != nil {
-		if deny, reason := bash.Check(fullCommand); deny {
+		if deny, reason := bash.Check(fullCommand, rulesets); deny {
 			return &EvalResult{
 				Decision: ActionDeny,
 				Reason:   reason,

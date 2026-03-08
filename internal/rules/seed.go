@@ -94,53 +94,6 @@ func SeedDefaults(dir string) error {
 	return nil
 }
 
-// MigrateLegacyRules moves rules from the legacy dir (~/.smoovtask/rules/)
-// to the vault rules dir, converting .yaml files to .md with frontmatter.
-// Existing files in the vault are not overwritten.
-func MigrateLegacyRules(legacyDir, vaultDir string) error {
-	entries, err := os.ReadDir(legacyDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return fmt.Errorf("read legacy rules dir: %w", err)
-	}
-
-	if err := os.MkdirAll(vaultDir, 0o755); err != nil {
-		return fmt.Errorf("create vault rules dir: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		ext := filepath.Ext(entry.Name())
-		if ext != ".yaml" && ext != ".yml" {
-			continue
-		}
-
-		baseName := strings.TrimSuffix(entry.Name(), ext)
-		mdPath := filepath.Join(vaultDir, baseName+".md")
-
-		// Don't overwrite existing vault files.
-		if _, err := os.Stat(mdPath); err == nil {
-			continue
-		}
-
-		data, err := os.ReadFile(filepath.Join(legacyDir, entry.Name()))
-		if err != nil {
-			continue
-		}
-
-		md := wrapAsFrontmatter(data)
-		if err := os.WriteFile(mdPath, md, 0o644); err != nil {
-			return fmt.Errorf("write %s: %w", mdPath, err)
-		}
-	}
-
-	return nil
-}
-
 // wrapAsFrontmatter wraps YAML content as markdown frontmatter.
 func wrapAsFrontmatter(yamlData []byte) []byte {
 	return []byte("---\n" + string(yamlData) + "---\n")

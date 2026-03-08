@@ -88,7 +88,7 @@ func TestBashPipelineCheck(t *testing.T) {
 			name:       "backtick command substitution",
 			command:    "echo `whoami`",
 			wantDeny:   true,
-			wantReason: "command substitution is not allowed",
+			wantReason: "backtick command substitution is not allowed (use $() instead)",
 		},
 
 		// --- pipe chain validation ---
@@ -387,7 +387,7 @@ func TestCheckDangerousOperators(t *testing.T) {
 			name:       "command substitution backtick",
 			part:       "echo `id`",
 			wantDeny:   true,
-			wantReason: "command substitution is not allowed",
+			wantReason: "backtick command substitution is not allowed (use $() instead)",
 		},
 		{
 			name:     "safe command",
@@ -404,6 +404,137 @@ func TestCheckDangerousOperators(t *testing.T) {
 			}
 			if tt.wantDeny && reason != tt.wantReason {
 				t.Errorf("checkDangerousOperators() reason = %q, want %q", reason, tt.wantReason)
+			}
+		})
+	}
+}
+
+func TestCheckDangerousOperatorsSmartCmdSub(t *testing.T) {
+	// Build rulesets that allow git and echo commands.
+	rulesets := []*Ruleset{
+		{
+			Name:     "test-allowlist",
+			Priority: 50,
+			Event:    "PreToolUse",
+			Rules: []Rule{
+				{
+					Name:   "allow-git",
+					Match:  MatchConfig{Tool: StringOrList{"Bash"}, Command: `^git\s+`},
+					Action: ActionAllow,
+				},
+				{
+					Name:   "allow-echo",
+					Match:  MatchConfig{Tool: StringOrList{"Bash"}, Command: `^echo\b`},
+					Action: ActionAllow,
+				},
+				{
+					Name:   "allow-date",
+					Match:  MatchConfig{Tool: StringOrList{"Bash"}, Command: `^date\b`},
+					Action: ActionAllow,
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name       string
+		part       string
+		wantDeny   bool
+		wantReason string
+	}{
+		{
+			name:     "allowed inner command: git branch",
+			part:     "remote=$(git branch -r --list 'origin/main')",
+			wantDeny: false,
+		},
+		{
+			name:       "disallowed inner command: rm",
+			part:       "result=$(rm -rf /)",
+			wantDeny:   true,
+			wantReason: "command substitution is not allowed",
+		},
+		{
+			name:     "nested allowed commands",
+			part:     "result=$(echo $(date))",
+			wantDeny: false,
+		},
+		{
+			name:       "nested with disallowed inner",
+			part:       "result=$(echo $(rm -rf /))",
+			wantDeny:   true,
+			wantReason: "command substitution is not allowed",
+		},
+		{
+			name:       "backticks still blocked even with rulesets",
+			part:       "result=`git status`",
+			wantDeny:   true,
+			wantReason: "backtick command substitution is not allowed (use $() instead)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deny, reason := checkDangerousOperators(tt.part, rulesets)
+			if deny != tt.wantDeny {
+				t.Errorf("checkDangerousOperators() deny = %v, want %v (reason: %q)", deny, tt.wantDeny, reason)
+			}
+			if tt.wantDeny && reason != tt.wantReason {
+				t.Errorf("checkDangerousOperators() reason = %q, want %q", reason, tt.wantReason)
+			}
+		})
+	}
+}
+
+func TestExtractCommandSubstitutions(t *testing.T) {
+	tests := []struct {
+		name string
+		s    string
+		want []string
+	}{
+		{
+			name: "no substitution",
+			s:    "echo hello",
+			want: nil,
+		},
+		{
+			name: "simple substitution",
+			s:    "echo $(date)",
+			want: []string{"date"},
+		},
+		{
+			name: "nested substitution",
+			s:    "echo $(echo $(date))",
+			want: []string{"echo $(date)", "date"},
+		},
+		{
+			name: "multiple substitutions",
+			s:    "echo $(date) $(whoami)",
+			want: []string{"date", "whoami"},
+		},
+		{
+			name: "complex inner command",
+			s:    "remote=$(git branch -r --list 'origin/main')",
+			want: []string{"git branch -r --list 'origin/main'"},
+		},
+		{
+			name: "quoted parens not treated as nesting",
+			s:    `x=$(echo "hello (world)")`,
+			want: []string{`echo "hello (world)"`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractCommandSubstitutions(tt.s)
+			if len(got) != len(tt.want) {
+				t.Fatalf("extractCommandSubstitutions(%q) = %v (len %d), want %v (len %d)",
+					tt.s, got, len(got), tt.want, len(tt.want))
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("extractCommandSubstitutions(%q)[%d] = %q, want %q",
+						tt.s, i, got[i], tt.want[i])
+				}
 			}
 		})
 	}
