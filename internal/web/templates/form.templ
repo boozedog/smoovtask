@@ -62,12 +62,11 @@ templ TicketFormContent(data TicketFormData) {
 
 			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
 				<label class="st-ticket-form-label" for="project">Project</label>
-				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } list="project-options" required/>
-				<datalist id="project-options">
+				<select id="project" name="project" class="select w-full st-ticket-form-input" required>
 					for _, p := range data.Projects {
-						<option value={ p }/>
+						<option value={ p } if data.Values.Project == p { selected }>{ p }</option>
 					}
-				</datalist>
+				</select>
 			</div>
 
 			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
@@ -148,12 +147,11 @@ templ TicketFormModalPartial(data TicketFormData) {
 			</div>
 			<div class="col-span-full sm:col-span-2 st-ticket-form-field">
 				<label class="st-ticket-form-label" for="project">Project</label>
-				<input id="project" name="project" class="input w-full st-ticket-form-input" value={ data.Values.Project } list="project-options-modal" required/>
-				<datalist id="project-options-modal">
+				<select id="project" name="project" class="select w-full st-ticket-form-input" required>
 					for _, p := range data.Projects {
-						<option value={ p }/>
+						<option value={ p } if data.Values.Project == p { selected }>{ p }</option>
 					}
-				</datalist>
+				</select>
 			</div>
 			<div class="col-span-full sm:col-span-1 st-ticket-form-field">
 				<label class="st-ticket-form-label" for="status">Status</label>
