@@ -154,7 +154,7 @@ func runPrepSingle(store *ticket.Store, repoRoot, baseBranch, ticketID string) e
 	fmt.Println()
 	fmt.Println("Enter the worktree and run:")
 	fmt.Printf("  cd %q\n", prPath)
-	fmt.Printf("  git merge --squash %s && git -c commit.gpgsign=false commit -m %q\n", workBranch, commitMsg)
+	fmt.Printf("  git merge --squash %s && git commit -m %q\n", workBranch, commitMsg)
 	fmt.Println()
 	fmt.Println("Then push and create PR:")
 	fmt.Printf("  git push -u origin pr/%s\n", tk.ID)
@@ -284,7 +284,7 @@ func runPrepBatch(cfg *config.Config, store *ticket.Store, repoRoot, baseBranch,
 	for _, info := range included {
 		commitMsg := suggestCommitMessage(info.tk)
 		firstLine := strings.SplitN(commitMsg, "\n", 2)[0]
-		fmt.Printf("  git merge --squash %s && git -c commit.gpgsign=false commit -m %q\n", info.workBranch, firstLine)
+		fmt.Printf("  git merge --squash %s && git commit -m %q\n", info.workBranch, firstLine)
 	}
 	fmt.Println()
 	fmt.Println("Then push and create PR:")
