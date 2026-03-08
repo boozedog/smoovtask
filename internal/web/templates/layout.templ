@@ -91,7 +91,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 				.st-search-input { flex: 1; background: transparent; border: none; outline: none; font-size: 1rem; color: inherit; font-family: inherit; }
 				.st-search-input::placeholder { opacity: 0.4; }
 				.st-search-kbd { font-size: 0.65rem; padding: 0.15rem 0.4rem; border: 1px solid hsl(var(--st-border)); border-radius: 0.25rem; opacity: 0.5; font-family: inherit; }
-				.st-search-results { height: 400px; overflow-y: auto; }
+				.st-search-results { max-height: 400px; overflow-y: auto; }
 				.st-search-results:empty::after { content: ''; }
 				.st-search-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem; cursor: pointer; text-decoration: none; color: inherit; border-bottom: 1px solid hsl(var(--st-border) / 0.3); }
 				.st-search-item:last-child { border-bottom: none; }
