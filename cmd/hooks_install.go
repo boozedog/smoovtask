@@ -494,6 +494,13 @@ func runHooksInstall(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("get rules dir: %w", err)
 	}
+
+	// Migrate legacy rules from ~/.smoovtask/rules/ to vault.
+	legacyDir, err := cfg.LegacyRulesDir()
+	if err == nil {
+		_ = rules.MigrateLegacyRules(legacyDir, rulesDir)
+	}
+
 	if err := rules.SeedDefaults(rulesDir); err != nil {
 		return fmt.Errorf("seed default rules: %w", err)
 	}

@@ -68,7 +68,7 @@ func runList(_ *cobra.Command, _ []string) error {
 	}
 
 	store := ticket.NewStore(projectsDir)
-	tickets, err := store.List(filter)
+	tickets, err := store.ListMeta(filter)
 	if err != nil {
 		return fmt.Errorf("list tickets: %w", err)
 	}
@@ -91,16 +91,11 @@ func runList(_ *cobra.Command, _ []string) error {
 		return tickets[i].Updated.After(tickets[j].Updated)
 	})
 
-	// Look up worker info for each ticket (best-effort)
+	// Look up worker info in a single batch (best-effort)
 	eventsDir, _ := cfg.EventsDir()
-	workerStates := make(map[string]*spawn.WorkerInfo)
+	var workerStates map[string]*spawn.WorkerInfo
 	if eventsDir != "" {
-		for _, tk := range tickets {
-			info, err := spawn.GetWorkerInfo(eventsDir, tk.ID)
-			if err == nil && info != nil {
-				workerStates[tk.ID] = info
-			}
-		}
+		workerStates, _ = spawn.BatchGetWorkerInfo(eventsDir)
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)

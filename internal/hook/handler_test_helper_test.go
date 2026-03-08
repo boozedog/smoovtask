@@ -63,6 +63,12 @@ func (e testEnv) projectsDir(t *testing.T) string {
 	return filepath.Join(e.Home, "vault", "projects")
 }
 
+// rulesDir returns the vault rules directory path for this test env.
+func (e testEnv) rulesDir(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(e.Home, "vault", "rules")
+}
+
 // quote returns a TOML-safe quoted string.
 func quote(s string) string {
 	return `"` + s + `"`
