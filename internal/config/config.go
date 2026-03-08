@@ -12,25 +12,12 @@ import (
 
 // Config holds the global smoovtask configuration.
 type Config struct {
-	Settings SettingsConfig           `toml:"settings"`
-	Agent    AgentConfig              `toml:"agent"`
-	Projects map[string]ProjectConfig `toml:"projects"`
+	Settings SettingsConfig `toml:"settings"`
 }
 
 // SettingsConfig holds global settings.
 type SettingsConfig struct {
 	VaultPath string `toml:"vault_path"`
-}
-
-// AgentConfig holds launcher settings for interactive agent sessions.
-type AgentConfig struct {
-	CLI string `toml:"cli"`
-}
-
-// ProjectConfig holds per-project settings.
-type ProjectConfig struct {
-	Path string `toml:"path"`
-	Repo string `toml:"repo,omitempty"`
 }
 
 // DefaultDir returns the default config directory (~/.smoovtask).
@@ -67,9 +54,7 @@ func Load() (*Config, error) {
 
 // LoadFrom reads config from the given path, applying defaults.
 func LoadFrom(path string) (*Config, error) {
-	cfg := &Config{
-		Projects: make(map[string]ProjectConfig),
-	}
+	cfg := &Config{}
 	cfg.applyDefaults()
 
 	data, err := os.ReadFile(path)
@@ -82,9 +67,6 @@ func LoadFrom(path string) (*Config, error) {
 
 	if err := toml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
-	}
-	if cfg.Projects == nil {
-		cfg.Projects = make(map[string]ProjectConfig)
 	}
 
 	return cfg, nil
@@ -197,8 +179,5 @@ func (c *Config) EnsureDirs() error {
 func (c *Config) applyDefaults() {
 	if c.Settings.VaultPath == "" {
 		c.Settings.VaultPath = "~/obsidian/smoovtask"
-	}
-	if c.Agent.CLI == "" {
-		c.Agent.CLI = "claude"
 	}
 }

@@ -12,7 +12,11 @@ import (
 
 // findProjectFromCwd detects the project from the current working directory.
 func findProjectFromCwd(cfg *config.Config, cwd string) string {
-	return project.Detect(cfg, cwd)
+	vaultPath, err := cfg.VaultPath()
+	if err != nil {
+		return ""
+	}
+	return project.Detect(vaultPath, cwd)
 }
 
 // resolveCurrentTicket finds the ticket to operate on.

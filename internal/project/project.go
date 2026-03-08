@@ -4,23 +4,32 @@ package project
 import (
 	"path/filepath"
 	"strings"
-
-	"github.com/boozedog/smoovtask/internal/config"
 )
 
 // Detect determines the project name from the given directory path
-// by matching against registered projects in the config.
-// First tries path-based matching (longest prefix wins), then falls
-// back to git remote URL comparison if no path match is found.
+// by scanning project.md files in the vault for path matches (longest prefix wins),
+// then falling back to git remote URL comparison.
 // Returns empty string if no match is found.
-func Detect(cfg *config.Config, dir string) string {
+func Detect(vaultPath, dir string) string {
+	if vaultPath == "" {
+		return ""
+	}
+
 	dir = filepath.Clean(dir)
+
+	meta, err := ListProjectsMeta(vaultPath)
+	if err != nil {
+		return ""
+	}
 
 	var bestName string
 	var bestLen int
 
-	for name, proj := range cfg.Projects {
-		projPath := filepath.Clean(proj.Path)
+	for name, pm := range meta {
+		if pm.Path == "" {
+			continue
+		}
+		projPath := filepath.Clean(pm.Path)
 		if dir == projPath || strings.HasPrefix(dir, projPath+string(filepath.Separator)) {
 			if len(projPath) > bestLen {
 				bestName = name
@@ -39,8 +48,8 @@ func Detect(cfg *config.Config, dir string) string {
 		return ""
 	}
 
-	for name, proj := range cfg.Projects {
-		if proj.Repo != "" && proj.Repo == remoteURL {
+	for name, pm := range meta {
+		if pm.Repo != "" && pm.Repo == remoteURL {
 			return name
 		}
 	}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
-	"github.com/boozedog/smoovtask/internal/project"
 )
 
 // HandlePostTool logs a post-tool event to the JSONL event log.
@@ -20,7 +19,7 @@ func HandlePostTool(input *Input) error {
 		return nil
 	}
 
-	proj := project.Detect(cfg, input.CWD)
+	proj := detectProject(cfg, input.CWD)
 
 	data := map[string]any{
 		"tool": input.ToolName,

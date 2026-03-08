@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/event"
+	"github.com/boozedog/smoovtask/internal/project"
 )
 
 // testEnv holds paths for a test environment with config and events dirs.
@@ -21,7 +22,7 @@ type testEnv struct {
 // setupTestEnv creates a temporary directory structure that mimics ~/.smoovtask
 // and sets $HOME so that config.Load() and EventsDir() resolve correctly.
 // The optional projectPath, if non-empty, registers a project named "test-project"
-// pointing at that path.
+// by creating a project.md file in the vault.
 func setupTestEnv(t *testing.T, projectPath string) testEnv {
 	t.Helper()
 
@@ -37,15 +38,20 @@ func setupTestEnv(t *testing.T, projectPath string) testEnv {
 		}
 	}
 
-	// Build config.toml
+	// Build config.toml — only vault path, no projects section.
 	cfg := "[settings]\nvault_path = " + quote(vaultDir) + "\n"
-	if projectPath != "" {
-		cfg += "\n[projects.test-project]\npath = " + quote(projectPath) + "\n"
-	}
 
 	configPath := filepath.Join(configDir, "config.toml")
 	if err := os.WriteFile(configPath, []byte(cfg), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
+	}
+
+	// Register project via vault project.md if requested.
+	if projectPath != "" {
+		meta := &project.ProjectMeta{Path: projectPath}
+		if err := project.SaveMeta(vaultDir, "test-project", meta); err != nil {
+			t.Fatalf("save project meta: %v", err)
+		}
 	}
 
 	t.Setenv("HOME", tmpDir)

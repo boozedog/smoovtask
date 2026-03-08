@@ -6,7 +6,6 @@ import (
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
-	"github.com/boozedog/smoovtask/internal/project"
 )
 
 // HandleUserPrompt logs a user prompt submission event and injects a note
@@ -22,7 +21,7 @@ func HandleUserPrompt(input *Input) (*Output, error) {
 		return &Output{}, nil
 	}
 
-	proj := project.Detect(cfg, input.CWD)
+	proj := detectProject(cfg, input.CWD)
 	ticketID := lookupActiveTicket(cfg, proj, input.SessionID)
 
 	el := event.NewEventLog(eventsDir)

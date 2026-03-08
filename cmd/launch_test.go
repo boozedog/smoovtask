@@ -8,8 +8,8 @@ import (
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
-func TestResolveCLIName_DefaultsToConfig(t *testing.T) {
-	name, err := resolveCLIName(&config.Config{Agent: config.AgentConfig{CLI: "claude"}}, "")
+func TestResolveCLIName_DefaultsToClaude(t *testing.T) {
+	name, err := resolveCLIName(&config.Config{}, "")
 	if err != nil {
 		t.Fatalf("resolveCLIName() error = %v", err)
 	}
@@ -19,7 +19,7 @@ func TestResolveCLIName_DefaultsToConfig(t *testing.T) {
 }
 
 func TestResolveCLIName_OverrideWins(t *testing.T) {
-	name, err := resolveCLIName(&config.Config{Agent: config.AgentConfig{CLI: "claude"}}, "opencode")
+	name, err := resolveCLIName(&config.Config{}, "opencode")
 	if err != nil {
 		t.Fatalf("resolveCLIName() error = %v", err)
 	}
@@ -29,7 +29,7 @@ func TestResolveCLIName_OverrideWins(t *testing.T) {
 }
 
 func TestResolveCLIName_Unknown(t *testing.T) {
-	_, err := resolveCLIName(&config.Config{Agent: config.AgentConfig{CLI: "claude"}}, "bogus")
+	_, err := resolveCLIName(&config.Config{}, "bogus")
 	if err == nil {
 		t.Fatal("expected error for unknown cli")
 	}

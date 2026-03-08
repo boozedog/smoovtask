@@ -31,6 +31,11 @@ func runInit(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
+	vaultPath, err := cfg.VaultPath()
+	if err != nil {
+		return fmt.Errorf("get vault path: %w", err)
+	}
+
 	// Use git repo name if available, otherwise fall back to directory name.
 	remoteURL := project.GitRemoteURL(cwd)
 	name := project.RepoName(remoteURL)
@@ -38,25 +43,24 @@ func runInit(_ *cobra.Command, _ []string) error {
 		name = filepath.Base(cwd)
 	}
 
-	if existing, ok := cfg.Projects[name]; ok {
-		if existing.Path == cwd {
-			fmt.Printf("Project %q already registered at %s\n", name, cwd)
-			return nil
-		}
+	// Check if already registered with same path.
+	existing, _ := project.LoadMeta(vaultPath, name)
+	if existing != nil && existing.Path == cwd {
+		fmt.Printf("Project %q already registered at %s\n", name, cwd)
+		return nil
 	}
 
-	projCfg := config.ProjectConfig{Path: cwd}
+	meta := &project.ProjectMeta{Path: cwd}
 	if remoteURL != "" {
-		projCfg.Repo = remoteURL
+		meta.Repo = remoteURL
 	}
-	cfg.Projects[name] = projCfg
 
 	if err := cfg.EnsureDirs(); err != nil {
 		return fmt.Errorf("create directories: %w", err)
 	}
 
-	if err := cfg.Save(); err != nil {
-		return fmt.Errorf("save config: %w", err)
+	if err := project.SaveMeta(vaultPath, name, meta); err != nil {
+		return fmt.Errorf("save project metadata: %w", err)
 	}
 
 	if remoteURL != "" {

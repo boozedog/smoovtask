@@ -39,10 +39,10 @@ func launchSession(role, ticketID, cliOverride string) error {
 	return nil
 }
 
-func resolveCLIName(cfg *config.Config, cliOverride string) (string, error) {
+func resolveCLIName(_ *config.Config, cliOverride string) (string, error) {
 	cliName := strings.TrimSpace(cliOverride)
 	if cliName == "" {
-		cliName = strings.TrimSpace(cfg.Agent.CLI)
+		cliName = "claude"
 	}
 
 	switch cliName {

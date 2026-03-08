@@ -6,13 +6,29 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/project"
 )
+
+func testProjectPath(t *testing.T, cfg *config.Config) string {
+	t.Helper()
+	vaultPath, err := cfg.VaultPath()
+	if err != nil {
+		t.Fatalf("get vault path: %v", err)
+	}
+	meta, err := project.LoadMeta(vaultPath, "testproject")
+	if err != nil || meta == nil {
+		t.Fatalf("load project meta: %v", err)
+	}
+	return meta.Path
+}
 
 func TestRunHook_PIEventSessionStart(t *testing.T) {
 	env := newTestEnv(t)
 	_ = env
 
-	cwd := env.Config.Projects["testproject"].Path
+	cwd := testProjectPath(t, env.Config)
 
 	payload := fmt.Sprintf(`{"type":"session_start","session_id":"run-pi-1","cwd":%q}`, cwd)
 	out, err := runHookWithInput(t, "pi-event", payload)
@@ -32,7 +48,7 @@ func TestRunHook_PIEventToolCallBlocked(t *testing.T) {
 	env := newTestEnv(t)
 	_ = env
 
-	cwd := env.Config.Projects["testproject"].Path
+	cwd := testProjectPath(t, env.Config)
 
 	payload := fmt.Sprintf(`{"type":"tool_call","session_id":"run-pi-2","cwd":%q,"tool_name":"Edit"}`, cwd)
 	out, err := runHookWithInput(t, "pi-event", payload)
@@ -50,7 +66,7 @@ func TestRunHook_PIEventToolCallBlocked(t *testing.T) {
 
 func TestRunHook_PreToolBlocksOnDeniedDecision(t *testing.T) {
 	env := newTestEnv(t)
-	cwd := env.Config.Projects["testproject"].Path
+	cwd := testProjectPath(t, env.Config)
 
 	_, err := runHookWithInput(t, "pre-tool", fmt.Sprintf(`{"session_id":"run-claude-1","cwd":%q,"tool_name":"Edit"}`, cwd))
 	if err == nil {

@@ -33,7 +33,7 @@ func HandlePreTool(input *Input) (Output, error) {
 		return Output{}, nil
 	}
 
-	proj := project.Detect(cfg, input.CWD)
+	proj := detectProject(cfg, input.CWD)
 
 	// Auto-handoff when exiting plan mode — release the ticket so the new
 	// build session can pick it up.
@@ -271,6 +271,15 @@ func handleExitPlanModeHandoff(cfg *config.Config, proj string, input *Input, ev
 	})
 
 	return Output{}, true
+}
+
+// detectProject resolves the vault path from config and detects the project.
+func detectProject(cfg *config.Config, dir string) string {
+	vaultPath, err := cfg.VaultPath()
+	if err != nil {
+		return ""
+	}
+	return project.Detect(vaultPath, dir)
 }
 
 // lookupActiveTicket resolves the active ticket for a session.

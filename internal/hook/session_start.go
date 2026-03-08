@@ -9,7 +9,6 @@ import (
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/event"
 	"github.com/boozedog/smoovtask/internal/guidance"
-	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/ticket"
 )
 
@@ -22,7 +21,7 @@ func HandleSessionStart(input *Input) (*Output, error) {
 		return &Output{}, fmt.Errorf("load config: %w", err)
 	}
 
-	proj := project.Detect(cfg, input.CWD)
+	proj := detectProject(cfg, input.CWD)
 	if proj == "" {
 		return &Output{}, nil
 	}
