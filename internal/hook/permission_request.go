@@ -22,6 +22,18 @@ func HandlePermissionRequest(input *Input) (Output, error) {
 
 	proj := detectProject(cfg, input.CWD)
 
+	data := make(map[string]any)
+	if input.ToolName != "" {
+		data["tool"] = input.ToolName
+	}
+	if input.ToolInput != nil {
+		for _, key := range []string{"command", "file_path", "pattern", "description"} {
+			if v, ok := input.ToolInput[key]; ok {
+				data[key] = v
+			}
+		}
+	}
+
 	el := event.NewEventLog(eventsDir)
 	_ = el.Append(event.Event{
 		TS:      time.Now().UTC(),
@@ -31,6 +43,7 @@ func HandlePermissionRequest(input *Input) (Output, error) {
 		Actor:   "agent",
 		RunID:   input.SessionID,
 		Source:  input.Source,
+		Data:    data,
 	})
 
 	return Output{}, nil

@@ -76,6 +76,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /ticket/{id}", h.Ticket)
 	mux.HandleFunc("GET /ticket/{id}/edit", h.EditTicket)
 	mux.HandleFunc("POST /ticket/{id}/edit", h.UpdateTicket)
+	mux.HandleFunc("GET /inbox", h.Inbox)
 	mux.HandleFunc("GET /activity", h.Activity)
 	mux.HandleFunc("GET /sessions", h.Sessions)
 	mux.HandleFunc("GET /agents", func(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +93,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	// Partials for htmx.
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
+	mux.HandleFunc("GET /partials/inbox", h.PartialInbox)
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
 	mux.HandleFunc("GET /partials/sessions", h.PartialSessions)

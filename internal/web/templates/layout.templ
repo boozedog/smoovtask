@@ -148,6 +148,9 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 					.st-ticket-form-page { padding: 1rem; }
 					.st-ticket-form-actions { gap: 0.5rem; }
 				}
+			.st-inbox-row { transition: background-color 0.15s; }
+			.st-inbox-row.st-inbox-read { opacity: 0.55; }
+			.st-inbox-row.st-inbox-read .st-inbox-subject { font-weight: 400; }
 			</style>
 		</head>
 		<body hx-ext="sse" sse-connect="/events" class="h-screen flex flex-col overflow-hidden bg-background text-foreground">
@@ -158,6 +161,20 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						<span class="font-mono">smoovtask</span>
 					</a>
 					<div role="tablist" class="tabs tabs-border ml-4 st-main-nav">
+						<a
+							role="tab"
+							if currentPath == "/inbox" {
+								class="tab tab-active"
+							} else {
+								class="tab"
+							}
+							hx-get="/partials/inbox"
+							hx-target="#content"
+							hx-push-url="/inbox"
+							href="/inbox"
+						>
+							Inbox
+						</a>
 						<a
 							role="tab"
 							if currentPath == "/" {
@@ -558,6 +575,70 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 				if (!window._stInitialized) {
 				window._stInitialized = true;
 
+				// --- Inbox: read/unread state (localStorage) ---
+				var _stInboxReadKey = 'st-inbox-read';
+				function stGetReadItems() {
+					try { return JSON.parse(localStorage.getItem(_stInboxReadKey) || '{}'); } catch(_) { return {}; }
+				}
+				function stMarkRead(id) {
+					var read = stGetReadItems();
+					read[id] = Date.now();
+					// Prune entries older than 7 days.
+					var cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+					Object.keys(read).forEach(function(k) { if (read[k] < cutoff) delete read[k]; });
+					localStorage.setItem(_stInboxReadKey, JSON.stringify(read));
+				}
+				function stApplyInboxReadState() {
+					var read = stGetReadItems();
+					document.querySelectorAll('.st-inbox-row[data-inbox-id]').forEach(function(row) {
+						if (read[row.getAttribute('data-inbox-id')]) {
+							row.classList.add('st-inbox-read');
+						}
+					});
+				}
+
+				// --- Inbox: local timezone formatting ---
+				function stFormatLocalTimes() {
+					document.querySelectorAll('.st-local-time').forEach(function(el) {
+						var iso = el.getAttribute('datetime');
+						if (!iso) return;
+						var d = new Date(iso);
+						if (isNaN(d.getTime())) return;
+						var date = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+						var time = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+						el.innerHTML = '<span>' + date + '</span><br/><span>' + time + '</span>';
+					});
+				}
+
+				// --- Browser Notifications ---
+				var _stNotifPermission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
+				var _stInboxHookTypes = {
+					'hook.permission-request': 'Permission requested',
+					'hook.stop': 'Agent stopped',
+					'hook.task-completed': 'Task completed'
+				};
+				function stRequestNotifPermission() {
+					if (typeof Notification === 'undefined') return;
+					if (Notification.permission === 'default') {
+						Notification.requestPermission().then(function(p) { _stNotifPermission = p; });
+					}
+				}
+				function stSendInboxNotification(hookName, ticketID) {
+					if (_stNotifPermission !== 'granted') return;
+					var title = _stInboxHookTypes[hookName];
+					if (!title) return;
+					var body = ticketID ? ticketID : 'An agent needs your attention';
+					try {
+						var n = new Notification('smoovtask: ' + title, {
+							body: body,
+							icon: '/static/logo.png',
+							tag: 'st-inbox-' + hookName + '-' + (ticketID || ''),
+							renotify: true
+						});
+						n.onclick = function() { window.focus(); n.close(); };
+					} catch(_) {}
+				}
+
 				// Auto-inject project param into all HTMX requests.
 				document.body.addEventListener('htmx:configRequest', function(e) {
 					var sel = document.getElementById('st-project-select');
@@ -588,6 +669,13 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 					source._stPingBound = true;
 					source.addEventListener('ping', function(evt) {
 						handleAgentPing({detail: evt});
+						// Browser notification for inbox-worthy events.
+						try {
+							var p = JSON.parse(evt.data || '{}');
+							if (p.hook && _stInboxHookTypes[p.hook]) {
+								stSendInboxNotification(p.hook, p.ticket || '');
+							}
+						} catch(_) {}
 					});
 				});
 
@@ -632,6 +720,17 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						}
 						return;
 					}
+					// Inbox row click: mark as read and open modal.
+					var inboxRow = e.target.closest('.st-inbox-row[data-inbox-id]');
+					if (inboxRow) {
+						stMarkRead(inboxRow.getAttribute('data-inbox-id'));
+						inboxRow.classList.add('st-inbox-read');
+						var partial = inboxRow.dataset.partial;
+						if (partial) {
+							htmx.ajax('GET', partial, {target: '#ticket-modal-body', swap: 'innerHTML'});
+						}
+						return;
+					}
 					var row = e.target.closest('tr[data-href]');
 					if (row && !e.target.closest('a')) {
 						var partial = row.dataset.partial;
@@ -651,6 +750,9 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 					var board = document.querySelector('.st-board');
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
+					stApplyInboxReadState();
+					stFormatLocalTimes();
+					stRequestNotifPermission();
 					syncAgentActivityState();
 					stSyncMuteIcon();
 					setInterval(function() {
@@ -666,6 +768,8 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 					if (board) board.addEventListener('scroll', updateScrollIndicators);
 					updateScrollIndicators();
 					syncAgentActivityState();
+					stApplyInboxReadState();
+					stFormatLocalTimes();
 
 					// Scroll to top on content navigation (not SSE refresh).
 					if (e.detail.target && e.detail.target.id === 'content') {
@@ -693,7 +797,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 							tab.classList.remove('tab-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/sessions': 'Sessions', '/activity': 'Activity', '/critical-path': 'Critical Path', '/projects': 'Projects', '/rules': 'Rules'};
+					var titleMap = {'/': 'Board', '/inbox': 'Inbox', '/sessions': 'Sessions', '/activity': 'Activity', '/critical-path': 'Critical Path', '/projects': 'Projects', '/rules': 'Rules'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');
@@ -718,7 +822,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						modalEl.close();
 					}
 					var path = window.location.pathname;
-					var partialMap = {'/': '/partials/board', '/sessions': '/partials/sessions', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path', '/projects': '/partials/projects', '/rules': '/partials/rules'};
+					var partialMap = {'/': '/partials/board', '/inbox': '/partials/inbox', '/sessions': '/partials/sessions', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path', '/projects': '/partials/projects', '/rules': '/partials/rules'};
 					var partial = partialMap[path];
 					if (!partial && path.startsWith('/ticket/')) {
 						partial = '/partials' + path;
