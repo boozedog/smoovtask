@@ -98,6 +98,65 @@ func TestExpandPath(t *testing.T) {
 	}
 }
 
+func TestEventsDirDefault(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("SMOOVBRAIN_DIR", dir)
+
+	cfg := &Config{}
+	cfg.applyDefaults()
+
+	got, err := cfg.EventsDir()
+	if err != nil {
+		t.Fatalf("EventsDir: %v", err)
+	}
+	want := filepath.Join(dir, "events")
+	if got != want {
+		t.Errorf("EventsDir() = %q, want %q", got, want)
+	}
+}
+
+func TestEventsDirCustom(t *testing.T) {
+	customDir := t.TempDir()
+
+	cfg := &Config{
+		Settings: SettingsConfig{
+			VaultPath:  "~/obsidian/smoovtask",
+			EventsPath: customDir,
+		},
+	}
+
+	got, err := cfg.EventsDir()
+	if err != nil {
+		t.Fatalf("EventsDir: %v", err)
+	}
+	if got != customDir {
+		t.Errorf("EventsDir() = %q, want %q", got, customDir)
+	}
+}
+
+func TestEventsDirCustomWithTilde(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("UserHomeDir: %v", err)
+	}
+
+	cfg := &Config{
+		Settings: SettingsConfig{
+			VaultPath:  "~/obsidian/smoovtask",
+			EventsPath: "~/my-events",
+		},
+	}
+
+	got, err := cfg.EventsDir()
+	if err != nil {
+		t.Fatalf("EventsDir: %v", err)
+	}
+	want := filepath.Join(home, "my-events")
+	if got != want {
+		t.Errorf("EventsDir() = %q, want %q", got, want)
+	}
+}
+
 func TestEnsureDirs(t *testing.T) {
 	dir := t.TempDir()
 	vault := filepath.Join(dir, "vault")
