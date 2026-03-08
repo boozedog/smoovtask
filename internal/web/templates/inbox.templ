@@ -1,0 +1,177 @@
+package templates
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/boozedog/smoovtask/internal/event"
+)
+
+type InboxItem struct {
+	Event       event.Event
+	Subject     string
+	Preview     string
+	TicketTitle string
+}
+
+type InboxData struct {
+	Items          []InboxItem
+	CurrentProject string
+	Projects       []string
+}
+
+func inboxEventIcon(eventType string) string {
+	switch eventType {
+	case event.HookPermissionReq:
+		return "!"
+	case event.HookStop:
+		return "X"
+	case event.HookTaskCompleted:
+		return "+"
+	case event.StatusHumanReview:
+		return "?"
+	default:
+		return "o"
+	}
+}
+
+func inboxEventIconClass(eventType string) string {
+	base := "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+	switch eventType {
+	case event.HookPermissionReq:
+		return base + " bg-warning text-warning-content"
+	case event.HookStop:
+		return base + " bg-error/20 text-error"
+	case event.HookTaskCompleted:
+		return base + " bg-success/20 text-success"
+	case event.StatusHumanReview:
+		return base + " bg-secondary/20 text-secondary"
+	default:
+		return base + " bg-base-content/10 text-base-content/50"
+	}
+}
+
+func inboxEventLabel(eventType string) string {
+	switch eventType {
+	case event.HookPermissionReq:
+		return "Permission"
+	case event.HookStop:
+		return "Stopped"
+	case event.HookTaskCompleted:
+		return "Completed"
+	case event.StatusHumanReview:
+		return "Human Review"
+	default:
+		parts := strings.Split(eventType, ".")
+		if len(parts) > 1 {
+			return parts[len(parts)-1]
+		}
+		return eventType
+	}
+}
+
+func inboxItemID(item InboxItem) string {
+	return fmt.Sprintf("inbox-%s-%d", item.Event.RunID, item.Event.TS.UnixMilli())
+}
+
+func inboxISOTime(t time.Time) string {
+	return t.UTC().Format(time.RFC3339)
+}
+
+func inboxFallbackTime(t time.Time) string {
+	return t.UTC().Format("2006-01-02 15:04")
+}
+
+templ InboxPage(data InboxData) {
+	@Layout("Inbox", "/inbox", data.CurrentProject, data.Projects) {
+		@InboxPartial(data)
+	}
+}
+
+templ InboxPartial(data InboxData) {
+	<div
+		hx-get="/partials/inbox"
+		hx-trigger="sse:refresh-activity"
+		hx-target="this"
+		hx-swap="outerHTML"
+	>
+		@InboxContent(data)
+	</div>
+}
+
+templ InboxContent(data InboxData) {
+	if len(data.Items) == 0 {
+		<div class="flex flex-col items-center justify-center py-16 opacity-50">
+			<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4 opacity-30"><path d="M22 12h-6l-2 3H10l-2-3H2"></path><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"></path></svg>
+			<p class="text-sm">Inbox zero. Nothing waiting on you.</p>
+		</div>
+	} else {
+		<div class="flex flex-col">
+			for _, item := range data.Items {
+				@InboxRow(item)
+			}
+		</div>
+	}
+}
+
+templ InboxRow(item InboxItem) {
+	<div
+		class="flex items-start gap-3 px-4 py-3 border-b border-[hsl(var(--st-border))]/50 hover:bg-base-200/50 cursor-pointer transition-colors st-inbox-row"
+		data-inbox-id={ inboxItemID(item) }
+		if item.Event.Ticket != "" {
+			data-href={ "/ticket/" + item.Event.Ticket }
+			data-partial={ "/partials/ticket/" + item.Event.Ticket }
+		} else if item.Event.RunID != "" {
+			data-href={ "/sessions/" + item.Event.RunID }
+			data-partial={ "/partials/session/" + item.Event.RunID }
+		}
+	>
+		<!-- Icon -->
+		<div class={ inboxEventIconClass(item.Event.Event) }>
+			{ inboxEventIcon(item.Event.Event) }
+		</div>
+		<!-- Body -->
+		<div class="flex-1 min-w-0">
+			<div class="flex items-center gap-2 mb-0.5">
+				<!-- Sender -->
+				<span class="font-semibold text-sm st-inbox-sender">
+					if item.Event.Source != "" {
+						{ sourceLabel(item.Event.Source) }
+					} else {
+						Agent
+					}
+					if item.Event.RunID != "" {
+						<span class="font-mono font-normal opacity-50 ml-1">{ shortAssignee(item.Event.RunID) }</span>
+					}
+				</span>
+				<!-- Event type label -->
+				<span class="badge badge-xs badge-ghost font-mono">{ inboxEventLabel(item.Event.Event) }</span>
+			</div>
+			<!-- Subject -->
+			<div class="text-sm st-inbox-subject">
+				<span class="font-medium">{ item.Subject }</span>
+				if item.TicketTitle != "" {
+					<span class="opacity-50 mx-1">-</span>
+					<span class="opacity-60">{ item.TicketTitle }</span>
+				}
+			</div>
+			<!-- Preview -->
+			if item.Preview != "" {
+				<div class="text-xs opacity-40 mt-0.5 truncate font-mono">{ item.Preview }</div>
+			}
+			<!-- Ticket ID -->
+			if item.Event.Ticket != "" {
+				<div class="mt-1">
+					<span class="text-xs font-mono opacity-40">{ item.Event.Ticket }</span>
+				</div>
+			}
+		</div>
+		<!-- Timestamp: date + time, formatted to user timezone via JS -->
+		<div class="text-xs opacity-50 whitespace-nowrap shrink-0 pt-0.5 text-right">
+			<time class="st-local-time" datetime={ inboxISOTime(item.Event.TS) }>
+				{ inboxFallbackTime(item.Event.TS) }
+			</time>
+		</div>
+	</div>
+}

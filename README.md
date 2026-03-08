@@ -14,10 +14,10 @@ go install github.com/boozedog/smoovtask/cmd/st@latest
 cd ~/projects/my-app
 st init
 
-# 3. Install agent hooks/extensions
-st hooks install --agents both
-# or: st hooks install --agents opencode
-# or: st hooks install --agents pi
+# 3. Install agent hooks, rules, and bridges
+st install --agents both
+# or: st install --agents opencode
+# or: st install --agents pi
 
 # 4. Create a ticket
 st new "Add rate limiting to API" --priority P2
@@ -179,18 +179,19 @@ The web UI provides a browser-based dashboard with live updates:
 
 Built with templ templates, htmx + SSE extension, and DaisyUI + Tailwind CSS (sunset theme).
 
-### Hooks
+### Setup
 
 ```
-st hooks install [--agents ...]            Install Claude hooks and optional OpenCode/PI bridges
+st install [--agents ...]                  Install hooks, rules, and agent bridges
+st uninstall [--agents ...]                Remove hooks and agent bridges (rules left intact)
 st hook <event-type>                       Handle a hook event (10 handlers)
 ```
 
 For OpenCode/PI integration, use:
 
 ```bash
-st hooks install --agents opencode
-st hooks install --agents pi
+st install --agents opencode
+st install --agents pi
 ```
 
 Hook event types: `session-start`, `pre-tool`, `post-tool`, `subagent-start`, `subagent-stop`, `task-completed`, `teammate-idle`, `permission-request`, `stop`, `session-end`
@@ -199,17 +200,23 @@ Hook event types: `session-start`, `pre-tool`, `post-tool`, `subagent-start`, `s
 
 smoovtask integrates with Claude Code through [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks), and with OpenCode/PI through installed TypeScript plugins/extensions that forward lifecycle events to `st hook`.
 
-### Installing Hooks/Extensions
+### Installing
 
 ```bash
-st hooks install
-# optional: st hooks install --agents opencode
-# optional: st hooks install --agents pi
+st install
+# optional: st install --agents opencode
+# optional: st install --agents pi
 ```
 
-This adds smoovtask hooks to `~/.claude/settings.json`, and installs OpenCode/PI bridge files when requested, preserving existing settings.
+This adds smoovtask hooks to `~/.claude/settings.json`, installs OpenCode/PI bridge plugins when requested, and seeds default rule files to `~/.smoovtask/rules/`. Existing settings are preserved.
 
-On install, smoovtask also seeds default rule files to `~/.smoovtask/rules/` for tool-use policy evaluation (bash allowlists, git safety, file protection).
+To remove everything:
+
+```bash
+st uninstall --agents both
+```
+
+Rule files in `~/.smoovtask/rules/` are left intact on uninstall since they may contain user customizations.
 
 ### What Each Hook Does
 
@@ -228,7 +235,7 @@ On install, smoovtask also seeds default rule files to `~/.smoovtask/rules/` for
 
 ### Rules System
 
-smoovtask ships default rule files that are seeded to `~/.smoovtask/rules/` on `st hooks install`. Rules evaluate tool invocations and return allow/deny/ask decisions.
+smoovtask ships default rule files that are seeded to `~/.smoovtask/rules/` on `st install`. Rules evaluate tool invocations and return allow/deny/ask decisions.
 
 **Default rulesets:**
 

@@ -17,7 +17,8 @@ type Config struct {
 
 // SettingsConfig holds global settings.
 type SettingsConfig struct {
-	VaultPath string `toml:"vault_path"`
+	VaultPath  string `toml:"vault_path"`
+	EventsPath string `toml:"events_path,omitempty"`
 }
 
 // DefaultDir returns the default config directory (~/.smoovtask).
@@ -129,7 +130,12 @@ func (c *Config) ProjectsDir() (string, error) {
 }
 
 // EventsDir returns the expanded events directory path.
+// If settings.events_path is set, it is expanded and returned;
+// otherwise defaults to ~/.smoovtask/events/.
 func (c *Config) EventsDir() (string, error) {
+	if c.Settings.EventsPath != "" {
+		return ExpandPath(c.Settings.EventsPath)
+	}
 	dir, err := DefaultDir()
 	if err != nil {
 		return "", err

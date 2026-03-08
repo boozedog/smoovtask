@@ -5,6 +5,8 @@ builds:
     binary: st
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/boozedog/smoovtask/internal/version.Version={{.Version}}
     goos:
       - linux
       - darwin

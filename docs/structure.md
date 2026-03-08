@@ -1,7 +1,7 @@
 # Project Structure
 
 - `cmd/st/` — Entry point (`main.go`)
-- `cmd/` — CLI commands (Cobra): root, init, new, list, show, pick, status, note, review, leader, work, launch, spawn, hook, hooks\_install, assign, hold, unhold, close, cancel, handoff, override, context, web, prep
+- `cmd/` — CLI commands (Cobra): root, init, new, list, show, pick, status, note, review, leader, work, launch, spawn, hook, install, uninstall, assign, hold, unhold, close, cancel, handoff, override, context, web, prep
 - `internal/config/` — TOML config loading, project registry
 - `internal/ticket/` — Ticket struct, ID generation, markdown parse/write, file-based store, dependency graph
 - `internal/event/` — JSONL event log: append (flock), daily rotation, query/filter

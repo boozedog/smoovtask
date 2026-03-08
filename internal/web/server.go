@@ -73,10 +73,10 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /{$}", h.Board)
 	mux.HandleFunc("GET /new", h.NewTicket)
 	mux.HandleFunc("POST /new", h.CreateTicket)
-	mux.HandleFunc("GET /list", h.List)
 	mux.HandleFunc("GET /ticket/{id}", h.Ticket)
 	mux.HandleFunc("GET /ticket/{id}/edit", h.EditTicket)
 	mux.HandleFunc("POST /ticket/{id}/edit", h.UpdateTicket)
+	mux.HandleFunc("GET /inbox", h.Inbox)
 	mux.HandleFunc("GET /activity", h.Activity)
 	mux.HandleFunc("GET /sessions", h.Sessions)
 	mux.HandleFunc("GET /agents", func(w http.ResponseWriter, r *http.Request) {
@@ -87,14 +87,16 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	mux.HandleFunc("GET /rules", h.Rules)
 	mux.HandleFunc("POST /rules/allow", h.AllowRule)
 
+	// API endpoints.
+	mux.HandleFunc("GET /api/search-tickets", h.SearchTickets)
+
 	// SSE endpoint — single unified stream to avoid HTTP/1.1 connection exhaustion.
 	mux.HandleFunc("GET /events", h.Events)
 
 	// Partials for htmx.
 	mux.HandleFunc("GET /partials/board", h.PartialBoard)
-	mux.HandleFunc("GET /partials/list", h.PartialList)
-	mux.HandleFunc("GET /partials/list-content", h.PartialListContent)
 	mux.HandleFunc("GET /partials/ticket/{id}", h.PartialTicket)
+	mux.HandleFunc("GET /partials/inbox", h.PartialInbox)
 	mux.HandleFunc("GET /partials/activity", h.PartialActivity)
 	mux.HandleFunc("GET /partials/activity-content", h.PartialActivityContent)
 	mux.HandleFunc("GET /partials/sessions", h.PartialSessions)
