@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"sort"
 	"strings"
 	"time"
 
@@ -86,6 +87,22 @@ func recentEvents(eventsDir string, q event.Query, limit int) []event.Event {
 func (h *Handler) allProjects() []string {
 	all, _ := h.store.ListMeta(ticket.ListFilter{})
 	return uniqueProjects(all)
+}
+
+func uniqueProjects(tickets []*ticket.Ticket) []string {
+	seen := make(map[string]struct{})
+	var projects []string
+	for _, tk := range tickets {
+		if tk.Project == "" {
+			continue
+		}
+		if _, ok := seen[tk.Project]; !ok {
+			seen[tk.Project] = struct{}{}
+			projects = append(projects, tk.Project)
+		}
+	}
+	sort.Strings(projects)
+	return projects
 }
 
 func (h *Handler) resolveRunSources(runIDs []string) map[string]string {

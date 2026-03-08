@@ -174,20 +174,6 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						</a>
 						<a
 							role="tab"
-							if currentPath == "/list" {
-								class="tab tab-active"
-							} else {
-								class="tab"
-							}
-							hx-get="/partials/list"
-							hx-target="#content"
-							hx-push-url="/list"
-							href="/list"
-						>
-							Tickets
-						</a>
-						<a
-							role="tab"
 							if currentPath == "/critical-path" {
 								class="tab tab-active"
 							} else {
@@ -707,7 +693,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 							tab.classList.remove('tab-active');
 						}
 					});
-					var titleMap = {'/': 'Board', '/list': 'Tickets', '/sessions': 'Sessions', '/activity': 'Activity', '/critical-path': 'Critical Path', '/projects': 'Projects', '/rules': 'Rules'};
+					var titleMap = {'/': 'Board', '/sessions': 'Sessions', '/activity': 'Activity', '/critical-path': 'Critical Path', '/projects': 'Projects', '/rules': 'Rules'};
 					var title = titleMap[path];
 					if (!title && path.startsWith('/ticket/')) {
 						var h1 = document.querySelector('#content h1');
@@ -732,7 +718,7 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 						modalEl.close();
 					}
 					var path = window.location.pathname;
-					var partialMap = {'/': '/partials/board', '/list': '/partials/list', '/sessions': '/partials/sessions', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path', '/projects': '/partials/projects', '/rules': '/partials/rules'};
+					var partialMap = {'/': '/partials/board', '/sessions': '/partials/sessions', '/activity': '/partials/activity', '/critical-path': '/partials/critical-path', '/projects': '/partials/projects', '/rules': '/partials/rules'};
 					var partial = partialMap[path];
 					if (!partial && path.startsWith('/ticket/')) {
 						partial = '/partials' + path;
