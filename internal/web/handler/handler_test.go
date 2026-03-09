@@ -72,7 +72,7 @@ func testSetup(t *testing.T) (*handler.Handler, string, string) {
 
 	broker := sse.NewBroker()
 	cfg := &config.Config{}
-	h := handler.New(cfg, projectsDir, eventsDir, broker, "testproj")
+	h := handler.New(cfg, projectsDir, eventsDir, broker)
 	return h, projectsDir, eventsDir
 }
 

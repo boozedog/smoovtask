@@ -336,6 +336,11 @@ templ Layout(title string, currentPath string, currentProject string, projects [
 
 				// --- Project selector ---
 				function stSelectProject(select) {
+					fetch('/api/project', {
+						method: 'POST',
+						headers: {'Content-Type': 'application/json'},
+						body: JSON.stringify({project: select.value})
+					});
 					var url = new URL(window.location);
 					if (select.value) {
 						url.searchParams.set('project', select.value);

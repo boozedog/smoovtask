@@ -15,7 +15,7 @@ func (h *Handler) NewTicket(w http.ResponseWriter, r *http.Request) {
 	data := templates.TicketFormData{
 		Mode: "new",
 		Values: templates.TicketFormValues{
-			Project:  h.project,
+			Project:  h.SelectedProject(),
 			Status:   string(ticket.StatusOpen),
 			Priority: string(ticket.DefaultPriority),
 		},
@@ -28,7 +28,7 @@ func (h *Handler) PartialNewTicket(w http.ResponseWriter, r *http.Request) {
 	data := templates.TicketFormData{
 		Mode: "new",
 		Values: templates.TicketFormValues{
-			Project:  h.project,
+			Project:  h.SelectedProject(),
 			Status:   string(ticket.StatusOpen),
 			Priority: string(ticket.DefaultPriority),
 		},
@@ -295,7 +295,7 @@ func (h *Handler) renderFormError(w http.ResponseWriter, r *http.Request, mode, 
 
 func (h *Handler) renderFormErrorWithValues(w http.ResponseWriter, r *http.Request, mode, ticketID string, values templates.TicketFormValues, msg string) {
 	if mode == "new" && values.Project == "" {
-		values.Project = h.project
+		values.Project = h.SelectedProject()
 	}
 	data := templates.TicketFormData{
 		Mode:     mode,
@@ -314,7 +314,7 @@ func (h *Handler) renderFormModalError(w http.ResponseWriter, r *http.Request, m
 
 func (h *Handler) renderFormModalErrorWithValues(w http.ResponseWriter, r *http.Request, mode, ticketID string, values templates.TicketFormValues, msg string) {
 	if mode == "new" && values.Project == "" {
-		values.Project = h.project
+		values.Project = h.SelectedProject()
 	}
 	data := templates.TicketFormData{
 		Mode:     mode,
