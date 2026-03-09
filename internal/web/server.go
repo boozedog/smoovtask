@@ -7,11 +7,9 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
-	"github.com/boozedog/smoovtask/internal/project"
 	"github.com/boozedog/smoovtask/internal/web/handler"
 	"github.com/boozedog/smoovtask/internal/web/middleware"
 	"github.com/boozedog/smoovtask/internal/web/sse"
@@ -55,10 +53,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	defer func() { _ = watcher.Close() }()
 
 	// Set up handlers.
-	cwd, _ := os.Getwd()
-	vaultPath, _ := s.cfg.VaultPath()
-	proj := project.Detect(vaultPath, cwd)
-	h := handler.New(s.cfg, projectsDir, eventsDir, s.broker, proj)
+	h := handler.New(s.cfg, projectsDir, eventsDir, s.broker)
 
 	mux := http.NewServeMux()
 
@@ -89,6 +84,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 	// API endpoints.
 	mux.HandleFunc("GET /api/search-tickets", h.SearchTickets)
+	mux.HandleFunc("POST /api/project", h.SetProject)
 
 	// SSE endpoint — single unified stream to avoid HTTP/1.1 connection exhaustion.
 	mux.HandleFunc("GET /events", h.Events)

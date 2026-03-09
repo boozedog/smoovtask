@@ -8,13 +8,14 @@ import (
 
 	"github.com/boozedog/smoovtask/internal/config"
 	"github.com/boozedog/smoovtask/internal/rules"
+	"github.com/boozedog/smoovtask/internal/skills"
 	"github.com/spf13/cobra"
 )
 
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install smoovtask hooks, rules, and agent bridges",
-	Long:  `Installs smoovtask into your environment: Claude Code hooks, OpenCode/PI bridge plugins, and default rule files. Existing hooks and settings are preserved.`,
+	Short: "Install smoovtask hooks, rules, skills, and agent bridges",
+	Long:  `Installs smoovtask into your environment: Claude Code hooks, OpenCode/PI bridge plugins, default rule files, and workflow skills. Existing hooks and settings are preserved.`,
 	RunE:  runInstall,
 }
 
@@ -502,6 +503,11 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("seed default rules: %w", err)
 	}
 
+	// Install st-managed Claude Code skills.
+	if err := skills.Install(); err != nil {
+		return fmt.Errorf("install skills: %w", err)
+	}
+
 	return nil
 }
 
@@ -523,6 +529,11 @@ func runUninstall(_ *cobra.Command, _ []string) error {
 				return fmt.Errorf("uninstall pi extension: %w", err)
 			}
 		}
+	}
+
+	// Remove st-managed Claude Code skills.
+	if err := skills.Uninstall(); err != nil {
+		return fmt.Errorf("uninstall skills: %w", err)
 	}
 
 	fmt.Println("\nRule files in ~/.smoovtask/rules/ were left intact.")

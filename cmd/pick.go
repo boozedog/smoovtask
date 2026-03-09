@@ -148,6 +148,10 @@ func runPick(_ *cobra.Command, args []string) error {
 		fmt.Println(tk.Body)
 	}
 
+	fmt.Printf("--- Commit Rules ---\n")
+	fmt.Println(guidance.CommitRules())
+	fmt.Println()
+
 	fmt.Printf("--- Before You Start ---\n")
 	fmt.Printf("Read the ticket description carefully. If ANYTHING is unclear or ambiguous:\n")
 	fmt.Printf("- Ask the user to clarify requirements before writing any code\n")

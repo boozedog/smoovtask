@@ -2,11 +2,30 @@
 // used by CLI commands and hooks.
 package guidance
 
-// CommitRules returns the standard instruction forbidding attribution lines in commit messages.
-func CommitRules() string {
+// CommitStyle returns the universal commit message style rules (no trailers, no elaborate formatting).
+// Safe to inject in any context — does not mention GPG signing.
+func CommitStyle() string {
 	return "NEVER include Co-Authored-By, Signed-off-by, or any other attribution/trailer lines in commit messages. " +
+		"Keep commits simple: `git add <files> && git commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
+}
+
+// CommitRules returns the full commit instruction for ticket worktree work.
+// Includes CommitStyle() plus the GPG signing skip — only inject when agents are
+// committing in ticket worktrees, NOT PR worktrees.
+func CommitRules() string {
+	return CommitStyle() + " " +
 		"ALWAYS disable GPG signing on commits — the human will sign when preparing the PR. " +
-		"Keep commits simple: `git add <files> && git -c commit.gpgsign=false commit -m \"short message\"` — no heredocs, no trailers, no elaborate formatting."
+		"Use `git -c commit.gpgsign=false commit` for every commit."
+}
+
+// PRCommitRules returns commit guidance for PR worktree merges.
+// PR worktree commits are signed by the human, so agents must NEVER skip GPG signing
+// and must prompt the user before each commit so they can authorize the signature.
+func PRCommitRules() string {
+	return "NEVER use `-c commit.gpgsign=false` or `--no-gpg-sign` in the PR worktree — " +
+		"the human signs these commits. Before EACH `git commit`, prompt the user with " +
+		"\"Ready to commit — please prepare to sign\" so they can authorize the GPG signature. " +
+		"If signing times out, ask the user to retry rather than disabling signing."
 }
 
 // NoteHowTo returns the standard instruction for how to add notes.

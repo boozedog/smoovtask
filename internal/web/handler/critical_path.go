@@ -51,7 +51,7 @@ func (h *Handler) buildCriticalPathData(r *http.Request) (templates.CriticalPath
 	runSources := h.resolveRunSources(runIDs)
 
 	return templates.CriticalPathData{
-		Project:        h.project,
+		Project:        filterProject,
 		Graph:          graph,
 		ByID:           byID,
 		RunSources:     runSources,

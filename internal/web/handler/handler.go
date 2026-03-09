@@ -2,8 +2,11 @@
 package handler
 
 import (
+	"encoding/json"
+	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
@@ -18,18 +21,41 @@ type Handler struct {
 	store     *ticket.Store
 	eventsDir string
 	broker    *sse.Broker
-	project   string
+
+	mu      sync.RWMutex
+	project string // currently selected project (mutable via navbar)
 }
 
 // New creates a new Handler.
-func New(cfg *config.Config, projectsDir, eventsDir string, broker *sse.Broker, project string) *Handler {
+func New(cfg *config.Config, projectsDir, eventsDir string, broker *sse.Broker) *Handler {
 	return &Handler{
 		cfg:       cfg,
 		store:     ticket.NewStore(projectsDir),
 		eventsDir: eventsDir,
 		broker:    broker,
-		project:   project,
 	}
+}
+
+// SelectedProject returns the currently selected project.
+func (h *Handler) SelectedProject() string {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.project
+}
+
+// SetProject handles POST /api/project to update the selected project.
+func (h *Handler) SetProject(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Project string `json:"project"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	h.mu.Lock()
+	h.project = body.Project
+	h.mu.Unlock()
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // statusOrder defines the column order for the kanban board.
