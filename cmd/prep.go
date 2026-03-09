@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/boozedog/smoovtask/internal/config"
+	"github.com/boozedog/smoovtask/internal/guidance"
 	"github.com/boozedog/smoovtask/internal/spawn"
 	"github.com/boozedog/smoovtask/internal/ticket"
 	"github.com/spf13/cobra"
@@ -152,6 +153,8 @@ func runPrepSingle(store *ticket.Store, repoRoot, baseBranch, ticketID string) e
 	fmt.Println("=== PR Worktree Created ===")
 	fmt.Printf("Path: %s\n", prPath)
 	fmt.Println()
+	fmt.Println("⚠️  " + guidance.PRCommitRules())
+	fmt.Println()
 	fmt.Println("Enter the worktree and run:")
 	fmt.Printf("  cd %q\n", prPath)
 	fmt.Printf("  git merge --squash %s && git commit -m %q\n", workBranch, commitMsg)
@@ -277,6 +280,8 @@ func runPrepBatch(cfg *config.Config, store *ticket.Store, repoRoot, baseBranch,
 
 	fmt.Println("=== PR Worktree Created ===")
 	fmt.Printf("Path: %s\n", prPath)
+	fmt.Println()
+	fmt.Println("⚠️  " + guidance.PRCommitRules())
 	fmt.Println()
 	fmt.Println("Enter the worktree and squash-merge each ticket:")
 	fmt.Printf("  cd %q\n", prPath)
